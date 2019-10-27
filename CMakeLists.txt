@@ -18,15 +18,6 @@ target_include_directories(krsyn PUBLIC  ./)
 add_executable(wav_write_test tests/wav_write_test.c)
 target_link_libraries(wav_write_test krsyn)
 
-set(CMAKE_AUTOMOC ON)
+# basic files
 
-# base files
-file(GLOB krsyn_editor_src editor/*.cpp editor/*.h)
-add_executable(krsyn_editor ${krsyn_editor_src})
-
-# Lv2
-target_include_directories(krsyn_editor PUBLIC editor/ thirdparty/lv2)
-
-# Qt5
-find_package(Qt5Widgets REQUIRED)
-target_link_libraries(krsyn_editor PUBLIC Qt5::Widgets )
+add_subdirectory(thirdparty/wxWidgets)
