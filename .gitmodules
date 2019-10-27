@@ -4,7 +4,6 @@
 [submodule "thirdparty/rtmidi"]
 	path = thirdparty/rtmidi
 	url = https://github.com/thestk/rtmidi
-[submodule "thirdparty/portaudio"]
-	path = thirdparty/portaudio
+[submodule "portaudio"]
+	path = portaudio
 	url = https://git.assembla.com/portaudio.git
-	
