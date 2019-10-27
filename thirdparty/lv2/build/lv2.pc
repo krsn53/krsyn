@@ -1,0 +1,7 @@
+prefix=C:/Program Files/Git/foo
+includedir=C:/Program Files/Git/foo/include
+
+Name: LV2
+Version: 1.16.0
+Description: An extensible audio plugin interface.
+Cflags: -I${includedir}
