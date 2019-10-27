@@ -1,3 +1,12 @@
 [submodule "thirdparty/vst3sdk"]
 	path = thirdparty/vst3sdk
 	url = https://github.com/steinbergmedia/vst3sdk
+[submodule "thirdparty/midifile"]
+	path = thirdparty/midifile
+	url = https://github.com/craigsapp/midifile
+[submodule "thirdparty/rtmidi"]
+	path = thirdparty/rtmidi
+	url = https://github.com/thestk/rtmidi
+[submodule "thirdparty/portaudio"]
+	path = thirdparty/portaudio
+	url = https://git.assembla.com/portaudio.git
