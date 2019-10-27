@@ -7,6 +7,4 @@
 [submodule "thirdparty/portaudio"]
 	path = thirdparty/portaudio
 	url = https://git.assembla.com/portaudio.git
-[submodule "thirdparty/wxWidgets"]
-	path = thirdparty/wxWidgets
-	url = https://github.com/wxWidgets/wxWidgets
+	

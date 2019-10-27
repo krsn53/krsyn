@@ -21,3 +21,5 @@ target_link_libraries(wav_write_test krsyn)
 # basic files
 
 add_subdirectory(thirdparty/wxWidgets)
+
+
