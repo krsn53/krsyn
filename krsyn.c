@@ -501,7 +501,7 @@ static inline int16_t fm_frame(const krsyn_core* core, const krsyn_fm* fm, krsyn
     if(algorithm ==7)
     {
         // +-----+
-        // +-[1]-+-[2]---[3]---[4]
+        // +-[1]-+ [2]   [3]   [4]
         //    +-----+-----+-----+--->
         output[3] = output_mod(core, note->phases[3], 0                     , note->envelop_now_amps[3]);
         output[2] = output_mod(core, note->phases[2], 0                     , note->envelop_now_amps[2]);

@@ -1,9 +1,9 @@
 [submodule "thirdparty/midifile"]
-	path = thirdparty/midifile
+	path = ext/midifile
 	url = https://github.com/craigsapp/midifile
 [submodule "thirdparty/rtmidi"]
-	path = thirdparty/rtmidi
+	path = ext/rtmidi
 	url = https://github.com/thestk/rtmidi
 [submodule "thirdparty/portaudio"]
-	path = thirdparty/portaudio
+	path = ext/portaudio
 	url = https://git.assembla.com/portaudio.git

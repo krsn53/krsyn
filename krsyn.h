@@ -145,17 +145,17 @@ typedef struct krsyn_core
 krsyn_core;
 
 
-typedef struct krsyn_phase_coarses_data
+typedef struct krsyn_phase_coarse_data
 {
     uint8_t fixed_frequency: 1;
     uint8_t value :7;
-}krsyn_phase_coarses_data;
+}krsyn_phase_coarse_data;
 
-typedef struct krsyn_ks_curve_types_data
+typedef struct krsyn_ks_curve_type_data
 {
     uint8_t left : 4;
     uint8_t right : 4;
-}krsyn_ks_curve_types_data;
+}krsyn_ks_curve_type_data;
 
 /**
  * @struct krsyn_fm_data
@@ -164,7 +164,7 @@ typedef struct krsyn_ks_curve_types_data
 typedef struct krsyn_fm_data
 {
     //! 基本周波数の何倍を出力するか。
-    krsyn_phase_coarses_data    phase_coarses           [KRSYN_NUM_OPERATORS];
+    krsyn_phase_coarse_data     phase_coarses           [KRSYN_NUM_OPERATORS];
 
     //! 周波数の微妙なズレ具合。範囲は0.0~0.5で、最大で半オクターブ音程が上がる。
     uint8_t                     phase_fines             [KRSYN_NUM_OPERATORS];
@@ -198,7 +198,7 @@ typedef struct krsyn_fm_data
     uint8_t                     ks_mid_points           [KRSYN_NUM_OPERATORS];
 
     //! キースケールの曲線の種類。上位4bitがks_mid_pointsよりノートナンバーが小さい時、下位4bitが大きい時の曲線。
-    krsyn_ks_curve_types_data   ks_curve_types          [KRSYN_NUM_OPERATORS];
+    krsyn_ks_curve_type_data    ks_curve_types          [KRSYN_NUM_OPERATORS];
     
 
     //! LFOの音量変化の度合い。
