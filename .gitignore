@@ -31,5 +31,7 @@
 *.out
 *.app
 
-.user
-.kdev4
+*.user
+*.kdev4
+
+/build/
