@@ -48,8 +48,10 @@ extern "C" {
 #define KRSYN_PHASE_MASK                    (KRSYN_PHASE_MAX - 1u)
 #define KRSYN_PHASE_SHIFT_MASK              (KRSYN_PHASE_1 - 1u)
 
+#define KRSYN_FREQUENCY_SHIFT               16u
+
 #define KRSYN_PHASE_COARSE_SHIFT            1u
-#define KRSYN_PHASE_FINE_SHIFT              16u
+#define KRSYN_PHASE_FINE_SHIFT              (KRSYN_FREQUENCY_SHIFT - 1u)
 
 #define KRSYN_LFO_TABLE_SHIFT               7u
 #define KRSYN_LFO_TABLE_LENGTH              (1<<KRSYN_LFO_TABLE_SHIFT)
@@ -64,7 +66,6 @@ extern "C" {
 #define KRSYN_ENVELOP_SHIFT                 16u
 #define KRSYN_ENVELOP_NUM_POINTS            4u
 
-#define KRSYN_FREQUENCY_SHIFT               16u
 #define KRSYN_RS_SHIFT                      16u
 #define KRSYN_VELOCITY_SENS_SHIFT           16u
 
@@ -81,17 +82,17 @@ extern "C" {
 #define KRSYN_SAMPLE_PER_FRAMES             (1<<KRSYN_SAMPLE_PER_FRAMES_SHIFT)
 #define KRSYN_SAMPLE_PER_FRAMES_MASK        (KRSYN_SAMPLE_PER_FRAMES-1)
 
-#define KRSYN_DATA_SIZE                     sizeof(krsyn_fm_data)
+#define KRSYN_DATA_SIZE                     sizeof(KrsynFMData)
 
 
 /**
- * @enum krsyn_ks_type
+ * @enum KrsynKSType
  * @brief キースケールの効果曲線
  * ks_mid_point を中心に音量を変化させる。
  * LDとLUは周波数に対して、線形的に音量が減少、増加する。
  * 対して、EDとEUは周波数に対して指数的に音量が減少、増加する。
 */
-enum krsyn_ks_type
+enum KrsynKSType
 {
     KRSYN_KS_CURVE_LD,
     KRSYN_KS_CURVE_ED,
@@ -101,10 +102,10 @@ enum krsyn_ks_type
 };
 
 /**
- * @enum envelop_state
+ * @enum KrsynEnvelopState
  * @brief エンベロープの現在の状態 
 */
-enum envelop_state
+enum KrsynEnvelopState
 {
     KRSYN_ENVELOP_OFF,
     KRSYN_ENVELOP_ON,
@@ -113,10 +114,10 @@ enum envelop_state
 };
 
 /**
- * @enum krsyn_lfo_wave_type
+ * @enum KrsynLFOWaveType
  * @brief LFO の波形
 */
-enum krsyn_lfo_wave_type
+enum KrsynLFOWaveType
 {
     KRSYN_LFO_WAVE_TRIANGLE,
     KRSYN_LFO_WAVE_SAW_UP,
@@ -128,10 +129,10 @@ enum krsyn_lfo_wave_type
 };
 
 /**
- * @struct krsyn_core
+ * @struct KrsynCore
  * @brief シンセの共通情報（サンプリング周波数や波形テーブルなど）。
 */
-typedef struct krsyn_core
+typedef struct KrsynCore
 {
     uint32_t    smp_freq;
     int16_t     sin_table[KRSYN_TABLE_LENGTH];
@@ -142,29 +143,29 @@ typedef struct krsyn_core
     int16_t     saw_table[1<<KRSYN_NUM_TABLE_MIPMAPS];
     int16_t     triangle_table[1<<KRSYN_NUM_TABLE_MIPMAPS];
 }
-krsyn_core;
+KrsynCore;
 
 
-typedef struct krsyn_phase_coarse_data
+typedef struct KrsynPhaseCoarseData
 {
     uint8_t fixed_frequency: 1;
     uint8_t value :7;
-}krsyn_phase_coarse_data;
+}KrsynPhaseCoarseData;
 
-typedef struct krsyn_ks_curve_type_data
+typedef struct KrsynKSCurveTypeData
 {
     uint8_t left : 4;
     uint8_t right : 4;
-}krsyn_ks_curve_type_data;
+}KrsynKSCurveTypeData;
 
 /**
- * @struct krsyn_fm_data
+ * @struct KrsynFMData
  * @brief FMシンセのバイナリデータ。
 */
-typedef struct krsyn_fm_data
+typedef struct KrsynFMData
 {
     //! 基本周波数の何倍を出力するか。
-    krsyn_phase_coarse_data     phase_coarses           [KRSYN_NUM_OPERATORS];
+    KrsynPhaseCoarseData     phase_coarses           [KRSYN_NUM_OPERATORS];
 
     //! 周波数の微妙なズレ具合。範囲は0.0~0.5で、最大で半オクターブ音程が上がる。
     uint8_t                     phase_fines             [KRSYN_NUM_OPERATORS];
@@ -198,7 +199,7 @@ typedef struct krsyn_fm_data
     uint8_t                     ks_mid_points           [KRSYN_NUM_OPERATORS];
 
     //! キースケールの曲線の種類。上位4bitがks_mid_pointsよりノートナンバーが小さい時、下位4bitが大きい時の曲線。
-    krsyn_ks_curve_type_data    ks_curve_types          [KRSYN_NUM_OPERATORS];
+    KrsynKSCurveTypeData    ks_curve_types          [KRSYN_NUM_OPERATORS];
     
 
     //! LFOの音量変化の度合い。
@@ -225,14 +226,14 @@ typedef struct krsyn_fm_data
     uint8_t                     lfo_fms_depth;                                 // zero : disabled
 
 }
-krsyn_fm_data;
+KrsynFMData;
 
 
 /**
- * @struct krsyn_fm_data
+ * @struct KrsynFMData
  * @brief 読み込まれたFMシンセのデータ。
 */
-typedef KRSYN_ALIGNED(16) struct krsyn_fm
+typedef KRSYN_ALIGNED(16) struct KrsynFM
 {
     uint32_t    phase_coarses           [KRSYN_NUM_OPERATORS];
     uint32_t    phase_fines             [KRSYN_NUM_OPERATORS];
@@ -264,13 +265,13 @@ typedef KRSYN_ALIGNED(16) struct krsyn_fm
     bool        lfo_ams_enabled;
     bool        lfo_fms_enabled;
 }
-krsyn_fm;
+KrsynFM;
 
 /**
- * @struct krsyn_fm_data
+ * @struct KrsynFMData
  * @brief ノートオンされたノートの状態。
 */
-typedef  KRSYN_ALIGNED(16)  struct krsyn_fm_note
+typedef  KRSYN_ALIGNED(16)  struct KrsynFMNote
 {
     int32_t     output_log              [KRSYN_NUM_OPERATORS];
 
@@ -285,7 +286,7 @@ typedef  KRSYN_ALIGNED(16)  struct krsyn_fm_note
     int32_t     envelop_now_deltas      [KRSYN_NUM_OPERATORS];
     uint32_t    envelop_now_times       [KRSYN_NUM_OPERATORS];
     int32_t     envelop_now_amps        [KRSYN_NUM_OPERATORS];
-    uint8_t     envelop_states          [KRSYN_NUM_OPERATORS];
+    uint8_t     KrsynEnvelopStates          [KRSYN_NUM_OPERATORS];
     uint8_t     envelop_now_points      [KRSYN_NUM_OPERATORS];
 
     uint32_t    lfo_phase;
@@ -295,28 +296,28 @@ typedef  KRSYN_ALIGNED(16)  struct krsyn_fm_note
 
     uint32_t    now_frame;
 }
-krsyn_fm_note;
+KrsynFMNote;
 
 /**
  * @fn krsyn_new
  * @brief シンセの初期化を行う。
  * @param freq サンプリング周波数。
 */
-krsyn_core*                 krsyn_new                       (uint32_t freq);
+KrsynCore*                 krsyn_new                       (uint32_t freq);
 
 /**
  * @fn krsyn_free
  * @brief シンセの解放を行う。
  * @param core 解放するシンセ。
 */
-void                        krsyn_free                      (krsyn_core* core);
+void                        krsyn_free                      (KrsynCore* core);
 
 /**
  * @fn krsyn_fm_set_data_default
  * @brief fmのデータを初期化する。
  * @param data 初期化するデータ。
 */
-void                        krsyn_fm_set_data_default       (krsyn_fm_data* data);
+void                        krsyn_fm_set_data_default       (KrsynFMData* data);
 
 /**
  * @fn krsyn_fm_set
@@ -325,7 +326,7 @@ void                        krsyn_fm_set_data_default       (krsyn_fm_data* data
  * @param fm 読み込まれるfmデータ。
  * @param data 読み込むバイナリ。
 */
-void                        krsyn_fm_set                    (const krsyn_core* core, krsyn_fm* fm, const krsyn_fm_data* data);
+void                        krsyn_fm_set                    (const KrsynCore* core, KrsynFM* fm, const KrsynFMData* data);
 
 /**
  * @fn krsyn_fm_render
@@ -336,10 +337,10 @@ void                        krsyn_fm_set                    (const krsyn_core* c
  * @param buf 書き込まれるバッファ。チャンネル数は常に2。
  * @param len 書き込まれるバッファの要素数。
 */
-void                        krsyn_fm_render                 (const krsyn_core* core, const krsyn_fm *fm, krsyn_fm_note* note, int16_t* buf, unsigned len);
+void                        krsyn_fm_render                 (const KrsynCore* core, const KrsynFM *fm, KrsynFMNote* note, int16_t* buf, unsigned len);
 
 /**
- * @fn krsyn_fm_noteon
+ * @fn krsyn_fm_note_on
  * @brief ノートオンする。
  * @param core シンセの基本データ。
  * @param fm シンセの音色。ノートの初期化に使う。
@@ -347,14 +348,14 @@ void                        krsyn_fm_render                 (const krsyn_core* c
  * @param notenum ノートオンされるノートのノートナンバー。
  * @param velocity ノートオンされるノートのベロシティ。
 */
-void                        krsyn_fm_noteon                 (const krsyn_core *core, const krsyn_fm *fm, krsyn_fm_note* note, uint8_t notenum, uint8_t velocity);
+void                        krsyn_fm_note_on                 (const KrsynCore *core, const KrsynFM *fm, KrsynFMNote* note, uint8_t notenum, uint8_t velocity);
 
 /**
- * @fn krsyn_fm_noteoff
+ * @fn krsyn_fm_note_off
  * @brief ノートオフする。
  * @param note ノートオフされるノート。
 */
-void                        krsyn_fm_noteoff                (krsyn_fm_note* note);
+void                        krsyn_fm_note_off                (KrsynFMNote* note);
 
 
 
@@ -415,7 +416,7 @@ static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
 
 #define calc_fixed_frequency(value)                     (value)
 #define calc_phase_coarses(value)                       (value)
-#define calc_phase_fines(value)                         krsyn_linear_u(value, 0, 1 << (KRSYN_PHASE_FINE_SHIFT-1))
+#define calc_phase_fines(value)                         krsyn_linear_u(value, 0, 1 << (KRSYN_PHASE_FINE_SHIFT))
 #define calc_phase_dets(value)                          krsyn_linear_u(value, 0, KRSYN_PHASE_MAX)
 #define calc_envelop_points(value)                      krsyn_linear2_i(value, 0, 1 << KRSYN_ENVELOP_SHIFT)
 #define calc_envelop_samples(smp_freq, value)           krsyn_calc_envelop_samples(smp_freq, value)
@@ -432,8 +433,8 @@ static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
 #define calc_feedback_level(value)                      krsyn_linear_u(value, 0, 2<<KRSYN_FEEDBACK_LEVEL_SHIFT)
 #define calc_lfo_table_type(value)                      (value)
 #define calc_lfo_fms_depth(value)                       krsyn_linear2_u(value, 0, 1 << KRSYN_LFO_DEPTH_SHIFT)
-#define calc_lfo_freq(value)                            krsyn_exp_u(data->lfo_freq, 1<<(KRSYN_FREQUENCY_SHIFT-5), 4)
-#define calc_lfo_det(value)                             krsyn_linear_u(data->lfo_det, 0, KRSYN_PHASE_MAX)
+#define calc_lfo_freq(value)                            krsyn_exp_u(value, 1<<(KRSYN_FREQUENCY_SHIFT-5), 4)
+#define calc_lfo_det(value)                             krsyn_linear_u(value, 0, KRSYN_PHASE_MAX)
 
 #ifdef __cplusplus
 } // extern "C"

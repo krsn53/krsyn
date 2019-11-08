@@ -30,10 +30,10 @@ struct wave_header
 
 int main( void )
 {
-  krsyn_core      *core = krsyn_new(44100);
-  krsyn_fm_data   data;
-  krsyn_fm        fm;
-  krsyn_fm_note   note;
+  KrsynCore      *core = krsyn_new(44100);
+  KrsynFMData   data;
+  KrsynFM        fm;
+  KrsynFMNote   note;
 
   int32_t buf_len = OUTPUT_LENGTH;
   int32_t buf_size = sizeof(int16_t) * buf_len;
@@ -41,7 +41,7 @@ int main( void )
 
   // 金属質な鍵盤っぽい音
   {
-    krsyn_fm_set_data_default(&data);
+      krsyn_fm_set_data_default(&data);
 
     data.algorithm = 4;
 
@@ -65,28 +65,28 @@ int main( void )
   }
 
   {
-    krsyn_fm_noteon(core, &fm, &note, 60, 100);
+    krsyn_fm_note_on(core, &fm, &note, 60, 100);
     krsyn_fm_render(core, &fm, &note, buf, buf_len/10);
     
-    krsyn_fm_noteon(core, &fm, &note, 62, 100);
+    krsyn_fm_note_on(core, &fm, &note, 62, 100);
     krsyn_fm_render(core, &fm, &note, buf+buf_len/10, buf_len/10);
 
-    krsyn_fm_noteon(core, &fm, &note, 64, 100);
+    krsyn_fm_note_on(core, &fm, &note, 64, 100);
     krsyn_fm_render(core, &fm, &note, buf+2*buf_len/10, buf_len/10);
     
-    krsyn_fm_noteon(core, &fm, &note, 65, 100);
+    krsyn_fm_note_on(core, &fm, &note, 65, 100);
     krsyn_fm_render(core, &fm, &note, buf+3*buf_len/10, buf_len/10);
     
-    krsyn_fm_noteon(core, &fm, &note, 64, 100);
+    krsyn_fm_note_on(core, &fm, &note, 64, 100);
     krsyn_fm_render(core, &fm, &note, buf+4*buf_len/10, buf_len/10);
     
-    krsyn_fm_noteon(core, &fm, &note, 62, 100);
+    krsyn_fm_note_on(core, &fm, &note, 62, 100);
     krsyn_fm_render(core, &fm, &note, buf+5*buf_len/10, buf_len/10);
     
-    krsyn_fm_noteon(core, &fm, &note, 60, 100);
+    krsyn_fm_note_on(core, &fm, &note, 60, 100);
     krsyn_fm_render(core, &fm, &note, buf+6*buf_len/10, buf_len*3/10);
 
-    krsyn_fm_noteoff(&note);
+    krsyn_fm_note_off(&note);
     krsyn_fm_render(core, &fm, &note, buf+9*buf_len/10, buf_len*1/10);
   }
 

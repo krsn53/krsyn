@@ -1,9 +1,9 @@
 #include "krsyn.h"
 
 
-krsyn_core* krsyn_new(uint32_t freq)
+KrsynCore* krsyn_new(uint32_t freq)
 {
-    krsyn_core* ret = malloc(sizeof(krsyn_core));
+    KrsynCore* ret = malloc(sizeof(KrsynCore));
     ret->smp_freq = freq;
 
     for(int i=0; i< KRSYN_TABLE_LENGTH; i++)
@@ -80,7 +80,7 @@ krsyn_core* krsyn_new(uint32_t freq)
     return ret;
 }
 
-void krsyn_free(krsyn_core* core)
+void krsyn_free(KrsynCore* core)
 {
     free(core);
 }
@@ -89,7 +89,7 @@ void krsyn_free(krsyn_core* core)
 
 
 
-void krsyn_fm_set_data_default(krsyn_fm_data* data)
+void krsyn_fm_set_data_default(KrsynFMData* data)
 {
     for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
@@ -131,7 +131,7 @@ void krsyn_fm_set_data_default(krsyn_fm_data* data)
     data->lfo_det = 0;
 }
 
-static inline void fm_op_set(const krsyn_core* core, krsyn_fm* fm, const krsyn_fm_data* data)
+static inline void fm_op_set(const KrsynCore* core, KrsynFM* fm, const KrsynFMData* data)
 {
     for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
@@ -165,7 +165,7 @@ static inline void fm_op_set(const krsyn_core* core, krsyn_fm* fm, const krsyn_f
 
 }
 
-static inline void fm_common_set(krsyn_fm* fm, const krsyn_fm_data* data)
+static inline void fm_common_set(KrsynFM* fm, const KrsynFMData* data)
 {
     fm->algorithm = calc_algorithm(data->algorithm);
     fm->feedback_level = calc_feedback_level(data->feedback_level);
@@ -178,14 +178,14 @@ static inline void fm_common_set(krsyn_fm* fm, const krsyn_fm_data* data)
 }
 
 
-void krsyn_fm_set(const krsyn_core* core, krsyn_fm* fm, const krsyn_fm_data* data)
+void krsyn_fm_set(const KrsynCore* core, KrsynFM* fm, const KrsynFMData* data)
 {
     fm_op_set(core, fm, data);
     fm_common_set(fm, data);
 }
 
 
-static inline uint32_t phase_lfo_delta(const krsyn_core* core, uint32_t freq)
+static inline uint32_t phase_lfo_delta(const KrsynCore* core, uint32_t freq)
 {
     uint64_t freq_11 = ((uint64_t)freq) << KRSYN_TABLE_SHIFT;
     uint64_t delta_11 = (uint32_t)(freq_11 / core->smp_freq);
@@ -193,29 +193,34 @@ static inline uint32_t phase_lfo_delta(const krsyn_core* core, uint32_t freq)
     return (uint32_t)delta_11;
 }
 
-static inline uint32_t phase_delta_fix_freq(const krsyn_core* core, uint32_t coarse)
+static inline uint32_t phase_delta_fix_freq(const KrsynCore* core, uint32_t coarse, uint32_t fine)
 {
     uint32_t freq = core->note_freq[coarse];
     uint64_t freq_11 = ((uint64_t)freq) << KRSYN_TABLE_SHIFT;
+    // 5461 ~ 2^16 * 1/12
+    uint32_t freq_rate = (1<<KRSYN_FREQUENCY_SHIFT) + ((5461 * fine) >> KRSYN_PHASE_FINE_SHIFT);
+
+    freq_11 *= freq_rate;
+    freq_11 >>= KRSYN_FREQUENCY_SHIFT;
 
     uint64_t delta_11 = (uint32_t)(freq_11 / core->smp_freq);
     return delta_11;
 }
 
-static inline uint32_t phase_delta(const krsyn_core* core, uint8_t notenum, uint32_t coarse, uint32_t fine)
+static inline uint32_t phase_delta(const KrsynCore* core, uint8_t notenum, uint32_t coarse, uint32_t fine)
 {
     uint32_t freq = core->note_freq[notenum];
     uint64_t freq_11 = ((uint64_t)freq) << KRSYN_TABLE_SHIFT;
 
-    uint32_t freq_rate = (coarse << (KRSYN_PHASE_FINE_SHIFT - KRSYN_PHASE_COARSE_SHIFT)) + fine;
+    uint32_t freq_rate = (coarse << (KRSYN_FREQUENCY_SHIFT - KRSYN_PHASE_COARSE_SHIFT)) + fine;
     uint64_t delta_11 = (uint32_t)(freq_11 / core->smp_freq);
     delta_11 *= freq_rate;
-    delta_11 >>= KRSYN_PHASE_FINE_SHIFT;
+    delta_11 >>= KRSYN_FREQUENCY_SHIFT;
 
     return (uint32_t)delta_11;
 }
 
-static inline uint32_t ks_lc(const krsyn_core* core, uint32_t index_16, int curve_type)
+static inline uint32_t ks_lc(const KrsynCore* core, uint32_t index_16, int curve_type)
 {
     uint32_t index_m = (uint32_t)(index_16>> KRSYN_KS_CURVE_SHIFT);
 
@@ -237,7 +242,7 @@ static inline uint32_t ks_lc(const krsyn_core* core, uint32_t index_16, int curv
     return ret;
 }
 
-static inline uint32_t ks_value(const krsyn_core* core, const krsyn_fm *fm, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
+static inline uint32_t ks_value(const KrsynCore* core, const KrsynFM *fm, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
 {
     uint64_t index_16 = table_index;
     index_16 <<= KRSYN_KS_CURVE_MAX_SHIFT;
@@ -249,7 +254,7 @@ static inline uint32_t ks_value(const krsyn_core* core, const krsyn_fm *fm, uint
     return ks_lc(core, (uint32_t)index_16, curve_type);
 }
 
-static inline uint32_t keyscale(const krsyn_core* core, const krsyn_fm *fm, uint8_t notenum, unsigned i)
+static inline uint32_t keyscale(const KrsynCore* core, const KrsynFM *fm, uint8_t notenum, unsigned i)
 {
     if(notenum < fm->ks_mid_points[i])
     {
@@ -270,7 +275,7 @@ static inline uint32_t keyscale(const krsyn_core* core, const krsyn_fm *fm, uint
     return 1<< KRSYN_KS_CURVE_SHIFT;
 }
 
-void krsyn_fm_noteon(const krsyn_core* core, const krsyn_fm *fm, krsyn_fm_note* note, uint8_t notenum, uint8_t vel)
+void krsyn_fm_note_on(const KrsynCore* core, const KrsynFM *fm, KrsynFMNote* note, uint8_t notenum, uint8_t vel)
 {
     note->now_frame = 0;
     note->feedback_log =0;
@@ -285,7 +290,7 @@ void krsyn_fm_noteon(const krsyn_core* core, const krsyn_fm *fm, krsyn_fm_note* 
         note->phases[i] = fm->phase_dets[i];
         if(fm->fixed_frequency[i])
         {
-            note->phase_deltas[i] = phase_delta_fix_freq(core, fm->phase_coarses[i]);
+            note->phase_deltas[i] = phase_delta_fix_freq(core, fm->phase_coarses[i], fm->phase_fines[i]);
         }
         else
         {
@@ -345,16 +350,16 @@ void krsyn_fm_noteon(const krsyn_core* core, const krsyn_fm *fm, krsyn_fm_note* 
         note->envelop_now_times[i] = note->envelop_samples[0][i];
         note->envelop_now_deltas[i] = note->envelop_deltas[0][i];
         note->envelop_now_points[i] = 0;
-        note->envelop_states[i] = KRSYN_ENVELOP_ON;
+        note->KrsynEnvelopStates[i] = KRSYN_ENVELOP_ON;
 
     }
 }
 
-void krsyn_fm_noteoff (krsyn_fm_note* note)
+void krsyn_fm_note_off (KrsynFMNote* note)
 {
     for(unsigned i=0; i< KRSYN_NUM_OPERATORS; i++)
     {
-        note->envelop_states[i] = KRSYN_ENVELOP_RELEASED;
+        note->KrsynEnvelopStates[i] = KRSYN_ENVELOP_RELEASED;
         note->envelop_now_times[i] = note->envelop_release_samples[i];
         note->envelop_now_deltas[i] = - note->envelop_now_amps[i] / (int32_t)note->envelop_now_times[i];
     }
@@ -378,13 +383,13 @@ static inline int16_t table_value_lc(const int16_t* table, uint32_t phase, unsig
 }
 
 // sin table value
-static inline int16_t sin_t(const krsyn_core* core, uint32_t phase)
+static inline int16_t sin_t(const KrsynCore* core, uint32_t phase)
 {
     return  table_value_lc(core->sin_table, phase,  KRSYN_TABLE_MASK);
 }
 
 // complimentation ato de naosu
-static inline int16_t table_value_sc(const krsyn_core* core, const int16_t* table, uint32_t phase, unsigned mask, unsigned stride_shift)
+static inline int16_t table_value_sc(const KrsynCore* core, const int16_t* table, uint32_t phase, unsigned mask, unsigned stride_shift)
 {
     uint32_t index_m = phase;
     index_m >>= KRSYN_PHASE_SHIFT + stride_shift;
@@ -413,18 +418,18 @@ static inline int16_t table_value_sc(const krsyn_core* core, const int16_t* tabl
     return (int16_t)sin_31;
 }
 
-static inline int16_t lfo_t(const krsyn_core*core, uint8_t type, uint32_t phase)
+static inline int16_t lfo_t(const KrsynCore*core, uint8_t type, uint32_t phase)
 {
     return table_value_lc(core->lfo_tables[type], phase >> ( KRSYN_TABLE_SHIFT - KRSYN_LFO_TABLE_SHIFT ), KRSYN_LFO_TABLE_MASK);
 }
 
-static inline int16_t saw_t(const krsyn_core*core, uint8_t mipmap, uint32_t phase)
+static inline int16_t saw_t(const KrsynCore*core, uint8_t mipmap, uint32_t phase)
 {
 
     return table_value_sc(core, core->saw_table, phase >> (KRSYN_TABLE_SHIFT - KRSYN_NUM_TABLE_MIPMAPS), KRSYN_MIPMAP_TABLE_MASK, mipmap);
 }
 
-static inline int16_t triangle_t(const krsyn_core*core, uint8_t mipmap, uint32_t phase)
+static inline int16_t triangle_t(const KrsynCore*core, uint8_t mipmap, uint32_t phase)
 {
     return table_value_sc(core, core->triangle_table, phase >> (KRSYN_TABLE_SHIFT - KRSYN_NUM_TABLE_MIPMAPS), KRSYN_MIPMAP_TABLE_MASK, mipmap);
 }
@@ -437,14 +442,14 @@ static inline int32_t envelop_apply(uint32_t amp, int32_t in)
     return out;
 }
 
-static inline int32_t output_mod(const krsyn_core* core, uint32_t phase, int32_t mod, uint32_t envelop)
+static inline int32_t output_mod(const KrsynCore* core, uint32_t phase, int32_t mod, uint32_t envelop)
 {
     // mod<<(KRSYN_TABLE_SHIFT + 1) = double table length = 4pi
     int32_t out = sin_t(core, phase + (mod<<(KRSYN_TABLE_SHIFT + 1)));
     return envelop_apply(envelop, out);
 }
 
-static inline int16_t fm_frame(const krsyn_core* core, const krsyn_fm* fm, krsyn_fm_note* note, uint8_t algorithm)
+static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, uint8_t algorithm)
 {
     int32_t out;
     int32_t feedback;
@@ -540,20 +545,20 @@ static inline int16_t fm_frame(const krsyn_core* core, const krsyn_fm* fm, krsyn
     return out >> 1;
 }
 
-static inline void envelop_next(krsyn_fm_note* note)
+static inline void envelop_next(KrsynFMNote* note)
 {
     for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
         if(note->envelop_now_times[i] == 0)
         {
-            switch(note->envelop_states[i])
+            switch(note->KrsynEnvelopStates[i])
             {
             case KRSYN_ENVELOP_ON:
                 note->envelop_now_amps[i] = note->envelop_points[note->envelop_now_points[i]][i];
                 note->envelop_now_points[i] ++;
                 if(note->envelop_now_points[i] == KRSYN_ENVELOP_NUM_POINTS)
                 {
-                    note->envelop_states[i] = KRSYN_ENVELOP_SUSTAINED;
+                    note->KrsynEnvelopStates[i] = KRSYN_ENVELOP_SUSTAINED;
                     note->envelop_now_deltas[i] = 0;
                 }
                 else
@@ -565,14 +570,14 @@ static inline void envelop_next(krsyn_fm_note* note)
             case KRSYN_ENVELOP_RELEASED:
                 note->envelop_now_amps[i] = 0;
                 note->envelop_now_deltas[i] = 0;
-                note->envelop_states[i] = KRSYN_ENVELOP_OFF;
+                note->KrsynEnvelopStates[i] = KRSYN_ENVELOP_OFF;
                 break;
             }
         }
     }
 }
 
-static inline void fm_lfo_frame(const krsyn_core* core, const krsyn_fm* fm, krsyn_fm_note* note, uint32_t delta[],
+static inline void fm_lfo_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, uint32_t delta[],
                                       bool ams, bool fms)
 {
     if(fms)
@@ -625,7 +630,7 @@ static inline void fm_lfo_frame(const krsyn_core* core, const krsyn_fm* fm, krsy
     }
 }
 
-static inline void krsyn_fm_process(const krsyn_core* core, const krsyn_fm* fm, krsyn_fm_note* note, int16_t* buf, unsigned len,
+static inline void krsyn_fm_process(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len,
                                     uint8_t algorithm, bool ams, bool fms)
 {
     uint32_t delta[KRSYN_NUM_OPERATORS];
@@ -654,19 +659,19 @@ static inline void krsyn_fm_process(const krsyn_core* core, const krsyn_fm* fm, 
 }
 
 #define krsyn_define_fm_render(algorithm) \
-void krsyn_fm_render_ ## algorithm ##_0_0(const krsyn_core* core, const krsyn_fm* fm, krsyn_fm_note* note, int16_t* buf, unsigned len) \
+void krsyn_fm_render_ ## algorithm ##_0_0(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len) \
 { \
     krsyn_fm_process(core, fm, note, buf, len, algorithm, false, false); \
 } \
-void krsyn_fm_render_ ## algorithm ##_0_1(const krsyn_core* core, const krsyn_fm* fm, krsyn_fm_note* note, int16_t* buf, unsigned len) \
+void krsyn_fm_render_ ## algorithm ##_0_1(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len) \
 { \
     krsyn_fm_process(core, fm, note, buf, len, algorithm, false, true); \
 } \
-void krsyn_fm_render_ ## algorithm ##_1_0(const krsyn_core* core, const krsyn_fm* fm, krsyn_fm_note* note, int16_t* buf, unsigned len) \
+void krsyn_fm_render_ ## algorithm ##_1_0(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len) \
 { \
     krsyn_fm_process(core, fm, note, buf, len, algorithm, true, false); \
 } \
-void krsyn_fm_render_ ## algorithm ##_1_1(const krsyn_core* core, const krsyn_fm* fm, krsyn_fm_note* note, int16_t* buf, unsigned len) \
+void krsyn_fm_render_ ## algorithm ##_1_1(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len) \
 { \
     krsyn_fm_process(core, fm, note, buf, len, algorithm, true, true); \
 }
@@ -700,7 +705,7 @@ krsyn_define_fm_render(29)
 #undef krsyn_define_fm_render
 
 
-static inline int calc_mipmap_num(const krsyn_core* core, const krsyn_fm_note* note)
+static inline int calc_mipmap_num(const KrsynCore* core, const KrsynFMNote* note)
 {
     // max frequency x : (table_length/2) * x < (sampling_frequency/2)
     //                                      x < sampling_frequency/table_length
@@ -717,7 +722,7 @@ static inline int calc_mipmap_num(const krsyn_core* core, const krsyn_fm_note* n
     return i;
 }
 
-void krsyn_fm_render(const krsyn_core* core, const krsyn_fm* fm, krsyn_fm_note* note, int16_t* buf, unsigned len)
+void krsyn_fm_render(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len)
 {
 
 #define krsyn_lfo_branch(algorithm) \
