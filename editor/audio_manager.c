@@ -5,7 +5,8 @@
 static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
 {
     AudioState* state = (AudioState* )user_data;
-    guint width, height;
+    gint width, height;
+    gint show_samples = 256;
     GtkStyleContext *context;
     double half_height;
 
@@ -21,17 +22,17 @@ static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
 
     cairo_set_source_rgb(cr, 0, 1, 0);
 
-    half_height= (double)height / width * NUM_SAMPLES * 0.5;
-    cairo_scale(cr, (double)width/ NUM_SAMPLES, (double)width/NUM_SAMPLES);
-    cairo_set_line_width(cr,  NUM_SAMPLES/(double)width);
+    half_height= (double)height / width * show_samples * 0.5;
+    cairo_scale(cr, (double)width/ show_samples, (double)width/show_samples);
+    cairo_set_line_width(cr,  show_samples/(double)width);
 
 
-    for(int i=0; i<NUM_SAMPLES-1; i++)
+    for(int i=0; i<show_samples-1; i++)
     {
         double x1 = i ;
-        double y1 =  half_height * state->log[NUM_CHANNELS*i] / INT16_MAX +  half_height;
+        double y1 =  half_height * state->buf[NUM_CHANNELS*i] / INT16_MAX +  half_height;
         double x2 = i + 1;
-        double y2 =  half_height * state->log[NUM_CHANNELS*i + NUM_CHANNELS] / INT16_MAX + half_height;
+        double y2 =  half_height * state->buf[NUM_CHANNELS*i + NUM_CHANNELS] / INT16_MAX + half_height;
 
         cairo_move_to(cr, x1, y1);
         cairo_line_to(cr, x2, y2);
@@ -43,87 +44,112 @@ static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
 
 static void wave_delete(GtkWidget *widget, gpointer user_data)
 {
-    int* id = (int *)user_data;
-    g_source_remove(*id);
-    free(id);
+    void** data = (void**)user_data;
+    g_source_remove(*((guint*)data[2]));
+    free(data[2]);
+    free(data);
 }
-
-static gboolean ivent_loop(gpointer ptr)
-{
-    GtkWidget* widget = GTK_WIDGET(ptr);
-    if (gtk_widget_get_window(widget) == NULL){
-        return FALSE;
-    }
-
-    gtk_widget_queue_draw(widget);
-
-    return (TRUE);
-}
-
-static int audio_callback(const void *input, void *output,
-             unsigned long frameCount,
-             const PaStreamCallbackTimeInfo* timeInfo,
-             PaStreamCallbackFlags statusFlags,
-             void *userData)
-{
-    AudioState* state = (AudioState* ) userData;
-    state->log = (int16_t*) output;
-    (void) input;
-    krsyn_fm_render(state->core, &state->fm, &state->note, state->log, frameCount*2);
-
-    return 0;
-}
-
 
 #define NUM_OCTAVES (7.0)
 #define NUM_WHITE_KEYS (NUM_OCTAVES * 9.0)
 
+static int next_notenum(int notenum)
+{
+    switch(notenum %12)
+    {
+    case 0: // C
+    case 2: // D
+    case 5: // F
+    case 7: // G
+    case 9: // A
+        notenum += 2;
+        break;
+    case 4: // E
+    case 11:// B
+        notenum++;
+    }
+    return notenum;
+}
+
 static gboolean keyboard_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
 {
     AudioState* state = (AudioState* )user_data;
-    guint width, height;
+    gint width, height;
     GtkStyleContext *context;
     double step, key_w, key_h;
+    int notenum;
 
     context = gtk_widget_get_style_context (widget);
-
     width = gtk_widget_get_allocated_width (widget);
     height = gtk_widget_get_allocated_height (widget);
 
     step = width / NUM_WHITE_KEYS;
     key_w = step;
     key_h = height;
+    notenum = 12;
     for(double i=0; i<width; i+=step)
     {
-        cairo_set_source_rgb(cr, 255, 255, 255);
+        if(notenum == state->noteon)
+        {
+            cairo_set_source_rgb(cr, 1, 0, 0);
+        }
+        else
+        {
+            cairo_set_source_rgb(cr, 1, 1, 1);
+        }
+
         cairo_rectangle(cr, i, 0, key_w, key_h);
         cairo_fill_preserve(cr);
-        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_set_source_rgb(cr, 0.75, 0.75, 0.75);
         cairo_stroke(cr);
+        notenum = next_notenum(notenum);
     }
-    cairo_set_source_rgb(cr, 0, 0, 0);
+
 
     key_w *= 0.6;
     key_h *= 0.6;
+    notenum = 13;
 
     for(double i=step*0.70; i< width; )
     {
         for(int j=0; j<2; j++)
         {
+            if(notenum == state->noteon)
+            {
+                cairo_set_source_rgb(cr, 1, 0, 0);
+            }
+            else {
+                cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
+            }
             cairo_rectangle(cr, i, 0, key_w, key_h);
-            cairo_fill(cr);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgb(cr, 0, 0, 0);
+            cairo_stroke(cr);
 
             i+= step;
+            notenum +=2;
         }
         i+=step;
+        notenum ++;
         for(int j=0; j<3; j++)
         {
+            if(notenum == state->noteon)
+            {
+                cairo_set_source_rgb(cr, 1, 0, 0);
+            }
+            else {
+                cairo_set_source_rgb(cr, 0.25, 0.275, 0.25);
+            }
             cairo_rectangle(cr, i, 0, key_w, key_h);
-            cairo_fill(cr);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgb(cr, 0, 0, 0);
+            cairo_stroke(cr);
 
             i+= step;
+            notenum+=2;
         }
         i+=step;
+        notenum++;
     }
 
 
@@ -141,6 +167,7 @@ static gboolean keyboard_key_pressed(GdkEvent* event, EditorState* state,
         event->button.x < x+width && event->button.y < height)
     {
         velocity = (event->button.y - y) * 127 / height;
+        state->state->noteon = notenum;
         krsyn_fm_set(state->state->core, &state->state->fm, &state->data);
         krsyn_fm_note_on(state->state->core, &state->state->fm, &state->state->note, notenum, velocity);
         return TRUE;
@@ -156,6 +183,10 @@ static gboolean keyboard_press(GtkWidget *widget,
     guint width, height;
     double step, key_w, key_h;
     int notenum;
+
+    if (gtk_widget_get_window(widget) != NULL){
+        gtk_widget_queue_draw(widget);
+    }
 
     width = gtk_widget_get_allocated_width (widget);
     height = gtk_widget_get_allocated_height (widget);
@@ -202,22 +233,8 @@ static gboolean keyboard_press(GtkWidget *widget,
         {
             return FALSE;
         }
-        switch(notenum %12)
-        {
-        case 0: // C
-        case 2: // D
-        case 5: // F
-        case 7: // G
-        case 9: // A
-            notenum += 2;
-            break;
-        case 4: // E
-        case 11:// B
-            notenum++;
-        }
+        notenum = next_notenum(notenum);
     }
-
-
 
     return FALSE;
 }
@@ -228,55 +245,119 @@ static gboolean keyboard_release(GtkWidget *widget,
                                  gpointer   user_data)
 {
     EditorState* state = (EditorState* )user_data;
+
+    if (gtk_widget_get_window(widget) != NULL){
+        gtk_widget_queue_draw(widget);
+    }
+
+    state->state->noteon = -1;
     krsyn_fm_note_off(&state->state->note);
+
     return FALSE;
 }
 
+void internal_process(AudioState* state, ALuint buffer){
+    krsyn_fm_render(state->core, &state->fm, &state->note, state->buf, NUM_CHANNELS*NUM_SAMPLES);
+
+    alBufferData(buffer, AL_FORMAT_STEREO16, state->buf, sizeof(state->buf), SAMPLE_RATE);
+    alSourceQueueBuffers(state->source, 1, &buffer);
+}
+
+static gboolean audio_stream_update(gpointer ptr)
+{
+    void **user_datas =ptr;
+    GtkWidget* widget = GTK_WIDGET(user_datas[0]);
+    AudioState* state = (AudioState*)(user_datas[1]);
+    if (gtk_widget_get_window(widget) == NULL){
+        return FALSE;
+    }
+
+    gtk_widget_queue_draw(widget);
+
+
+
+    if (state->is_playing)
+    {
+        int processed;
+        alGetSourcei(state->source, AL_BUFFERS_PROCESSED, &processed);
+        while (processed > 0)
+        {
+            ALuint buffer;
+            alSourceUnqueueBuffers(state->source, 1, &buffer);
+            internal_process(state, buffer);
+            processed--;
+        }
+    }
+
+    return (TRUE);
+}
 
 AudioState* audio_state_new()
 {
-
     AudioState *ret = malloc(sizeof(AudioState));
-    PaError err;
     KrsynFMData data;
 
     memset(ret, 0, sizeof(AudioState));
 
-    Pa_Initialize();
-    ret->core = krsyn_new(SAMPLE_RATE);
-    err = Pa_OpenDefaultStream(&ret->stream, 0, NUM_CHANNELS, paInt16, SAMPLE_RATE, NUM_SAMPLES, audio_callback, ret);
+    ret->device = alcOpenDevice(NULL);
+    ret->context = alcCreateContext(ret->device, NULL);
+    alcMakeContextCurrent(ret->context);
 
-    if(err != paNoError) goto error;
+    if(alGetError() != AL_NO_ERROR)
+    {
+        goto error;
+    }
+
+    ret->noteon = -1;
+    ret->core = krsyn_new(SAMPLE_RATE);
 
     krsyn_fm_set_data_default(&data);
     krsyn_fm_set(ret->core, &ret->fm, &data);
 
     memset(&ret->note, 0, sizeof(ret->note));
 
-    return ret;
+    alGenBuffers(4, ret->buffers);
+    alGenSources(1, &ret->source);
+    alSourcef(ret->source, AL_GAIN, 1);
+    alSource3f(ret->source, AL_POSITION, 0, 0, 0);
 
+    for (int i=0; i<4; i++)
+    {
+        internal_process(ret, ret->buffers[i]);
+    }
+    alSourcePlay(ret->source);
+    ret->is_playing = true;
+
+    return ret;
 error:
-    krsyn_free(ret->core);
+    alcDestroyContext(ret->context);
+    alcCloseDevice(ret->device);
     free(ret);
     return NULL;
 }
 
 void audio_state_free(AudioState* state)
 {
+    alcDestroyContext(state->context);
+    alcCloseDevice(state->device);
     krsyn_free(state->core);
-    Pa_CloseStream(state->stream);
     free(state);
 }
 
 GtkWidget* wave_viewer_new(AudioState* state)
 {
     GtkWidget* drawing = gtk_drawing_area_new();
-    int *callback_id = malloc(sizeof(int));
+    guint *callback_id = malloc(sizeof(guint));
+    void** user_datas = malloc(sizeof(void*)*3);
+
+    user_datas[0] = drawing;
+    user_datas[1] = state;
+    user_datas[2] = callback_id;
     gtk_widget_set_size_request(drawing, 200, 100);
-    *callback_id = g_timeout_add(100, ivent_loop, drawing);
+    *callback_id = g_timeout_add(50, audio_stream_update,  user_datas);
 
     g_signal_connect(drawing, "draw", G_CALLBACK(wave_draw), state);
-    g_signal_connect(drawing, "destroy", G_CALLBACK(wave_delete), callback_id);
+    g_signal_connect(drawing, "destroy", G_CALLBACK(wave_delete), user_datas);
 
     return drawing;
 }
@@ -289,7 +370,7 @@ GtkWidget* keyboard_new(EditorState* state)
     gtk_widget_set_size_request(drawing, 200, 100);
     g_signal_connect(drawing, "button-press-event", G_CALLBACK(keyboard_press), state);
     g_signal_connect(drawing, "button-release-event", G_CALLBACK(keyboard_release), state);
-    g_signal_connect(drawing, "draw", G_CALLBACK(keyboard_draw), NULL);
+    g_signal_connect(drawing, "draw", G_CALLBACK(keyboard_draw), state->state);
 
     return drawing;
 }

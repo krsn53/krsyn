@@ -1,6 +1,7 @@
 #ifndef FM_DATA_PARAMS_H
 #define FM_DATA_PARAMS_H
 
+#include "editor_state.h"
 #include "param_editor.h"
 #include <gtk/gtk.h>
 #include "../krsyn.h"
@@ -11,7 +12,7 @@
  * @param data　編集するデータのポインタ。
  * @return GtkWidget* 共通パラメータが編集できるウィジェット。
  */
-GtkWidget* common_params_new(KrsynFMData* data);
+GtkWidget* common_params_new(EditorState* state);
 
 /**
  * @brief operator_params_new オペレータのパラメータ軍を編集する。
@@ -19,6 +20,6 @@ GtkWidget* common_params_new(KrsynFMData* data);
  * @param data 編集するデータのポインタ。
  * @return GtkWidget* オペレータのパラメータが編集できるウィジェット。
  */
-GtkWidget* operator_params_new(KrsynFMData* data);
+GtkWidget* operator_params_new(EditorState* state);
 
 #endif // FM_DATA_PARAMS_H

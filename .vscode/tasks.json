@@ -1,0 +1,32 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake conf",
+            "type": "shell",
+            "options":{ "cwd":"${workspaceFolder}/build" },
+            "command": "cmake",
+            "args": ["..", "-G\"Ninja\""],
+        },
+        {
+            "label": "cmake build",
+            "type": "shell",
+            "options":{ "cwd":"${workspaceFolder}/build" },
+            "command": "ninja",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn":["cmake conf"]
+        },
+        {
+            "label": "run editor",
+            "type": "shell",
+            "options":{ "cwd":"${workspaceFolder}/build" },
+            "command": "${workspaceFolder}/build/krsyn_editor",
+            "dependsOn":["cmake build"],
+        }
+    ]
+}

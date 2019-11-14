@@ -1,29 +1,29 @@
 #ifndef AUDIO_MANAGER_H
 #define AUDIO_MANAGER_H
 
-#include <gtk/gtk.h>
-#include <portaudio.h>
-#include "../krsyn.h"
+#include "editor_state.h"
+#include <AL/al.h>
+#include <AL/alc.h>
 
 #define SAMPLE_RATE (44100)
 #define NUM_CHANNELS (2)
-#define NUM_SAMPLES (256)
+#define NUM_SAMPLES (4410)
 
 typedef struct AudioState
 {
     KrsynCore*  core;
     KrsynFM     fm;
     KrsynFMNote note;
+    int8_t noteon;
 
-    PaStream*   stream;
-    int16_t*    log;
+    ALCdevice *device;
+    ALCcontext *context ;
+    ALuint buffers[4];
+    ALuint source;
+    gboolean is_playing;
+    int16_t    buf[NUM_SAMPLES*NUM_CHANNELS];
 }AudioState;
 
-typedef struct EditorState
-{
-    AudioState* state;
-    KrsynFMData data;
-}EditorState;
 
 AudioState* audio_state_new();
 void audio_state_free(AudioState* state);

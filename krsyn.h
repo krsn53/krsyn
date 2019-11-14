@@ -199,7 +199,7 @@ typedef struct KrsynFMData
     uint8_t                     ks_mid_points           [KRSYN_NUM_OPERATORS];
 
     //! キースケールの曲線の種類。上位4bitがks_mid_pointsよりノートナンバーが小さい時、下位4bitが大きい時の曲線。
-    KrsynKSCurveTypeData    ks_curve_types          [KRSYN_NUM_OPERATORS];
+    KrsynKSCurveTypeData        ks_curve_types          [KRSYN_NUM_OPERATORS];
     
 
     //! LFOの音量変化の度合い。
