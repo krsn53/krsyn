@@ -10,6 +10,11 @@ static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
     GtkStyleContext *context;
     double half_height;
 
+    double env_width;
+    double env_draw_width;
+    double env_reg;
+
+
     context = gtk_widget_get_style_context (widget);
 
     width = gtk_widget_get_allocated_width (widget);
@@ -20,13 +25,26 @@ static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
     cairo_rectangle(cr, 0, 0,width, height);
     cairo_fill (cr);
 
-    cairo_set_source_rgb(cr, 0, 1, 0);
+    env_width = (double)width / KRSYN_NUM_OPERATORS;
+    env_draw_width = env_width*0.8;
+    cairo_set_source_rgb(cr, 0, 0, 1);
+    env_reg = env_width*0.1;
+    for(int i = 0; i<KRSYN_NUM_OPERATORS; i++, env_reg+=env_width)
+    {
+        double envelop_amp = state->note.envelop_now_amps[i];
+        envelop_amp /= (double)(1<<KRSYN_ENVELOP_SHIFT);
+        envelop_amp *= height;
+
+        cairo_rectangle(cr, env_reg, height - envelop_amp, env_draw_width, envelop_amp);
+
+        cairo_fill(cr);
+    }
 
     half_height= (double)height / width * show_samples * 0.5;
     cairo_scale(cr, (double)width/ show_samples, (double)width/show_samples);
     cairo_set_line_width(cr,  show_samples/(double)width);
 
-
+    cairo_set_source_rgb(cr, 0, 1, 0);
     for(int i=0; i<show_samples-1; i++)
     {
         double x1 = i ;

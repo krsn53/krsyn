@@ -314,7 +314,7 @@ GtkWidget* common_params_new(EditorState *state)
 
     add_enum_pixbuf_param(grid, "Algorithm", &state->data.algorithm, algorithm_types, 10,  row++);
     add_param(grid, "Feedback Level", &state->data.feedback_level, feedback_level_format, 255, row++);
-    add_enum_param(grid, "LFO Wave Type", &state->data.lfo_table_type, lfo_table_types, KRSYN_LFO_NUM_WAVES, row++);
+    add_enum_param(grid, "LFO Wave Type", &state->data.lfo_wave_type, lfo_table_types, KRSYN_LFO_NUM_WAVES, row++);
     add_param(grid, "LFO Frequency", &state->data.lfo_freq, lfo_freq_format, 255, row++);
     add_param(grid, "FLO Det", &state->data.lfo_det, phase_det_format, 255, row++);
     add_param(grid, "LFO FMS Depth", &state->data.lfo_fms_depth, zero_one_format2, 255, row++);
@@ -333,7 +333,9 @@ GtkWidget*  operator_params_new(EditorState *state)
     //オペレータナンバー表示
     for(int i=1; i<=4; i++)
     {
-        GtkWidget* label = gtk_label_new(g_strdup_printf("Operator %d", i));
+        gchar* str = g_strdup_printf("Operator %d", i);
+        GtkWidget* label = gtk_label_new(str);
+        g_free(str);
         gtk_grid_attach(grid, label, i, row, 1, 1);
     }
     row ++;
@@ -360,6 +362,8 @@ GtkWidget*  operator_params_new(EditorState *state)
     add_operator_param(grid, "KS Mid Point", state->data.ks_mid_points, NULL, 127, row++);
     add_ks_curve_left_param(grid, "KS Type Left", state->data.ks_curve_types, row++);
     add_ks_curve_right_param(grid, "KS Type Right", state->data.ks_curve_types, row++);
+
+    add_operator_param(grid, "LFO AMS Depth", state->data.lfo_ams_depths,  zero_one_format2, 255, row++);
 
     return grid_widget;
 }

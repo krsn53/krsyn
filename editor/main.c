@@ -1,5 +1,6 @@
 #include "fm_data_params.h"
 #include "audio_manager.h"
+#include "editor_menu.h"
 
 
 static void activate (GtkApplication *app,  gpointer user_data)
@@ -24,7 +25,7 @@ static void activate (GtkApplication *app,  gpointer user_data)
     krsyn_fm_set_data_default(&state->data);
 
     window = gtk_application_window_new (app);
-    gtk_window_set_title (GTK_WINDOW (window), "Window");
+    gtk_window_set_title (GTK_WINDOW (window), "Krsyn Tone Editor");
 
     provider = gtk_css_provider_new();
     error = NULL;
@@ -43,6 +44,9 @@ static void activate (GtkApplication *app,  gpointer user_data)
     right_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     up_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     out_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    state->param_editor = out_box;
+
+    add_editor_menu(app, out_box, state);
 
     g_signal_new("update-params",
                  G_TYPE_OBJECT,
@@ -63,6 +67,11 @@ static void activate (GtkApplication *app,  gpointer user_data)
 
     gtk_window_set_default_size (GTK_WINDOW (window), 960, -1);
 
+    if(strcmp(state->save_file, "") != 0)
+    {
+        editor_open_tone(state->save_file, state);
+    }
+
     gtk_widget_show_all (window);
 }
 
@@ -78,6 +87,11 @@ int main (int  argc, char **argv)
     int status;
     EditorState state;
     memset(&state, 0, sizeof(EditorState));
+
+    if(argc == 2)
+    {
+        strcpy(state.save_file, argv[1]);
+    }
 
     app = gtk_application_new ("org.gtk.example", G_APPLICATION_FLAGS_NONE);
 

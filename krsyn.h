@@ -53,10 +53,6 @@ extern "C" {
 #define KRSYN_PHASE_COARSE_SHIFT            1u
 #define KRSYN_PHASE_FINE_SHIFT              (KRSYN_FREQUENCY_SHIFT - 1u)
 
-#define KRSYN_LFO_TABLE_SHIFT               7u
-#define KRSYN_LFO_TABLE_LENGTH              (1<<KRSYN_LFO_TABLE_SHIFT)
-#define KRSYN_LFO_TABLE_MASK                (KRSYN_LFO_TABLE_LENGTH - 1u)
-
 #define KRSYN_NUM_TABLE_MIPMAPS             10u
 #define KRSYN_MIPMAP_TABLE_LENGTH           (1u<<KRSYN_NUM_TABLE_MIPMAPS)
 #define KRSYN_MIPMAP_TABLE_MASK             (KRSYN_MIPMAP_TABLE_LENGTH-1)
@@ -105,19 +101,19 @@ enum KrsynKSType
  * @enum KrsynEnvelopState
  * @brief エンベロープの現在の状態 
 */
-enum KrsynEnvelopState
+typedef enum KrsynEnvelopState
 {
     KRSYN_ENVELOP_OFF,
     KRSYN_ENVELOP_ON,
     KRSYN_ENVELOP_SUSTAINED,
     KRSYN_ENVELOP_RELEASED,
-};
+}KrsynEnvelopState;
 
 /**
  * @enum KrsynLFOWaveType
  * @brief LFO の波形
 */
-enum KrsynLFOWaveType
+typedef enum KrsynLFOWaveType
 {
     KRSYN_LFO_WAVE_TRIANGLE,
     KRSYN_LFO_WAVE_SAW_UP,
@@ -126,7 +122,7 @@ enum KrsynLFOWaveType
     KRSYN_LFO_WAVE_SIN,
 
     KRSYN_LFO_NUM_WAVES,
-};
+}KrsynLFOWaveType;
 
 /**
  * @struct KrsynCore
@@ -139,7 +135,6 @@ typedef struct KrsynCore
     uint32_t    note_freq[128];
     int32_t     ratescale[128];
     uint16_t    ks_curves[KRSYN_KS_CURVE_NUM_TYPES][KRSYN_KS_CURVE_TABLE_LENGTH];
-    int16_t     lfo_tables[KRSYN_LFO_NUM_WAVES][KRSYN_LFO_TABLE_LENGTH]; // TODO: remove after
     int16_t     saw_table[1<<KRSYN_NUM_TABLE_MIPMAPS];
     int16_t     triangle_table[1<<KRSYN_NUM_TABLE_MIPMAPS];
 }
@@ -214,7 +209,7 @@ typedef struct KrsynFMData
 
 
     //! LFOの波形の種類。
-    uint8_t                     lfo_table_type;
+    uint8_t                     lfo_wave_type;
 
     //! LFOの周波数。
     uint8_t                     lfo_freq;
@@ -261,7 +256,7 @@ typedef KRSYN_ALIGNED(16) struct KrsynFM
 
     bool        fixed_frequency         [KRSYN_NUM_OPERATORS];
 
-    uint8_t     lfo_table_type;
+    uint8_t     lfo_wave_type;
     bool        lfo_ams_enabled;
     bool        lfo_fms_enabled;
 }
@@ -431,7 +426,7 @@ static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
 #define calc_lfo_ams_depths(value)                      krsyn_linear2_u(value, 0, 1 << KRSYN_LFO_DEPTH_SHIFT)
 #define calc_algorithm(value)                           (value)
 #define calc_feedback_level(value)                      krsyn_linear_u(value, 0, 2<<KRSYN_FEEDBACK_LEVEL_SHIFT)
-#define calc_lfo_table_type(value)                      (value)
+#define calc_lfo_wave_type(value)                      (value)
 #define calc_lfo_fms_depth(value)                       krsyn_linear2_u(value, 0, 1 << KRSYN_LFO_DEPTH_SHIFT)
 #define calc_lfo_freq(value)                            krsyn_exp_u(value, 1<<(KRSYN_FREQUENCY_SHIFT-5), 4)
 #define calc_lfo_det(value)                             krsyn_linear_u(value, 0, KRSYN_PHASE_MAX)

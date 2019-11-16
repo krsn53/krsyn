@@ -10,7 +10,7 @@ typedef struct EditorState
 {
     AudioState* state;
     GtkWidget* param_editor;
+    char save_file[256];
     KrsynFMData data;
-    KrsynFMData* data_editing;
 }EditorState;
 #endif // EDITOR_STATE_H
