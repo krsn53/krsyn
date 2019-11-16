@@ -29,7 +29,6 @@ file(GLOB krsyn_editor_src editor/*.h editor/*.c editor/*.cpp)
 add_executable(krsyn_editor ${krsyn_editor_src})
 target_link(AL openal krsyn_editor)
 target_link(GTK gtk+-3.0 krsyn_editor)
-target_link(LV2 lv2 krsyn_editor)
 target_link_libraries(krsyn_editor krsyn)
 target_link_libraries(krsyn_editor m)
 
