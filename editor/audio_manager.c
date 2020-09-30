@@ -31,11 +31,11 @@ static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
     env_reg = env_width*0.1;
     for(int i = 0; i<KRSYN_NUM_OPERATORS; i++, env_reg+=env_width)
     {
-        double envelop_amp = state->note.envelop_now_amps[i];
-        envelop_amp /= (double)(1<<KRSYN_ENVELOP_SHIFT);
-        envelop_amp *= height;
+        double envelope_amp = state->note.envelope_now_amps[i];
+        envelope_amp /= (double)(1<<KRSYN_ENVELOP_SHIFT);
+        envelope_amp *= height;
 
-        cairo_rectangle(cr, env_reg, height - envelop_amp, env_draw_width, envelop_amp);
+        cairo_rectangle(cr, env_reg, height - envelope_amp, env_draw_width, envelope_amp);
 
         cairo_fill(cr);
     }

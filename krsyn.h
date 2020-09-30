@@ -168,14 +168,14 @@ typedef struct KrsynFMData
     //! 波形の初期位相。ノートオンされた際に初期化される。
     uint8_t                     phase_dets              [KRSYN_NUM_OPERATORS];
 
-    //! envelop_times時のアンプの大きさ。いわゆるTotal LevelやSustain Levelなど。
-    uint8_t                     envelop_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    //! envelope_times時のアンプの大きさ。いわゆるTotal LevelやSustain Levelなど。
+    uint8_t                     envelope_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
 
-    //! envelop_pointsのアンプの大きさになるまでの時間。いわゆるAttack TimeやSustain Timeなど。
-    uint8_t                     envelop_times           [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    //! envelope_pointsのアンプの大きさになるまでの時間。いわゆるAttack TimeやSustain Timeなど。
+    uint8_t                     envelope_times           [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
 
     //! リリースタイム。ノートオフされてからアンプが0になるまでの時間。
-    uint8_t                     envelop_release_times   [KRSYN_NUM_OPERATORS];
+    uint8_t                     envelope_release_times   [KRSYN_NUM_OPERATORS];
 
 
     //! ベロシティによる音量変化の度合い。
@@ -234,9 +234,9 @@ typedef KRSYN_ALIGNED(16) struct KrsynFM
     uint32_t    phase_fines             [KRSYN_NUM_OPERATORS];
     uint32_t    phase_dets              [KRSYN_NUM_OPERATORS];
 
-    int32_t     envelop_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
-    uint32_t    envelop_samples         [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
-    uint32_t    envelop_release_samples [KRSYN_NUM_OPERATORS];
+    int32_t     envelope_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    uint32_t    envelope_samples         [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    uint32_t    envelope_release_samples [KRSYN_NUM_OPERATORS];
 
     uint32_t    velocity_sens           [KRSYN_NUM_OPERATORS];
     uint32_t    lfo_ams_depths           [KRSYN_NUM_OPERATORS];
@@ -273,16 +273,16 @@ typedef  KRSYN_ALIGNED(16)  struct KrsynFMNote
     uint32_t    phases                  [KRSYN_NUM_OPERATORS];
     uint32_t    phase_deltas            [KRSYN_NUM_OPERATORS];
 
-    int32_t     envelop_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
-    uint32_t    envelop_samples         [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
-    int32_t     envelop_deltas          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
-    uint32_t    envelop_release_samples [KRSYN_NUM_OPERATORS];
+    int32_t     envelope_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    uint32_t    envelope_samples         [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    int32_t     envelope_deltas          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    uint32_t    envelope_release_samples [KRSYN_NUM_OPERATORS];
 
-    int32_t     envelop_now_deltas      [KRSYN_NUM_OPERATORS];
-    uint32_t    envelop_now_times       [KRSYN_NUM_OPERATORS];
-    int32_t     envelop_now_amps        [KRSYN_NUM_OPERATORS];
-    uint8_t     KrsynEnvelopStates          [KRSYN_NUM_OPERATORS];
-    uint8_t     envelop_now_points      [KRSYN_NUM_OPERATORS];
+    int32_t     envelope_now_deltas      [KRSYN_NUM_OPERATORS];
+    uint32_t    envelope_now_times       [KRSYN_NUM_OPERATORS];
+    int32_t     envelope_now_amps        [KRSYN_NUM_OPERATORS];
+    uint8_t     envelope_states          [KRSYN_NUM_OPERATORS];
+    uint8_t     envelope_now_points      [KRSYN_NUM_OPERATORS];
 
     uint32_t    lfo_phase;
     uint32_t    lfo_delta;
@@ -370,14 +370,14 @@ static inline uint32_t krsyn_exp_u(uint8_t val, uint32_t base, int num_v_bit)
     return ret;
 }
 
-static inline uint32_t krsyn_calc_envelop_times(uint32_t val)
+static inline uint32_t krsyn_calc_envelope_times(uint32_t val)
 {
     return krsyn_exp_u(val, 1<<(16-8), 4);// 2^8 <= x < 2^16
 }
 
-static inline uint32_t krsyn_calc_envelop_samples(uint32_t smp_freq, uint8_t val)
+static inline uint32_t krsyn_calc_envelope_samples(uint32_t smp_freq, uint8_t val)
 {
-    uint32_t time = krsyn_calc_envelop_times(val);
+    uint32_t time = krsyn_calc_envelope_times(val);
     uint64_t samples = time;
     samples *= smp_freq;
     samples /= KRSYN_SAMPLE_PER_FRAMES;
@@ -413,9 +413,9 @@ static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
 #define calc_phase_coarses(value)                       (value)
 #define calc_phase_fines(value)                         krsyn_linear_u(value, 0, 1 << (KRSYN_PHASE_FINE_SHIFT))
 #define calc_phase_dets(value)                          krsyn_linear_u(value, 0, KRSYN_PHASE_MAX)
-#define calc_envelop_points(value)                      krsyn_linear2_i(value, 0, 1 << KRSYN_ENVELOP_SHIFT)
-#define calc_envelop_samples(smp_freq, value)           krsyn_calc_envelop_samples(smp_freq, value)
-#define calc_envelop_release_samples(smp_freq, value)   calc_envelop_samples(smp_ferq,value)
+#define calc_envelope_points(value)                      krsyn_linear2_i(value, 0, 1 << KRSYN_ENVELOP_SHIFT)
+#define calc_envelope_samples(smp_freq, value)           krsyn_calc_envelope_samples(smp_freq, value)
+#define calc_envelope_release_samples(smp_freq, value)   calc_envelope_samples(smp_ferq,value)
 #define calc_velocity_sens(value)                       krsyn_linear2_u(data->velocity_sens[i], 0, 1 << KRSYN_VELOCITY_SENS_SHIFT)
 #define calc_ratescales(value)                          krsyn_linear2_u(value, 0, 1 << KRSYN_RS_SHIFT)
 #define calc_ks_low_depths(value)                       krsyn_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_SHIFT);

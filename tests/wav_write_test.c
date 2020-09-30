@@ -52,13 +52,13 @@ int main( void )
 
     for(int i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
-      data.envelop_points[1][i] = 192 >> (i&1 ? 0 : 1);
-      data.envelop_points[2][i] = 64 >> (i&1 ? 0 : 1);
-      data.envelop_points[3][i] = 0 ;
+      data.envelope_points[1][i] = 192 >> (i&1 ? 0 : 1);
+      data.envelope_points[2][i] = 64 >> (i&1 ? 0 : 1);
+      data.envelope_points[3][i] = 0 ;
 
-      data.envelop_times[1][i] = 127;
-      data.envelop_times[2][i] = 160;
-      data.envelop_times[3][i] = 160;
+      data.envelope_times[1][i] = 127;
+      data.envelope_times[2][i] = 160;
+      data.envelope_times[3][i] = 160;
     }
 
     krsyn_fm_set(core, &fm, &data);

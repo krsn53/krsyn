@@ -74,17 +74,17 @@ void krsyn_fm_set_data_default(KrsynFMData* data)
         data->phase_fines[i] = 0;
         data->phase_dets[i] = 0;
 
-        data->envelop_times[0][i] = 0;
-        data->envelop_times[1][i] = UINT8_MAX;
-        data->envelop_times[2][i] = UINT8_MAX;
-        data->envelop_times[3][i] = UINT8_MAX;
+        data->envelope_times[0][i] = 0;
+        data->envelope_times[1][i] = UINT8_MAX;
+        data->envelope_times[2][i] = UINT8_MAX;
+        data->envelope_times[3][i] = UINT8_MAX;
 
-        data->envelop_points[0][i] = UINT8_MAX;
-        data->envelop_points[1][i] = UINT8_MAX;
-        data->envelop_points[2][i] = UINT8_MAX;
-        data->envelop_points[3][i] = UINT8_MAX;
+        data->envelope_points[0][i] = UINT8_MAX;
+        data->envelope_points[1][i] = UINT8_MAX;
+        data->envelope_points[2][i] = UINT8_MAX;
+        data->envelope_points[3][i] = UINT8_MAX;
 
-        data->envelop_release_times[i] = 128;
+        data->envelope_release_times[i] = 128;
 
         data->velocity_sens[i] = UINT8_MAX;
 
@@ -119,11 +119,11 @@ static inline void fm_op_set(const KrsynCore* core, KrsynFM* fm, const KrsynFMDa
 
         for(unsigned e=0; e < KRSYN_ENVELOP_NUM_POINTS; e++)
         {
-            fm->envelop_points[e][i] = calc_envelop_points(data->envelop_points[e][i]);
-            fm->envelop_samples[e][i] = calc_envelop_samples(core->smp_freq, data->envelop_times[e][i]);
+            fm->envelope_points[e][i] = calc_envelope_points(data->envelope_points[e][i]);
+            fm->envelope_samples[e][i] = calc_envelope_samples(core->smp_freq, data->envelope_times[e][i]);
         }
 
-        fm->envelop_release_samples[i] =  calc_envelop_samples(core->smp_freq, data->envelop_release_times[i]);
+        fm->envelope_release_samples[i] =  calc_envelope_samples(core->smp_freq, data->envelope_release_times[i]);
 
         fm->velocity_sens[i] = calc_velocity_sens(data->velocity_sens[i]);
 
@@ -287,7 +287,7 @@ void krsyn_fm_note_on(const KrsynCore* core, const KrsynFM *fm, KrsynFMNote* not
         int64_t target;
         uint32_t velocity;
 
-        //envelop
+        //envelope
         for(unsigned j=0; j < KRSYN_ENVELOP_NUM_POINTS; j++)
         {
             velocity = fm->velocity_sens[i];
@@ -295,38 +295,38 @@ void krsyn_fm_note_on(const KrsynCore* core, const KrsynFM *fm, KrsynFMNote* not
             velocity >>= 7;
             velocity = (1 << KRSYN_VELOCITY_SENS_SHIFT) -  velocity;
 
-            target = fm->envelop_points[j][i];
+            target = fm->envelope_points[j][i];
             target *= keysc;
             target >>= KRSYN_KS_CURVE_SHIFT;
             target *= velocity;
             target >>= KRSYN_VELOCITY_SENS_SHIFT;
 
-            note->envelop_points[j][i] = (int32_t)target;
+            note->envelope_points[j][i] = (int32_t)target;
 
-            uint64_t frame = (fm->envelop_samples[j][i]);
+            uint64_t frame = (fm->envelope_samples[j][i]);
             frame *= ratescales;
             frame >>= KRSYN_RS_SHIFT;
-            note->envelop_samples[j][i] = MAX((uint32_t)frame, 1u);
+            note->envelope_samples[j][i] = MAX((uint32_t)frame, 1u);
         }
 
-        uint64_t frame = (fm->envelop_release_samples[i]);
+        uint64_t frame = (fm->envelope_release_samples[i]);
         frame *= ratescales;
         frame >>= KRSYN_RS_SHIFT;
-        note->envelop_release_samples[i] = MAX((uint32_t)frame, 1u);
+        note->envelope_release_samples[i] = MAX((uint32_t)frame, 1u);
 
-        note->envelop_deltas[0][i] = note->envelop_points[0][i] / note->envelop_samples[0][i];
+        note->envelope_deltas[0][i] = note->envelope_points[0][i] / note->envelope_samples[0][i];
         for(unsigned j=1; j < KRSYN_ENVELOP_NUM_POINTS; j++)
         {
-            note->envelop_deltas[j][i] = (note->envelop_points[j][i] - note->envelop_points[j-1][i]);
-            note->envelop_deltas[j][i] /= (int32_t)note->envelop_samples[j][i];
+            note->envelope_deltas[j][i] = (note->envelope_points[j][i] - note->envelope_points[j-1][i]);
+            note->envelope_deltas[j][i] /= (int32_t)note->envelope_samples[j][i];
         }
 
-        //envelop state init
-        note->envelop_now_amps[i] = 0;
-        note->envelop_now_times[i] = note->envelop_samples[0][i];
-        note->envelop_now_deltas[i] = note->envelop_deltas[0][i];
-        note->envelop_now_points[i] = 0;
-        note->KrsynEnvelopStates[i] = KRSYN_ENVELOP_ON;
+        //envelope state init
+        note->envelope_now_amps[i] = 0;
+        note->envelope_now_times[i] = note->envelope_samples[0][i];
+        note->envelope_now_deltas[i] = note->envelope_deltas[0][i];
+        note->envelope_now_points[i] = 0;
+        note->envelope_states[i] = KRSYN_ENVELOP_ON;
 
     }
 }
@@ -335,9 +335,9 @@ void krsyn_fm_note_off (KrsynFMNote* note)
 {
     for(unsigned i=0; i< KRSYN_NUM_OPERATORS; i++)
     {
-        note->KrsynEnvelopStates[i] = KRSYN_ENVELOP_RELEASED;
-        note->envelop_now_times[i] = note->envelop_release_samples[i];
-        note->envelop_now_deltas[i] = - note->envelop_now_amps[i] / (int32_t)note->envelop_now_times[i];
+        note->envelope_states[i] = KRSYN_ENVELOP_RELEASED;
+        note->envelope_now_times[i] = note->envelope_release_samples[i];
+        note->envelope_now_deltas[i] = - note->envelope_now_amps[i] / (int32_t)note->envelope_now_times[i];
     }
 }
 
@@ -409,7 +409,7 @@ static inline int16_t triangle_t(const KrsynCore*core, uint8_t mipmap, uint32_t 
               : core->triangle_table[(phase >> KRSYN_PHASE_SHIFT) & KRSYN_TABLE_MASK];
 }
 
-static inline int32_t envelop_apply(uint32_t amp, int32_t in)
+static inline int32_t envelope_apply(uint32_t amp, int32_t in)
 {
     int32_t out = amp;
     out *=in;
@@ -417,11 +417,11 @@ static inline int32_t envelop_apply(uint32_t amp, int32_t in)
     return out;
 }
 
-static inline int32_t output_mod(const KrsynCore* core, uint32_t phase, int32_t mod, uint32_t envelop)
+static inline int32_t output_mod(const KrsynCore* core, uint32_t phase, int32_t mod, uint32_t envelope)
 {
     // mod<<(KRSYN_TABLE_SHIFT + 1) = double table length = 4pi
     int32_t out = sin_t(core, phase + (mod<<(KRSYN_TABLE_SHIFT + 1)), true);
-    return envelop_apply(envelop, out);
+    return envelope_apply(envelope, out);
 }
 
 static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note, uint8_t algorithm)
@@ -435,10 +435,10 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
         // +-----+
         // +-[1]-+-[2]---[3]---[4]--->
 
-        output[3] = output_mod(core, note->phases[3], note->output_log[2], note->envelop_now_amps[3]);
-        output[2] = output_mod(core, note->phases[2], note->output_log[1], note->envelop_now_amps[2]);
-        output[1] = output_mod(core, note->phases[1], note->output_log[0], note->envelop_now_amps[1]);
-        output[0] = output_mod(core, note->phases[0], note->feedback_log , note->envelop_now_amps[0]);
+        output[3] = output_mod(core, note->phases[3], note->output_log[2], note->envelope_now_amps[3]);
+        output[2] = output_mod(core, note->phases[2], note->output_log[1], note->envelope_now_amps[2]);
+        output[1] = output_mod(core, note->phases[1], note->output_log[0], note->envelope_now_amps[1]);
+        output[0] = output_mod(core, note->phases[0], note->feedback_log , note->envelope_now_amps[0]);
         out = note->output_log[3];
 
         feedback = fm->feedback_level;
@@ -452,10 +452,10 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
         // +-[1]-+
         //       +-[3]---[4]--->
         //   [2]-+
-        output[3] = output_mod(core, note->phases[3], note->output_log[2]                      , note->envelop_now_amps[3]);
-        output[2] = output_mod(core, note->phases[2], note->output_log[1] + note->output_log[0], note->envelop_now_amps[2]);
-        output[1] = output_mod(core, note->phases[1], 0                                        , note->envelop_now_amps[1]);
-        output[0] = output_mod(core, note->phases[0], note->feedback_log                       , note->envelop_now_amps[0]);
+        output[3] = output_mod(core, note->phases[3], note->output_log[2]                      , note->envelope_now_amps[3]);
+        output[2] = output_mod(core, note->phases[2], note->output_log[1] + note->output_log[0], note->envelope_now_amps[2]);
+        output[1] = output_mod(core, note->phases[1], 0                                        , note->envelope_now_amps[1]);
+        output[0] = output_mod(core, note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
         out = note->output_log[3];
 
         feedback = fm->feedback_level;
@@ -468,10 +468,10 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
         // +-[1]-+-----+
         //             +-[4]--->
         //   [2]---[3]-+
-        output[3] = output_mod(core, note->phases[3], note->output_log[2] + note->output_log[0], note->envelop_now_amps[3]);
-        output[2] = output_mod(core, note->phases[2], note->output_log[1]                      , note->envelop_now_amps[2]);
-        output[1] = output_mod(core, note->phases[1], 0                                        , note->envelop_now_amps[1]);
-        output[0] = output_mod(core, note->phases[0], note->feedback_log                       , note->envelop_now_amps[0]);
+        output[3] = output_mod(core, note->phases[3], note->output_log[2] + note->output_log[0], note->envelope_now_amps[3]);
+        output[2] = output_mod(core, note->phases[2], note->output_log[1]                      , note->envelope_now_amps[2]);
+        output[1] = output_mod(core, note->phases[1], 0                                        , note->envelope_now_amps[1]);
+        output[0] = output_mod(core, note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
         out = note->output_log[3];
 
         feedback = fm->feedback_level;
@@ -484,10 +484,10 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
         // +-[1]-+-[2]-+
         //             +-[4]--->
         //         [3]-+
-        output[3] = output_mod(core, note->phases[3], note->output_log[1] + note->output_log[2], note->envelop_now_amps[3]);
-        output[2] = output_mod(core, note->phases[2], 0                                        , note->envelop_now_amps[2]);
-        output[1] = output_mod(core, note->phases[1], note->output_log[0]                      , note->envelop_now_amps[1]);
-        output[0] = output_mod(core, note->phases[0], note->feedback_log                       , note->envelop_now_amps[0]);
+        output[3] = output_mod(core, note->phases[3], note->output_log[1] + note->output_log[2], note->envelope_now_amps[3]);
+        output[2] = output_mod(core, note->phases[2], 0                                        , note->envelope_now_amps[2]);
+        output[1] = output_mod(core, note->phases[1], note->output_log[0]                      , note->envelope_now_amps[1]);
+        output[0] = output_mod(core, note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
         out = note->output_log[3];
 
         feedback = fm->feedback_level;
@@ -500,10 +500,10 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
         // +-[1]-+-[2]-+
         //             +--->
         // +-[3]---[4]-+
-        output[3] = output_mod(core, note->phases[3], note->output_log[2] , note->envelop_now_amps[3]);
-        output[2] = output_mod(core, note->phases[2], 0                   , note->envelop_now_amps[2]);
-        output[1] = output_mod(core, note->phases[1], note->output_log[0] , note->envelop_now_amps[1]);
-        output[0] = output_mod(core, note->phases[0], note->feedback_log  , note->envelop_now_amps[0]);
+        output[3] = output_mod(core, note->phases[3], note->output_log[2] , note->envelope_now_amps[3]);
+        output[2] = output_mod(core, note->phases[2], 0                   , note->envelope_now_amps[2]);
+        output[1] = output_mod(core, note->phases[1], note->output_log[0] , note->envelope_now_amps[1]);
+        output[0] = output_mod(core, note->phases[0], note->feedback_log  , note->envelope_now_amps[0]);
         out = note->output_log[1] + note->output_log[3];
 
         feedback = fm->feedback_level;
@@ -517,10 +517,10 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
         // +-[1]-+-+-[3]-+--->
         //         |     |
         //         +-[4]-+
-        output[3] = output_mod(core, note->phases[3], note->output_log[0]                      , note->envelop_now_amps[3]);
-        output[2] = output_mod(core, note->phases[2], note->output_log[0]                      , note->envelop_now_amps[2]);
-        output[1] = output_mod(core, note->phases[1], note->output_log[0]                      , note->envelop_now_amps[1]);
-        output[0] = output_mod(core, note->phases[0], note->feedback_log                       , note->envelop_now_amps[0]);
+        output[3] = output_mod(core, note->phases[3], note->output_log[0]                      , note->envelope_now_amps[3]);
+        output[2] = output_mod(core, note->phases[2], note->output_log[0]                      , note->envelope_now_amps[2]);
+        output[1] = output_mod(core, note->phases[1], note->output_log[0]                      , note->envelope_now_amps[1]);
+        output[0] = output_mod(core, note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
         out = note->output_log[1] + note->output_log[2] + note->output_log[3];
 
         feedback = fm->feedback_level;
@@ -535,10 +535,10 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
         //         [3]-+--->
         //             |
         //         [4]-+
-        output[3] = output_mod(core, note->phases[3], 0                   , note->envelop_now_amps[3]);
-        output[2] = output_mod(core, note->phases[2], 0                   , note->envelop_now_amps[2]);
-        output[1] = output_mod(core, note->phases[1], note->output_log[0] , note->envelop_now_amps[1]);
-        output[0] = output_mod(core, note->phases[0], note->feedback_log  , note->envelop_now_amps[0]);
+        output[3] = output_mod(core, note->phases[3], 0                   , note->envelope_now_amps[3]);
+        output[2] = output_mod(core, note->phases[2], 0                   , note->envelope_now_amps[2]);
+        output[1] = output_mod(core, note->phases[1], note->output_log[0] , note->envelope_now_amps[1]);
+        output[0] = output_mod(core, note->phases[0], note->feedback_log  , note->envelope_now_amps[0]);
         out = note->output_log[1] + note->output_log[2] + note->output_log[3];
 
         feedback = fm->feedback_level;
@@ -550,32 +550,16 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
         // +-----+
         // +-[1]-+ [2]   [3]   [4]
         //    +-----+-----+-----+--->
-        output[3] = output_mod(core, note->phases[3], 0                     , note->envelop_now_amps[3]);
-        output[2] = output_mod(core, note->phases[2], 0                     , note->envelop_now_amps[2]);
-        output[1] = output_mod(core, note->phases[1], 0                     , note->envelop_now_amps[1]);
-        output[0] = output_mod(core, note->phases[0], note->feedback_log    , note->envelop_now_amps[0]);
+        output[3] = output_mod(core, note->phases[3], 0                     , note->envelope_now_amps[3]);
+        output[2] = output_mod(core, note->phases[2], 0                     , note->envelope_now_amps[2]);
+        output[1] = output_mod(core, note->phases[1], 0                     , note->envelope_now_amps[1]);
+        output[0] = output_mod(core, note->phases[0], note->feedback_log    , note->envelope_now_amps[0]);
         out = note->output_log[0] + note->output_log[1] + note->output_log[2] + note->output_log[3];
 
         feedback = fm->feedback_level;
         feedback *= output[0];
         feedback >>= KRSYN_FEEDBACK_LEVEL_SHIFT;
     }
-    // Triangle
-    if(algorithm >= 10 && algorithm < 10 + KRSYN_NUM_TABLE_MIPMAPS)
-    {
-        output[0] = envelop_apply(note->envelop_now_amps[0], triangle_t(core, algorithm-10, note->phases[0], true));
-        out = note->output_log[0];
-    }
-
-    // Saw and Square
-    if(algorithm >= 20 && algorithm < 20 + KRSYN_NUM_TABLE_MIPMAPS)
-    {
-        output[0] = envelop_apply(note->envelop_now_amps[0], saw_t(core, algorithm-20, note->phases[0], true));
-        output[1] = envelop_apply(note->envelop_now_amps[1], saw_t(core, algorithm-20, note->phases[1], true));
-
-        out = note->output_log[0] - note->output_log[1];
-    }
-
 
     for(unsigned i =0; i< KRSYN_NUM_OPERATORS; i++)
     {
@@ -586,32 +570,32 @@ static inline int16_t fm_frame(const KrsynCore* core, const KrsynFM* fm, KrsynFM
     return out >> 2; //
 }
 
-static inline void envelop_next(KrsynFMNote* note)
+static inline void envelope_next(KrsynFMNote* note)
 {
     for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
-        if(note->envelop_now_times[i] == 0)
+        if(note->envelope_now_times[i] == 0)
         {
-            switch(note->KrsynEnvelopStates[i])
+            switch(note->envelope_states[i])
             {
             case KRSYN_ENVELOP_ON:
-                note->envelop_now_amps[i] = note->envelop_points[note->envelop_now_points[i]][i];
-                note->envelop_now_points[i] ++;
-                if(note->envelop_now_points[i] == KRSYN_ENVELOP_NUM_POINTS)
+                note->envelope_now_amps[i] = note->envelope_points[note->envelope_now_points[i]][i];
+                note->envelope_now_points[i] ++;
+                if(note->envelope_now_points[i] == KRSYN_ENVELOP_NUM_POINTS)
                 {
-                    note->KrsynEnvelopStates[i] = KRSYN_ENVELOP_SUSTAINED;
-                    note->envelop_now_deltas[i] = 0;
+                    note->envelope_states[i] = KRSYN_ENVELOP_SUSTAINED;
+                    note->envelope_now_deltas[i] = 0;
                 }
                 else
                 {
-                    note->envelop_now_deltas[i] = note->envelop_deltas[note->envelop_now_points[i]][i];
-                    note->envelop_now_times[i] = note->envelop_samples[note->envelop_now_points[i]][i];
+                    note->envelope_now_deltas[i] = note->envelope_deltas[note->envelope_now_points[i]][i];
+                    note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
                 }
                 break;
             case KRSYN_ENVELOP_RELEASED:
-                note->envelop_now_amps[i] = 0;
-                note->envelop_now_deltas[i] = 0;
-                note->KrsynEnvelopStates[i] = KRSYN_ENVELOP_OFF;
+                note->envelope_now_amps[i] = 0;
+                note->envelope_now_deltas[i] = 0;
+                note->envelope_states[i] = KRSYN_ENVELOP_OFF;
                 break;
             }
         }
@@ -717,10 +701,10 @@ static inline void krsyn_fm_process(const KrsynCore* core, const KrsynFM* fm, Kr
         {
             for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
             {
-                note->envelop_now_amps[j] += note->envelop_now_deltas[j];
-                note->envelop_now_times[j]--;
+                note->envelope_now_amps[j] += note->envelope_now_deltas[j];
+                note->envelope_now_times[j]--;
             }
-            envelop_next(note);
+            envelope_next(note);
         }
         note->now_frame ++;
     }
@@ -749,29 +733,12 @@ void krsyn_fm_render_ ## algorithm ## _ ## wave  ##_1_0(const KrsynCore* core, c
 
 krsyn_define_fm_render(0)
 krsyn_define_fm_render(1)
+krsyn_define_fm_render(2)
+krsyn_define_fm_render(3)
 krsyn_define_fm_render(4)
+krsyn_define_fm_render(5)
+krsyn_define_fm_render(6)
 krsyn_define_fm_render(7)
-krsyn_define_fm_render(8)
-krsyn_define_fm_render(10)
-krsyn_define_fm_render(11)
-krsyn_define_fm_render(12)
-krsyn_define_fm_render(13)
-krsyn_define_fm_render(14)
-krsyn_define_fm_render(15)
-krsyn_define_fm_render(16)
-krsyn_define_fm_render(17)
-krsyn_define_fm_render(18)
-krsyn_define_fm_render(19)
-krsyn_define_fm_render(20)
-krsyn_define_fm_render(21)
-krsyn_define_fm_render(22)
-krsyn_define_fm_render(23)
-krsyn_define_fm_render(24)
-krsyn_define_fm_render(25)
-krsyn_define_fm_render(26)
-krsyn_define_fm_render(27)
-krsyn_define_fm_render(28)
-krsyn_define_fm_render(29)
 
 #undef krsyn_define_fm_render
 
@@ -841,48 +808,25 @@ void krsyn_fm_render(const KrsynCore* core, const KrsynFM* fm, KrsynFMNote* note
     case 1:
         krsyn_fm_render_branch(1)
         break;
+    case 2:
+        krsyn_fm_render_branch(2)
+        break;
+    case 3:
+        krsyn_fm_render_branch(3)
+        break;
     case 4:
         krsyn_fm_render_branch(4)
+        break;
+    case 5:
+        krsyn_fm_render_branch(5)
+        break;
+    case 6:
+        krsyn_fm_render_branch(6)
         break;
     case 7:
         krsyn_fm_render_branch(7)
         break;
-    case 8:
-    {
-        int i = calc_mipmap_num(core, note);
-        switch(i)
-        {
-        case 0:krsyn_fm_render_branch(10) break;
-        case 1:krsyn_fm_render_branch(11) break;
-        case 2:krsyn_fm_render_branch(12) break;
-        case 3:krsyn_fm_render_branch(13) break;
-        case 4:krsyn_fm_render_branch(14) break;
-        case 5:krsyn_fm_render_branch(15) break;
-        case 6:krsyn_fm_render_branch(16) break;
-        case 7:krsyn_fm_render_branch(17) break;
-        case 8:krsyn_fm_render_branch(18) break;
-        case 9:krsyn_fm_render_branch(19) break;
-        }
-        break;
-    }
-    case 9:
-    {
-        int i= calc_mipmap_num(core, note);
-        switch(i)
-        {
-        case 0:krsyn_fm_render_branch(20) break;
-        case 1:krsyn_fm_render_branch(21) break;
-        case 2:krsyn_fm_render_branch(22) break;
-        case 3:krsyn_fm_render_branch(23) break;
-        case 4:krsyn_fm_render_branch(24) break;
-        case 5:krsyn_fm_render_branch(25) break;
-        case 6:krsyn_fm_render_branch(26) break;
-        case 7:krsyn_fm_render_branch(27) break;
-        case 8:krsyn_fm_render_branch(28) break;
-        case 9:krsyn_fm_render_branch(29) break;
-        }
-        break;
-    }
+
     }
 
 #undef krsyn_lfo_branch

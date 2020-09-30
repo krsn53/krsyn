@@ -78,9 +78,9 @@ static gchar* lfo_freq_format(GtkScale* scale, gdouble value, gpointer user)
     return g_strdup_printf ("%.1f%s", time, "Hz");
 }
 
-static gchar* envelop_time_format(GtkScale* scale, gdouble value, gpointer user)
+static gchar* envelope_time_format(GtkScale* scale, gdouble value, gpointer user)
 {
-    double time = krsyn_calc_envelop_times(value) / (double)(1<<16);
+    double time = krsyn_calc_envelope_times(value) / (double)(1<<16);
     if(time < 0.1)
     {
         return g_strdup_printf("%.2f%s", time*1000.0, "msec");
@@ -302,8 +302,6 @@ GtkWidget* common_params_new(EditorState *state)
             gdk_pixbuf_new_from_file("resource/images/algorithm_05.png", NULL),
             gdk_pixbuf_new_from_file("resource/images/algorithm_06.png", NULL),
             gdk_pixbuf_new_from_file("resource/images/algorithm_07.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_08.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_09.png", NULL),
     };
 
     int row = 0;
@@ -312,7 +310,7 @@ GtkWidget* common_params_new(EditorState *state)
 
     gtk_grid_attach(grid, gtk_label_new("Common"), 0, row++, 2, 1);
 
-    add_enum_pixbuf_param(grid, "Algorithm", &state->data.algorithm, algorithm_types, 10,  row++);
+    add_enum_pixbuf_param(grid, "Algorithm", &state->data.algorithm, algorithm_types, 8,  row++);
     add_param(grid, "Feedback Level", &state->data.feedback_level, feedback_level_format, 255, row++);
     add_enum_param(grid, "LFO Wave Type", &state->data.lfo_wave_type, lfo_table_types, KRSYN_LFO_NUM_WAVES, row++);
     add_param(grid, "LFO Frequency", &state->data.lfo_freq, lfo_freq_format, 255, row++);
@@ -346,15 +344,15 @@ GtkWidget*  operator_params_new(EditorState *state)
     add_operator_param(grid, "Phase Fine", state->data.phase_fines, zero_one_format, 255, row++);
     add_operator_param(grid, "Phase Dat", state->data.phase_dets, phase_det_format, 255, row++);
 
-    add_operator_param(grid, "Attack Level", state->data.envelop_points[0], zero_one_format2, 255, row++);
-    add_operator_param(grid, "Decay Level", state->data.envelop_points[1], zero_one_format2, 255, row++);
-    add_operator_param(grid, "Sustain Level 1", state->data.envelop_points[2], zero_one_format2, 255, row++);
-    add_operator_param(grid, "Sustain Level 2", state->data.envelop_points[3], zero_one_format2,  255, row++);
-    add_operator_param(grid, "Attack Time", state->data.envelop_times[0], envelop_time_format, 255, row++);
-    add_operator_param(grid, "Decay Time", state->data.envelop_times[1], envelop_time_format,  255, row++);
-    add_operator_param(grid, "Sustain Time 1", state->data.envelop_times[2], envelop_time_format, 255, row++);
-    add_operator_param(grid, "Sustain Time 2", state->data.envelop_times[3], envelop_time_format, 255, row++);
-    add_operator_param(grid, "Release Time", state->data.envelop_release_times, envelop_time_format, 255, row++);
+    add_operator_param(grid, "Attack Level", state->data.envelope_points[0], zero_one_format2, 255, row++);
+    add_operator_param(grid, "Decay Level", state->data.envelope_points[1], zero_one_format2, 255, row++);
+    add_operator_param(grid, "Sustain Level 1", state->data.envelope_points[2], zero_one_format2, 255, row++);
+    add_operator_param(grid, "Sustain Level 2", state->data.envelope_points[3], zero_one_format2,  255, row++);
+    add_operator_param(grid, "Attack Time", state->data.envelope_times[0], envelope_time_format, 255, row++);
+    add_operator_param(grid, "Decay Time", state->data.envelope_times[1], envelope_time_format,  255, row++);
+    add_operator_param(grid, "Sustain Time 1", state->data.envelope_times[2], envelope_time_format, 255, row++);
+    add_operator_param(grid, "Sustain Time 2", state->data.envelope_times[3], envelope_time_format, 255, row++);
+    add_operator_param(grid, "Release Time", state->data.envelope_release_times, envelope_time_format, 255, row++);
 
     add_operator_param(grid, "Rate Scale", state->data.ratescales, zero_one_format2, 255, row++);
     add_operator_param(grid, "KS Low Depth", state->data.ks_low_depths, zero_one_format2, 255, row++);
