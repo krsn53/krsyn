@@ -68,6 +68,12 @@ static gchar* phase_det_format(GtkScale* scale, gdouble value, gpointer user)
     return g_strdup_printf ( "%.1f%s", value*360.0f / 256.0f, "°");
 }
 
+static gchar* lfo_fms_format(GtkScale* scale, gdouble value, gpointer user)
+{
+    double time = calc_lfo_fms_depth((uint8_t)value) / (double)(1<<16);
+    return g_strdup_printf ("%.3f%s", time*100.0, "%");
+}
+
 static gchar* lfo_freq_format(GtkScale* scale, gdouble value, gpointer user)
 {
     double time = calc_lfo_freq((uint8_t)value) / (double)(1<<16);
@@ -302,6 +308,9 @@ GtkWidget* common_params_new(EditorState *state)
             gdk_pixbuf_new_from_file("resource/images/algorithm_05.png", NULL),
             gdk_pixbuf_new_from_file("resource/images/algorithm_06.png", NULL),
             gdk_pixbuf_new_from_file("resource/images/algorithm_07.png", NULL),
+            gdk_pixbuf_new_from_file("resource/images/algorithm_08.png", NULL),
+            gdk_pixbuf_new_from_file("resource/images/algorithm_09.png", NULL),
+            gdk_pixbuf_new_from_file("resource/images/algorithm_10.png", NULL),
     };
 
     int row = 0;
@@ -310,12 +319,12 @@ GtkWidget* common_params_new(EditorState *state)
 
     gtk_grid_attach(grid, gtk_label_new("Common"), 0, row++, 2, 1);
 
-    add_enum_pixbuf_param(grid, "Algorithm", &state->data.algorithm, algorithm_types, 8,  row++);
+    add_enum_pixbuf_param(grid, "Algorithm", &state->data.algorithm, algorithm_types, 11,  row++);
     add_param(grid, "Feedback Level", &state->data.feedback_level, feedback_level_format, 255, row++);
     add_enum_param(grid, "LFO Wave Type", &state->data.lfo_wave_type, lfo_table_types, KRSYN_LFO_NUM_WAVES, row++);
     add_param(grid, "LFO Frequency", &state->data.lfo_freq, lfo_freq_format, 255, row++);
     add_param(grid, "FLO Det", &state->data.lfo_det, phase_det_format, 255, row++);
-    add_param(grid, "LFO FMS Depth", &state->data.lfo_fms_depth, zero_one_format2, 255, row++);
+    add_param(grid, "LFO FMS Depth", &state->data.lfo_fms_depth, lfo_fms_format, 240, row++);
 
     return grid_widget;
 }

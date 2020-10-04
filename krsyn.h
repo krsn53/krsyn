@@ -48,14 +48,12 @@ extern "C" {
 #define KRSYN_PHASE_MASK                    (KRSYN_PHASE_MAX - 1u)
 #define KRSYN_PHASE_SHIFT_MASK              (KRSYN_PHASE_1 - 1u)
 
+#define KRSYN_NOISE_PHASE_SHIFT             (KRSYN_PHASE_SHIFT + KRSYN_TABLE_SHIFT - 5)
+
 #define KRSYN_FREQUENCY_SHIFT               16u
 
 #define KRSYN_PHASE_COARSE_SHIFT            1u
 #define KRSYN_PHASE_FINE_SHIFT              (KRSYN_FREQUENCY_SHIFT - 1u)
-
-#define KRSYN_NUM_TABLE_MIPMAPS             10u
-#define KRSYN_MIPMAP_TABLE_LENGTH           (1u<<KRSYN_NUM_TABLE_MIPMAPS)
-#define KRSYN_MIPMAP_TABLE_MASK             (KRSYN_MIPMAP_TABLE_LENGTH-1)
 
 #define KRSYN_NUM_OPERATORS                 4u
 
@@ -135,8 +133,9 @@ typedef struct KrsynCore
     uint32_t    note_freq[128];
     int32_t     ratescale[128];
     uint16_t    ks_curves[KRSYN_KS_CURVE_NUM_TYPES][KRSYN_KS_CURVE_TABLE_LENGTH];
-    int16_t     saw_table[1<<KRSYN_NUM_TABLE_MIPMAPS];
-    int16_t     triangle_table[1<<KRSYN_NUM_TABLE_MIPMAPS];
+    int16_t     saw_table[KRSYN_TABLE_LENGTH];
+    int16_t     triangle_table[KRSYN_TABLE_LENGTH];
+    int16_t     noise_table[KRSYN_TABLE_LENGTH];
 }
 KrsynCore;
 
@@ -360,7 +359,7 @@ static inline uint32_t krsyn_exp_u(uint8_t val, uint32_t base, int num_v_bit)
     // ->[e]*(8-num_v_bit) [v]*(num_v_bit)
     // base * 1.(v) * 2^(e)
     int8_t v = val & ((1 << num_v_bit) - 1);
-    v |= 1 << num_v_bit;    // add 1
+    v |= ((val== 0) ? 0 : 1) << num_v_bit;    // add 1
     int8_t e = val >> num_v_bit;
 
     uint64_t ret = (uint64_t)base * v;
@@ -427,7 +426,7 @@ static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
 #define calc_algorithm(value)                           (value)
 #define calc_feedback_level(value)                      krsyn_linear_u(value, 0, 2<<KRSYN_FEEDBACK_LEVEL_SHIFT)
 #define calc_lfo_wave_type(value)                      (value)
-#define calc_lfo_fms_depth(value)                       krsyn_linear2_u(value, 0, 1 << KRSYN_LFO_DEPTH_SHIFT)
+#define calc_lfo_fms_depth(value)                       krsyn_exp_u(value, 1 << (KRSYN_LFO_DEPTH_SHIFT-12), 4)
 #define calc_lfo_freq(value)                            krsyn_exp_u(value, 1<<(KRSYN_FREQUENCY_SHIFT-5), 4)
 #define calc_lfo_det(value)                             krsyn_linear_u(value, 0, KRSYN_PHASE_MAX)
 
