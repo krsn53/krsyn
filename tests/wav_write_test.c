@@ -30,7 +30,7 @@ struct wave_header
 
 int main( void )
 {
-  KrsynCore      *core = krsyn_new(44100);
+  uint32_t sampling_rate = 44100;
   KrsynFMData   data;
   KrsynFM        fm;
   KrsynFMNote   note;
@@ -50,7 +50,7 @@ int main( void )
     data.phase_coarses[2].value = 26;
     data.phase_coarses[3].value = 8;
 
-    for(int i=0; i<KRSYN_NUM_OPERATORS; i++)
+    for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
       data.envelope_points[1][i] = 192 >> (i&1 ? 0 : 1);
       data.envelope_points[2][i] = 64 >> (i&1 ? 0 : 1);
@@ -61,33 +61,33 @@ int main( void )
       data.envelope_times[3][i] = 160;
     }
 
-    krsyn_fm_set(core, &fm, &data);
+    krsyn_fm_set(sampling_rate, &fm, &data);
   }
 
   {
-    krsyn_fm_note_on(core, &fm, &note, 60, 100);
-    krsyn_fm_render(core, &fm, &note, buf, buf_len/10);
+    krsyn_fm_note_on(sampling_rate, &fm, &note, 60, 100);
+    krsyn_fm_render(&fm, &note, buf, buf_len/10);
     
-    krsyn_fm_note_on(core, &fm, &note, 62, 100);
-    krsyn_fm_render(core, &fm, &note, buf+buf_len/10, buf_len/10);
+    krsyn_fm_note_on(sampling_rate, &fm, &note, 62, 100);
+    krsyn_fm_render(&fm, &note, buf+buf_len/10, buf_len/10);
 
-    krsyn_fm_note_on(core, &fm, &note, 64, 100);
-    krsyn_fm_render(core, &fm, &note, buf+2*buf_len/10, buf_len/10);
+    krsyn_fm_note_on(sampling_rate, &fm, &note, 64, 100);
+    krsyn_fm_render(&fm, &note, buf+2*buf_len/10, buf_len/10);
     
-    krsyn_fm_note_on(core, &fm, &note, 65, 100);
-    krsyn_fm_render(core, &fm, &note, buf+3*buf_len/10, buf_len/10);
+    krsyn_fm_note_on(sampling_rate, &fm, &note, 65, 100);
+    krsyn_fm_render(&fm, &note, buf+3*buf_len/10, buf_len/10);
     
-    krsyn_fm_note_on(core, &fm, &note, 64, 100);
-    krsyn_fm_render(core, &fm, &note, buf+4*buf_len/10, buf_len/10);
+    krsyn_fm_note_on(sampling_rate, &fm, &note, 64, 100);
+    krsyn_fm_render(&fm, &note, buf+4*buf_len/10, buf_len/10);
     
-    krsyn_fm_note_on(core, &fm, &note, 62, 100);
-    krsyn_fm_render(core, &fm, &note, buf+5*buf_len/10, buf_len/10);
+    krsyn_fm_note_on(sampling_rate, &fm, &note, 62, 100);
+    krsyn_fm_render(&fm, &note, buf+5*buf_len/10, buf_len/10);
     
-    krsyn_fm_note_on(core, &fm, &note, 60, 100);
-    krsyn_fm_render(core, &fm, &note, buf+6*buf_len/10, buf_len*3/10);
+    krsyn_fm_note_on(sampling_rate, &fm, &note, 60, 100);
+    krsyn_fm_render(&fm, &note, buf+6*buf_len/10, buf_len*3/10);
 
     krsyn_fm_note_off(&note);
-    krsyn_fm_render(core, &fm, &note, buf+9*buf_len/10, buf_len*1/10);
+    krsyn_fm_render(&fm, &note, buf+9*buf_len/10, buf_len*1/10);
   }
 
   {
@@ -117,5 +117,4 @@ int main( void )
   }
 
   free (buf);
-  krsyn_free(core);
 }

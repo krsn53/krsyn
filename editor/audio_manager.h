@@ -11,7 +11,7 @@
 
 typedef struct AudioState
 {
-    KrsynCore*  core;
+    uint32_t sampling_rate;
     KrsynFM     fm;
     KrsynFMNote note;
     int8_t noteon;

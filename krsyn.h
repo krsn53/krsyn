@@ -5,7 +5,7 @@
 #ifndef KRSYN_H
 #define KRSYN_H
 
-//#include <xmmintrin.h>
+//#include <xmmintrin.h> perhaps, my implementation is so bad, so I have compiler vectorize automatically. It is faster.
 #include <stdint.h>
 #include <math.h>
 #include <stdlib.h>
@@ -32,49 +32,46 @@ extern "C" {
 
 #if defined _MSC_VER
 #define KRSYN_ALIGNED(x) __declspec( align( x ) )
+#elif defined __TINYC__
+#define KRSYN_ALIGNED(x)
 #elif defined __GNUC__
 #define KRSYN_ALIGNED(x) __attribute__((aligned(x)))
 #endif
 
-#define KRSYN_TABLE_SHIFT                   10u
-#define KRSYN_TABLE_LENGTH                  (1<<KRSYN_TABLE_SHIFT)
-#define KRSYN_TABLE_MASK                    (KRSYN_TABLE_LENGTH - 1u)
+#define ks_v(a, x)                          ((a) << (x))
+#define ks_1(x)                             ks_v(1, x)
+#define ks_m(x)                             (ks_1(x) - 1)
+#define ks_mask(a, x)                       ((a) & ks_m(x))
 
-#define KRSYN_OUTPUT_SHIFT                  15u
+#define KRSYN_TABLE_BITS                   10u
+#define KRSYN_OUTPUT_BITS                  15u
+#define KRSYN_PHASE_BITS                   16u
+#define KRSYN_PHASE_MAX_BITS               (KRSYN_PHASE_BITS + KRSYN_TABLE_BITS)
 
-#define KRSYN_PHASE_SHIFT                   16u
-#define KRSYN_PHASE_1                       (1<<KRSYN_PHASE_SHIFT)
-#define KRSYN_PHASE_MAX                     (KRSYN_PHASE_1 << KRSYN_TABLE_SHIFT)
-#define KRSYN_PHASE_MASK                    (KRSYN_PHASE_MAX - 1u)
-#define KRSYN_PHASE_SHIFT_MASK              (KRSYN_PHASE_1 - 1u)
+#define KRSYN_NOISE_PHASE_BITS             (KRSYN_PHASE_MAX_BITS - 5)
 
-#define KRSYN_NOISE_PHASE_SHIFT             (KRSYN_PHASE_SHIFT + KRSYN_TABLE_SHIFT - 5)
+#define KRSYN_FREQUENCY_BITS               16u
 
-#define KRSYN_FREQUENCY_SHIFT               16u
-
-#define KRSYN_PHASE_COARSE_SHIFT            1u
-#define KRSYN_PHASE_FINE_SHIFT              (KRSYN_FREQUENCY_SHIFT - 1u)
+#define KRSYN_PHASE_COARSE_BITS            1u
+#define KRSYN_PHASE_FINE_BITS              (KRSYN_FREQUENCY_BITS - 1u)
 
 #define KRSYN_NUM_OPERATORS                 4u
 
-#define KRSYN_ENVELOP_SHIFT                 16u
+#define KRSYN_ENVELOP_BITS                 16u
 #define KRSYN_ENVELOP_NUM_POINTS            4u
 
-#define KRSYN_RS_SHIFT                      16u
-#define KRSYN_VELOCITY_SENS_SHIFT           16u
+#define KRSYN_RS_BITS                      16u
+#define KRSYN_VELOCITY_SENS_BITS           16u
 
-#define KRSYN_KS_CURVE_TABLE_SHIFT          7u
-#define KRSYN_KS_CURVE_TABLE_LENGTH         (1<<KRSYN_KS_CURVE_TABLE_SHIFT)
-#define KRSYN_KS_CURVE_SHIFT                16u
-#define KRSYN_KS_CURVE_MAX_SHIFT            (KRSYN_KS_CURVE_SHIFT + KRSYN_KS_CURVE_TABLE_SHIFT)
-#define KRSYN_KS_DEPTH_SHIFT                16u
+#define KRSYN_KS_CURVE_TABLE_BITS          7u
+#define KRSYN_KS_CURVE_BITS                16u
+#define KRSYN_KS_CURVE_MAX_BITS            (KRSYN_KS_CURVE_BITS + KRSYN_KS_CURVE_TABLE_BITS)
+#define KRSYN_KS_DEPTH_BITS                16u
 
-#define KRSYN_LFO_DEPTH_SHIFT               16u
-#define KRSYN_FEEDBACK_LEVEL_SHIFT          16u
+#define KRSYN_LFO_DEPTH_BITS               16u
+#define KRSYN_FEEDBACK_LEVEL_BITS          16u
 
-#define KRSYN_SAMPLE_PER_FRAMES_SHIFT       5u
-#define KRSYN_SAMPLE_PER_FRAMES             (1<<KRSYN_SAMPLE_PER_FRAMES_SHIFT)
-#define KRSYN_SAMPLE_PER_FRAMES_MASK        (KRSYN_SAMPLE_PER_FRAMES-1)
+#define KRSYN_SAMPLE_PER_FRAMES_BITS       5u
 
 #define KRSYN_DATA_SIZE                     sizeof(KrsynFMData)
 
@@ -121,23 +118,6 @@ typedef enum KrsynLFOWaveType
 
     KRSYN_LFO_NUM_WAVES,
 }KrsynLFOWaveType;
-
-/**
- * @struct KrsynCore
- * @brief シンセの共通情報（サンプリング周波数や波形テーブルなど）。
-*/
-typedef struct KrsynCore
-{
-    uint32_t    smp_freq;
-    int16_t     sin_table[KRSYN_TABLE_LENGTH];
-    uint32_t    note_freq[128];
-    int32_t     ratescale[128];
-    uint16_t    ks_curves[KRSYN_KS_CURVE_NUM_TYPES][KRSYN_KS_CURVE_TABLE_LENGTH];
-    int16_t     saw_table[KRSYN_TABLE_LENGTH];
-    int16_t     triangle_table[KRSYN_TABLE_LENGTH];
-    int16_t     noise_table[KRSYN_TABLE_LENGTH];
-}
-KrsynCore;
 
 
 typedef struct KrsynPhaseCoarseData
@@ -292,19 +272,6 @@ typedef  KRSYN_ALIGNED(16)  struct KrsynFMNote
 }
 KrsynFMNote;
 
-/**
- * @fn krsyn_new
- * @brief シンセの初期化を行う。
- * @param freq サンプリング周波数。
-*/
-KrsynCore*                 krsyn_new                       (uint32_t freq);
-
-/**
- * @fn krsyn_free
- * @brief シンセの解放を行う。
- * @param core 解放するシンセ。
-*/
-void                        krsyn_free                      (KrsynCore* core);
 
 /**
  * @fn krsyn_fm_set_data_default
@@ -320,7 +287,7 @@ void                        krsyn_fm_set_data_default       (KrsynFMData* data);
  * @param fm 読み込まれるfmデータ。
  * @param data 読み込むバイナリ。
 */
-void                        krsyn_fm_set                    (const KrsynCore* core, KrsynFM* fm, const KrsynFMData* data);
+void                        krsyn_fm_set                    (uint32_t sampling_rate, KrsynFM* fm, const KrsynFMData* data);
 
 /**
  * @fn krsyn_fm_render
@@ -331,7 +298,7 @@ void                        krsyn_fm_set                    (const KrsynCore* co
  * @param buf 書き込まれるバッファ。チャンネル数は常に2。
  * @param len 書き込まれるバッファの要素数。
 */
-void                        krsyn_fm_render                 (const KrsynCore* core, const KrsynFM *fm, KrsynFMNote* note, int16_t* buf, unsigned len);
+void                        krsyn_fm_render                 (const KrsynFM *fm, KrsynFMNote* note, int16_t* buf, unsigned len);
 
 /**
  * @fn krsyn_fm_note_on
@@ -342,7 +309,7 @@ void                        krsyn_fm_render                 (const KrsynCore* co
  * @param notenum ノートオンされるノートのノートナンバー。
  * @param velocity ノートオンされるノートのベロシティ。
 */
-void                        krsyn_fm_note_on                 (const KrsynCore *core, const KrsynFM *fm, KrsynFMNote* note, uint8_t notenum, uint8_t velocity);
+void                        krsyn_fm_note_on                 (uint32_t sampling_rate, const KrsynFM *fm, KrsynFMNote* note, uint8_t notenum, uint8_t velocity);
 
 /**
  * @fn krsyn_fm_note_off
@@ -379,7 +346,7 @@ static inline uint32_t krsyn_calc_envelope_samples(uint32_t smp_freq, uint8_t va
     uint32_t time = krsyn_calc_envelope_times(val);
     uint64_t samples = time;
     samples *= smp_freq;
-    samples /= KRSYN_SAMPLE_PER_FRAMES;
+    samples /= ks_1(KRSYN_SAMPLE_PER_FRAMES_BITS);
     samples >>= 16;
     samples = MAX(1u, samples);  // note : maybe dont need this line
     return (uint32_t)samples;
@@ -410,25 +377,25 @@ static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
 
 #define calc_fixed_frequency(value)                     (value)
 #define calc_phase_coarses(value)                       (value)
-#define calc_phase_fines(value)                         krsyn_linear_u(value, 0, 1 << (KRSYN_PHASE_FINE_SHIFT))
-#define calc_phase_dets(value)                          krsyn_linear_u(value, 0, KRSYN_PHASE_MAX)
-#define calc_envelope_points(value)                      krsyn_linear2_i(value, 0, 1 << KRSYN_ENVELOP_SHIFT)
+#define calc_phase_fines(value)                         krsyn_linear_u(value, 0, 1 << (KRSYN_PHASE_FINE_BITS))
+#define calc_phase_dets(value)                          krsyn_linear_u(value, 0, ks_1(KRSYN_PHASE_MAX_BITS))
+#define calc_envelope_points(value)                      krsyn_linear2_i(value, 0, 1 << KRSYN_ENVELOP_BITS)
 #define calc_envelope_samples(smp_freq, value)           krsyn_calc_envelope_samples(smp_freq, value)
 #define calc_envelope_release_samples(smp_freq, value)   calc_envelope_samples(smp_ferq,value)
-#define calc_velocity_sens(value)                       krsyn_linear2_u(data->velocity_sens[i], 0, 1 << KRSYN_VELOCITY_SENS_SHIFT)
-#define calc_ratescales(value)                          krsyn_linear2_u(value, 0, 1 << KRSYN_RS_SHIFT)
-#define calc_ks_low_depths(value)                       krsyn_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_SHIFT);
-#define calc_ks_high_depths(value)                      krsyn_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_SHIFT)
+#define calc_velocity_sens(value)                       krsyn_linear2_u(data->velocity_sens[i], 0, 1 << KRSYN_VELOCITY_SENS_BITS)
+#define calc_ratescales(value)                          krsyn_linear2_u(value, 0, 1 << KRSYN_RS_BITS)
+#define calc_ks_low_depths(value)                       krsyn_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_BITS);
+#define calc_ks_high_depths(value)                      krsyn_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_BITS)
 #define calc_ks_mid_points(value)                       (value & 0x7f)
 #define calc_ks_curve_types_left(value)                 (value & 0x0f)
 #define calc_ks_curve_types_right(value)                (value >> 4)
-#define calc_lfo_ams_depths(value)                      krsyn_linear2_u(value, 0, 1 << KRSYN_LFO_DEPTH_SHIFT)
+#define calc_lfo_ams_depths(value)                      krsyn_linear2_u(value, 0, 1 << KRSYN_LFO_DEPTH_BITS)
 #define calc_algorithm(value)                           (value)
-#define calc_feedback_level(value)                      krsyn_linear_u(value, 0, 2<<KRSYN_FEEDBACK_LEVEL_SHIFT)
+#define calc_feedback_level(value)                      krsyn_linear_u(value, 0, 2<<KRSYN_FEEDBACK_LEVEL_BITS)
 #define calc_lfo_wave_type(value)                      (value)
-#define calc_lfo_fms_depth(value)                       krsyn_exp_u(value, 1 << (KRSYN_LFO_DEPTH_SHIFT-12), 4)
-#define calc_lfo_freq(value)                            krsyn_exp_u(value, 1<<(KRSYN_FREQUENCY_SHIFT-5), 4)
-#define calc_lfo_det(value)                             krsyn_linear_u(value, 0, KRSYN_PHASE_MAX)
+#define calc_lfo_fms_depth(value)                       krsyn_exp_u(value, 1 << (KRSYN_LFO_DEPTH_BITS-12), 4)
+#define calc_lfo_freq(value)                            krsyn_exp_u(value, 1<<(KRSYN_FREQUENCY_BITS-5), 4)
+#define calc_lfo_det(value)                             krsyn_linear_u(value, 0, ks_1(KRSYN_PHASE_MAX_BITS))
 
 #ifdef __cplusplus
 } // extern "C"

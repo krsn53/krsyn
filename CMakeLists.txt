@@ -12,7 +12,6 @@ add_library(krsyn ${krsyn_src})
 
 add_executable(wav_write_test tests/wav_write_test.c)
 target_link_libraries(wav_write_test krsyn)
-target_link_libraries(wav_write_test m)
 
 function(target_link as lib proj)
     find_package(PkgConfig REQUIRED)

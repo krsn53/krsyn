@@ -29,10 +29,10 @@ static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
     env_draw_width = env_width*0.8;
     cairo_set_source_rgb(cr, 0, 0, 1);
     env_reg = env_width*0.1;
-    for(int i = 0; i<KRSYN_NUM_OPERATORS; i++, env_reg+=env_width)
+    for(unsigned i = 0; i<KRSYN_NUM_OPERATORS; i++, env_reg+=env_width)
     {
         double envelope_amp = state->note.envelope_now_amps[i];
-        envelope_amp /= (double)(1<<KRSYN_ENVELOP_SHIFT);
+        envelope_amp /= (double)(1<<KRSYN_ENVELOP_BITS);
         envelope_amp *= height;
 
         cairo_rectangle(cr, env_reg, height - envelope_amp, env_draw_width, envelope_amp);
@@ -186,8 +186,8 @@ static gboolean keyboard_key_pressed(GdkEvent* event, EditorState* state,
     {
         velocity = (event->button.y - y) * 127 / height;
         state->state->noteon = notenum;
-        krsyn_fm_set(state->state->core, &state->state->fm, &state->data);
-        krsyn_fm_note_on(state->state->core, &state->state->fm, &state->state->note, notenum, velocity);
+        krsyn_fm_set(state->state->sampling_rate, &state->state->fm, &state->data);
+        krsyn_fm_note_on(state->state->sampling_rate, &state->state->fm, &state->state->note, notenum, velocity);
         return TRUE;
     }
     return FALSE;
@@ -275,7 +275,7 @@ static gboolean keyboard_release(GtkWidget *widget,
 }
 
 void internal_process(AudioState* state, ALuint buffer){
-    krsyn_fm_render(state->core, &state->fm, &state->note, state->buf, NUM_CHANNELS*NUM_SAMPLES);
+    krsyn_fm_render(&state->fm, &state->note, state->buf, NUM_CHANNELS*NUM_SAMPLES);
 
     alBufferData(buffer, AL_FORMAT_STEREO16, state->buf, sizeof(state->buf), SAMPLE_RATE);
     alSourceQueueBuffers(state->source, 1, &buffer);
@@ -327,10 +327,10 @@ AudioState* audio_state_new()
     }
 
     ret->noteon = -1;
-    ret->core = krsyn_new(SAMPLE_RATE);
+    ret->sampling_rate = SAMPLE_RATE;
 
     krsyn_fm_set_data_default(&data);
-    krsyn_fm_set(ret->core, &ret->fm, &data);
+    krsyn_fm_set(ret->sampling_rate, &ret->fm, &data);
 
     memset(&ret->note, 0, sizeof(ret->note));
 
@@ -358,7 +358,6 @@ void audio_state_free(AudioState* state)
 {
     alcDestroyContext(state->context);
     alcCloseDevice(state->device);
-    krsyn_free(state->core);
     free(state);
 }
 
