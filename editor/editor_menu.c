@@ -49,16 +49,16 @@ static void set_title(GtkWindow* window, const char* file){
 }
 
 static void new_menu_activate(GtkMenuItem *item, gpointer user_data){
-    EditorState* state;
+    editor_state* state;
 
     state = user_data;
-    krsyn_fm_set_data_default(&state->data);
+    krsyn_binary_set_default(&state->data);
     emit_update_params_signal(state->param_editor);
     set_title(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(state->param_editor))), "");
     memset(state->save_file, 0, sizeof(state->save_file));
 }
 
-gboolean editor_open_tone(const char* file, EditorState* state)
+gboolean editor_open_tone(const char* file, editor_state* state)
 {
     FILE* fp;
 
@@ -94,7 +94,7 @@ gboolean editor_open_tone(const char* file, EditorState* state)
     return FALSE;
 }
 
-gboolean editor_save_tone(const char* file, EditorState* state){
+gboolean editor_save_tone(const char* file, editor_state* state){
     char * file_path;
     FILE* fp;
     unsigned long len;
@@ -125,7 +125,7 @@ gboolean editor_save_tone(const char* file, EditorState* state){
 }
 
 static void open_menu_activate(GtkMenuItem *item, gpointer user_data){
-    EditorState* state;
+    editor_state* state;
     GtkWidget* file_dialog;
     GtkFileFilter *file_filter;
     int response;
@@ -155,7 +155,7 @@ static void open_menu_activate(GtkMenuItem *item, gpointer user_data){
 
 static void save_as_menu_activate(GtkMenuItem *item, gpointer user_data)
 {
-    EditorState* state;
+    editor_state* state;
     GtkWidget* file_dialog;
     GtkFileFilter *file_filter;
     int response;
@@ -180,7 +180,7 @@ static void save_as_menu_activate(GtkMenuItem *item, gpointer user_data)
 
 static void save_menu_activate(GtkMenuItem *item, gpointer user_data)
 {
-    EditorState* state;
+    editor_state* state;
 
     state = user_data;
 
@@ -203,7 +203,7 @@ static void quit_menu_activate(GtkMenuItem *item, gpointer user_data)
     g_application_quit(user_data);
 }
 
-void add_editor_menu(GtkApplication* app, GtkWidget* vbox, EditorState* editor_state){
+void add_editor_menu(GtkApplication* app, GtkWidget* vbox, editor_state* editor_state){
     GtkWidget *menu_bar;
     GtkWidget *file;
     GtkWidget *file_items;

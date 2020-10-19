@@ -4,13 +4,13 @@
 #include <gtk/gtk.h>
 #include "../krsyn.h"
 
-typedef struct AudioState AudioState;
+typedef struct audio_state audio_state;
 
-typedef struct EditorState
+typedef struct editor_state
 {
-    AudioState* state;
+    audio_state* state;
     GtkWidget* param_editor;
     char save_file[256];
-    KrsynFMData data;
-}EditorState;
+    krsyn_binary data;
+}editor_state;
 #endif // EDITOR_STATE_H

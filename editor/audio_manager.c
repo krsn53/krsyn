@@ -4,7 +4,7 @@
 
 static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
 {
-    AudioState* state = (AudioState* )user_data;
+    audio_state* state = (audio_state* )user_data;
     gint width, height;
     gint show_samples = 256;
     GtkStyleContext *context;
@@ -32,7 +32,7 @@ static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
     for(unsigned i = 0; i<KRSYN_NUM_OPERATORS; i++, env_reg+=env_width)
     {
         double envelope_amp = state->note.envelope_now_amps[i];
-        envelope_amp /= (double)(1<<KRSYN_ENVELOP_BITS);
+        envelope_amp /= (double)(1<<KRSYN_ENVELOPE_BITS);
         envelope_amp *= height;
 
         cairo_rectangle(cr, env_reg, height - envelope_amp, env_draw_width, envelope_amp);
@@ -91,7 +91,7 @@ static int next_notenum(int notenum)
 
 static gboolean keyboard_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
 {
-    AudioState* state = (AudioState* )user_data;
+    audio_state* state = (audio_state* )user_data;
     gint width, height;
     GtkStyleContext *context;
     double step, key_w, key_h;
@@ -175,7 +175,7 @@ static gboolean keyboard_draw (GtkWidget *widget, cairo_t *cr, gpointer user_dat
 }
 
 
-static gboolean keyboard_key_pressed(GdkEvent* event, EditorState* state,
+static gboolean keyboard_key_pressed(GdkEvent* event, editor_state* state,
                                      double x, double y,double width, double height,
                                      uint8_t notenum)
 {
@@ -186,8 +186,8 @@ static gboolean keyboard_key_pressed(GdkEvent* event, EditorState* state,
     {
         velocity = (event->button.y - y) * 127 / height;
         state->state->noteon = notenum;
-        krsyn_fm_set(state->state->sampling_rate, &state->state->fm, &state->data);
-        krsyn_fm_note_on(state->state->sampling_rate, &state->state->fm, &state->state->note, notenum, velocity);
+        krsyn_set(&state->state->fm, state->state->sampling_rate,  &state->data);
+        krsyn_note_on(&state->state->note, &state->state->fm,  state->state->sampling_rate, notenum, velocity);
         return TRUE;
     }
     return FALSE;
@@ -197,7 +197,7 @@ static gboolean keyboard_press(GtkWidget *widget,
               GdkEvent  *event,
               gpointer   user_data)
 {
-    EditorState* state = (EditorState* )user_data;
+    editor_state* state = (editor_state* )user_data;
     guint width, height;
     double step, key_w, key_h;
     int notenum;
@@ -262,20 +262,20 @@ static gboolean keyboard_release(GtkWidget *widget,
                                  GdkEvent  *event,
                                  gpointer   user_data)
 {
-    EditorState* state = (EditorState* )user_data;
+    editor_state* state = (editor_state* )user_data;
 
     if (gtk_widget_get_window(widget) != NULL){
         gtk_widget_queue_draw(widget);
     }
 
     state->state->noteon = -1;
-    krsyn_fm_note_off(&state->state->note);
+    krsyn_note_off(&state->state->note);
 
     return FALSE;
 }
 
-void internal_process(AudioState* state, ALuint buffer){
-    krsyn_fm_render(&state->fm, &state->note, state->buf, NUM_CHANNELS*NUM_SAMPLES);
+void internal_process(audio_state* state, ALuint buffer){
+    krsyn_render(&state->fm, &state->note, state->buf, NUM_CHANNELS*NUM_SAMPLES);
 
     alBufferData(buffer, AL_FORMAT_STEREO16, state->buf, sizeof(state->buf), SAMPLE_RATE);
     alSourceQueueBuffers(state->source, 1, &buffer);
@@ -285,7 +285,7 @@ static gboolean audio_stream_update(gpointer ptr)
 {
     void **user_datas =ptr;
     GtkWidget* widget = GTK_WIDGET(user_datas[0]);
-    AudioState* state = (AudioState*)(user_datas[1]);
+    audio_state* state = (audio_state*)(user_datas[1]);
     if (gtk_widget_get_window(widget) == NULL){
         return FALSE;
     }
@@ -310,12 +310,12 @@ static gboolean audio_stream_update(gpointer ptr)
     return (TRUE);
 }
 
-AudioState* audio_state_new()
+audio_state* audio_state_new()
 {
-    AudioState *ret = malloc(sizeof(AudioState));
-    KrsynFMData data;
+    audio_state *ret = malloc(sizeof(audio_state));
+    krsyn_binary data;
 
-    memset(ret, 0, sizeof(AudioState));
+    memset(ret, 0, sizeof(audio_state));
 
     ret->device = alcOpenDevice(NULL);
     ret->context = alcCreateContext(ret->device, NULL);
@@ -329,8 +329,8 @@ AudioState* audio_state_new()
     ret->noteon = -1;
     ret->sampling_rate = SAMPLE_RATE;
 
-    krsyn_fm_set_data_default(&data);
-    krsyn_fm_set(ret->sampling_rate, &ret->fm, &data);
+    krsyn_binary_set_default(&data);
+    krsyn_set(&ret->fm, ret->sampling_rate, &data);
 
     memset(&ret->note, 0, sizeof(ret->note));
 
@@ -354,14 +354,14 @@ error:
     return NULL;
 }
 
-void audio_state_free(AudioState* state)
+void audio_state_free(audio_state* state)
 {
     alcDestroyContext(state->context);
     alcCloseDevice(state->device);
     free(state);
 }
 
-GtkWidget* wave_viewer_new(AudioState* state)
+GtkWidget* wave_viewer_new(audio_state* state)
 {
     GtkWidget* drawing = gtk_drawing_area_new();
     guint *callback_id = malloc(sizeof(guint));
@@ -379,7 +379,7 @@ GtkWidget* wave_viewer_new(AudioState* state)
     return drawing;
 }
 
-GtkWidget* keyboard_new(EditorState* state)
+GtkWidget* keyboard_new(editor_state* state)
 {
     GtkWidget* drawing = gtk_drawing_area_new();
     gtk_widget_set_can_focus(drawing, true);

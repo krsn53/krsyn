@@ -12,17 +12,17 @@ static void activate (GtkApplication *app,  gpointer user_data)
     GtkWidget* out_box;
     GtkWidget* common_params;
     GtkWidget* operator_params;
-    EditorState *state;
+    editor_state *state;
     GtkWidget* wave_viewer;
     GtkWidget* keyboard;
 
     GtkCssProvider* provider;
     GError* error;
 
-    state = (EditorState*)user_data;
+    state = (editor_state*)user_data;
     state->state = audio_state_new();
 
-    krsyn_fm_set_data_default(&state->data);
+    krsyn_binary_set_default(&state->data);
 
     window = gtk_application_window_new (app);
     gtk_window_set_title (GTK_WINDOW (window), "Krsyn Tone Editor");
@@ -77,7 +77,7 @@ static void activate (GtkApplication *app,  gpointer user_data)
 
 static void shutdown(GtkApplication* widget, gpointer user_data)
 {
-    EditorState * state = (EditorState*)user_data;
+    editor_state * state = (editor_state*)user_data;
     audio_state_free(state->state);
 }
 
@@ -85,8 +85,8 @@ int main (int  argc, char **argv)
 {
     GtkApplication *app;
     int status;
-    EditorState state;
-    memset(&state, 0, sizeof(EditorState));
+    editor_state state;
+    memset(&state, 0, sizeof(editor_state));
 
     if(argc == 2)
     {

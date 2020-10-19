@@ -1,6 +1,6 @@
 /**
  * @file krsyn.h
- * @brief これはkrsynシンセを使うためにAPIです。
+ * @brief Synthesizer core
 */
 #ifndef KRSYN_H
 #define KRSYN_H
@@ -30,14 +30,6 @@ extern "C" {
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #endif
 
-#if defined _MSC_VER
-#define KRSYN_ALIGNED(x) __declspec( align( x ) )
-#elif defined __TINYC__
-#define KRSYN_ALIGNED(x)
-#elif defined __GNUC__
-#define KRSYN_ALIGNED(x) __attribute__((aligned(x)))
-#endif
-
 #define ks_v(a, x)                          ((a) << (x))
 #define ks_1(x)                             ks_v(1, x)
 #define ks_m(x)                             (ks_1(x) - 1)
@@ -57,8 +49,8 @@ extern "C" {
 
 #define KRSYN_NUM_OPERATORS                 4u
 
-#define KRSYN_ENVELOP_BITS                 16u
-#define KRSYN_ENVELOP_NUM_POINTS            4u
+#define KRSYN_ENVELOPE_BITS                 30u
+#define KRSYN_ENVELOPE_NUM_POINTS            4u
 
 #define KRSYN_RS_BITS                      16u
 #define KRSYN_VELOCITY_SENS_BITS           16u
@@ -73,17 +65,17 @@ extern "C" {
 
 #define KRSYN_SAMPLE_PER_FRAMES_BITS       5u
 
-#define KRSYN_DATA_SIZE                     sizeof(KrsynFMData)
+#define KRSYN_DATA_SIZE                     sizeof(krsyn_binary)
 
 
 /**
- * @enum KrsynKSType
- * @brief キースケールの効果曲線
- * ks_mid_point を中心に音量を変化させる。
- * LDとLUは周波数に対して、線形的に音量が減少、増加する。
- * 対して、EDとEUは周波数に対して指数的に音量が減少、増加する。
+ * @enum krsyn_keyscale_t
+ * @brief Key scale factor curve
+ * ks_mid_point as center, volume is changed by key by key.
+ * In LD and LU, volume changes linearly with frequency.
+ * In ED and EU, volume changes exponentially.
 */
-enum KrsynKSType
+enum krsyn_keyscale_t
 {
     KRSYN_KS_CURVE_LD,
     KRSYN_KS_CURVE_ED,
@@ -93,22 +85,22 @@ enum KrsynKSType
 };
 
 /**
- * @enum KrsynEnvelopState
- * @brief エンベロープの現在の状態 
+ * @enum krsyn_envelope_state
+ * @brief Current envelope state
 */
-typedef enum KrsynEnvelopState
+typedef enum krsyn_envelope_state
 {
-    KRSYN_ENVELOP_OFF,
-    KRSYN_ENVELOP_ON,
-    KRSYN_ENVELOP_SUSTAINED,
-    KRSYN_ENVELOP_RELEASED,
-}KrsynEnvelopState;
+    KRSYN_ENVELOPE_OFF = 0,
+    KRSYN_ENVELOPE_ON,
+    KRSYN_ENVELOPE_SUSTAINED,
+    KRSYN_ENVELOPE_RELEASED,
+}krsyn_envelope_state;
 
 /**
- * @enum KrsynLFOWaveType
- * @brief LFO の波形
+ * @enum krsynLFOWaveType
+ * @brief LFO wave type
 */
-typedef enum KrsynLFOWaveType
+typedef enum krsyn_lfo_wave_t
 {
     KRSYN_LFO_WAVE_TRIANGLE,
     KRSYN_LFO_WAVE_SAW_UP,
@@ -117,104 +109,104 @@ typedef enum KrsynLFOWaveType
     KRSYN_LFO_WAVE_SIN,
 
     KRSYN_LFO_NUM_WAVES,
-}KrsynLFOWaveType;
+}krsyn_lfo_wave_t;
 
 
-typedef struct KrsynPhaseCoarseData
+typedef struct krsyn_phase_coarse
 {
     uint8_t fixed_frequency: 1;
     uint8_t value :7;
-}KrsynPhaseCoarseData;
+}krsyn_phase_coarse;
 
-typedef struct KrsynKSCurveTypeData
+typedef struct krsyn_keyscale_curve_t
 {
     uint8_t left : 4;
     uint8_t right : 4;
-}KrsynKSCurveTypeData;
+}krsyn_keyscale_curve_t;
 
 /**
- * @struct KrsynFMData
- * @brief FMシンセのバイナリデータ。
+ * @struct krsyn_binary
+ * @brief Binary data of the synthesizer.
 */
-typedef struct KrsynFMData
+typedef struct krsyn_binary
 {
-    //! 基本周波数の何倍を出力するか。
-    KrsynPhaseCoarseData     phase_coarses           [KRSYN_NUM_OPERATORS];
+    //! Frequency magnification of output.
+    krsyn_phase_coarse          phase_coarses           [KRSYN_NUM_OPERATORS];
 
-    //! 周波数の微妙なズレ具合。範囲は0.0~0.5で、最大で半オクターブ音程が上がる。
+    //! Detune of frequency. Max value is half octave.
     uint8_t                     phase_fines             [KRSYN_NUM_OPERATORS];
 
-    //! 波形の初期位相。ノートオンされた際に初期化される。
+    //! Initial phase of wave. Every time note on event arises, phase is initialized.
     uint8_t                     phase_dets              [KRSYN_NUM_OPERATORS];
 
-    //! envelope_times時のアンプの大きさ。いわゆるTotal LevelやSustain Levelなど。
-    uint8_t                     envelope_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    //! Amplitude at envelope_times. i.e. Total Level and Sustain Level.
+    uint8_t                     envelope_points          [KRSYN_ENVELOPE_NUM_POINTS][KRSYN_NUM_OPERATORS];
 
-    //! envelope_pointsのアンプの大きさになるまでの時間。いわゆるAttack TimeやSustain Timeなど。
-    uint8_t                     envelope_times           [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    //! Time until becoming envelop_points. i.e. Attack Time and Sustain Time.
+    uint8_t                     envelope_times           [KRSYN_ENVELOPE_NUM_POINTS][KRSYN_NUM_OPERATORS];
 
-    //! リリースタイム。ノートオフされてからアンプが0になるまでの時間。
+    //! Release time. Time until amplitude becoming zero from note off.
     uint8_t                     envelope_release_times   [KRSYN_NUM_OPERATORS];
 
 
-    //! ベロシティによる音量変化の度合い。
+    //! Volume change degree by velocity.
     uint8_t                     velocity_sens           [KRSYN_NUM_OPERATORS];
 
-    //! ノートナンバーによるエンベロープのスピードの変化の度合い。
+    //! Envelope speed change degree by note number.
     uint8_t                     ratescales              [KRSYN_NUM_OPERATORS];
 
-    //! ks_mid_pointsよりノートナンバーが小さい時のノートナンバーによる音量変化の度合い。
+    //! Volume change degree by note number when note number is smaller than ks_mid_points.
     uint8_t                     ks_low_depths           [KRSYN_NUM_OPERATORS];
 
-    //! ks_mid_pointsよりノートナンバーが大きい時のノートナンバーによる音量変化の度合い。
+    //! Volume change degree by note number when note number is bigger than ks_mid_points.
     uint8_t                     ks_high_depths          [KRSYN_NUM_OPERATORS];
 
-    //! キースケールの中心となるノートナンバー。
+    //! Note number which is center of keyscale.
     uint8_t                     ks_mid_points           [KRSYN_NUM_OPERATORS];
 
-    //! キースケールの曲線の種類。上位4bitがks_mid_pointsよりノートナンバーが小さい時、下位4bitが大きい時の曲線。
-    KrsynKSCurveTypeData        ks_curve_types          [KRSYN_NUM_OPERATORS];
+    //! Kind of keyscale curve. Upper 4 bits are value for the notes which bellow ks_mid_points, and lower 4 bits are value for the notes which above ks_mid_points.
+    krsyn_keyscale_curve_t        ks_curve_types          [KRSYN_NUM_OPERATORS];
     
 
-    //! LFOの音量変化の度合い。
+    //! Amplitude modulation sensitivity of LFO.
     uint8_t                     lfo_ams_depths          [KRSYN_NUM_OPERATORS]; // zero : disabled
 
 
-    //! アルゴリズムの種類。
+    //! algorithm number, 0~7:FM 8~10:PCM
     uint8_t                     algorithm;
 
-    //! フィードバックの度合い。
+    //! FM feed back degree.
     uint8_t                     feedback_level;
 
 
-    //! LFOの波形の種類。
+    //! Wave type of LFO.
     uint8_t                     lfo_wave_type;
 
-    //! LFOの周波数。
+    //! Frequency of LFO.
     uint8_t                     lfo_freq;
 
-    //! LFOの初期位相。
+    //! Initial phase of LFO.
     uint8_t                     lfo_det;
     
-    //! LFOの音程変化の度合い。
+    //! Frequency modulation sensitivity of LFO.
     uint8_t                     lfo_fms_depth;                                 // zero : disabled
 
 }
-KrsynFMData;
+krsyn_binary;
 
 
 /**
- * @struct KrsynFMData
- * @brief 読み込まれたFMシンセのデータ。
+ * @struct krsyn_binary
+ * @brief Synthesizer data read for ease of calculation.
 */
-typedef KRSYN_ALIGNED(16) struct KrsynFM
+typedef struct krsyn
 {
     uint32_t    phase_coarses           [KRSYN_NUM_OPERATORS];
     uint32_t    phase_fines             [KRSYN_NUM_OPERATORS];
     uint32_t    phase_dets              [KRSYN_NUM_OPERATORS];
 
-    int32_t     envelope_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
-    uint32_t    envelope_samples         [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    int32_t     envelope_points          [KRSYN_ENVELOPE_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    uint32_t    envelope_samples         [KRSYN_ENVELOPE_NUM_POINTS][KRSYN_NUM_OPERATORS];
     uint32_t    envelope_release_samples [KRSYN_NUM_OPERATORS];
 
     uint32_t    velocity_sens           [KRSYN_NUM_OPERATORS];
@@ -239,26 +231,26 @@ typedef KRSYN_ALIGNED(16) struct KrsynFM
     bool        lfo_ams_enabled;
     bool        lfo_fms_enabled;
 }
-KrsynFM;
+krsyn;
 
 /**
- * @struct KrsynFMData
- * @brief ノートオンされたノートの状態。
+ * @struct krsyn_binary
+ * @brief Note state.
 */
-typedef  KRSYN_ALIGNED(16)  struct KrsynFMNote
+typedef  struct krsyn_note
 {
     int32_t     output_log              [KRSYN_NUM_OPERATORS];
 
     uint32_t    phases                  [KRSYN_NUM_OPERATORS];
     uint32_t    phase_deltas            [KRSYN_NUM_OPERATORS];
 
-    int32_t     envelope_points          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
-    uint32_t    envelope_samples         [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
-    int32_t     envelope_deltas          [KRSYN_ENVELOP_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    int32_t     envelope_points          [KRSYN_ENVELOPE_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    uint32_t    envelope_samples         [KRSYN_ENVELOPE_NUM_POINTS][KRSYN_NUM_OPERATORS];
+    int32_t     envelope_deltas          [KRSYN_ENVELOPE_NUM_POINTS][KRSYN_NUM_OPERATORS];
     uint32_t    envelope_release_samples [KRSYN_NUM_OPERATORS];
 
     int32_t     envelope_now_deltas      [KRSYN_NUM_OPERATORS];
-    uint32_t    envelope_now_times       [KRSYN_NUM_OPERATORS];
+    int32_t     envelope_now_times       [KRSYN_NUM_OPERATORS];
     int32_t     envelope_now_amps        [KRSYN_NUM_OPERATORS];
     uint8_t     envelope_states          [KRSYN_NUM_OPERATORS];
     uint8_t     envelope_now_points      [KRSYN_NUM_OPERATORS];
@@ -270,53 +262,52 @@ typedef  KRSYN_ALIGNED(16)  struct KrsynFMNote
 
     uint32_t    now_frame;
 }
-KrsynFMNote;
+krsyn_note;
 
 
 /**
- * @fn krsyn_fm_set_data_default
- * @brief fmのデータを初期化する。
- * @param data 初期化するデータ。
+ * @fn krsyn_binary_set_default
+ * @brief FM data initialize to default
+ * @param data Initializing data
 */
-void                        krsyn_fm_set_data_default       (KrsynFMData* data);
+void                        krsyn_binary_set_default       (krsyn_binary* data);
 
 /**
- * @fn krsyn_fm_set
- * @brief fmデータをバイナリから読み込む。
- * @param core シンセの基本データ。サンプリング周波数を参照する。
- * @param fm 読み込まれるfmデータ。
- * @param data 読み込むバイナリ。
+ * @fn krsyn_set
+ * @brief Read FM data from binary.
+ * @param fm Dist data
+ * @param sampling_rate Sampling rate
+ * @param data Source data
 */
-void                        krsyn_fm_set                    (uint32_t sampling_rate, KrsynFM* fm, const KrsynFMData* data);
+void                        krsyn_set                    (krsyn* fm, uint32_t sampling_rate, const krsyn_binary* data);
 
 /**
- * @fn krsyn_fm_render
- * @brief fmの音色をバッファに書き込む。
- * @param　core シンセの基本データ。
- * @param fm シンセの音色。
- * @param note 現在のノートオンの状態。
- * @param buf 書き込まれるバッファ。チャンネル数は常に2。
- * @param len 書き込まれるバッファの要素数。
+ * @fn krsyn_render
+ * @brief Synthesize note of fm to buf.
+ * @param fm Tone data of synthesizer
+ * @param note Current note state
+ * @param buf Write buffer
+ * @param len Length of buffer
 */
-void                        krsyn_fm_render                 (const KrsynFM *fm, KrsynFMNote* note, int16_t* buf, unsigned len);
+void                        krsyn_render                 (const krsyn *fm, krsyn_note* note, int16_t* buf, unsigned len);
 
 /**
- * @fn krsyn_fm_note_on
- * @brief ノートオンする。
- * @param core シンセの基本データ。
- * @param fm シンセの音色。ノートの初期化に使う。
- * @param note ノートオンされるノート。
- * @param notenum ノートオンされるノートのノートナンバー。
- * @param velocity ノートオンされるノートのベロシティ。
+ * @fn krsyn_note_on
+ * @brief Note on FM tone with note number and velocity.
+ * @param note A note noteon
+ * @param fm Tone data of synthesizer
+ * @param sampling_rate Sampling rate
+ * @param notenum Note number of note
+ * @param velocity Velociry of note
 */
-void                        krsyn_fm_note_on                 (uint32_t sampling_rate, const KrsynFM *fm, KrsynFMNote* note, uint8_t notenum, uint8_t velocity);
+void                        krsyn_note_on                 (krsyn_note* note, const krsyn *fm, uint32_t sampling_rate,  uint8_t notenum, uint8_t velocity);
 
 /**
- * @fn krsyn_fm_note_off
- * @brief ノートオフする。
- * @param note ノートオフされるノート。
+ * @fn krsyn_note_off
+ * @brief Note off FM tone
+ * @param note A note noteoff
 */
-void                        krsyn_fm_note_off                (KrsynFMNote* note);
+void                        krsyn_note_off                (krsyn_note* note);
 
 
 
@@ -346,7 +337,6 @@ static inline uint32_t krsyn_calc_envelope_samples(uint32_t smp_freq, uint8_t va
     uint32_t time = krsyn_calc_envelope_times(val);
     uint64_t samples = time;
     samples *= smp_freq;
-    samples /= ks_1(KRSYN_SAMPLE_PER_FRAMES_BITS);
     samples >>= 16;
     samples = MAX(1u, samples);  // note : maybe dont need this line
     return (uint32_t)samples;
@@ -379,7 +369,7 @@ static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
 #define calc_phase_coarses(value)                       (value)
 #define calc_phase_fines(value)                         krsyn_linear_u(value, 0, 1 << (KRSYN_PHASE_FINE_BITS))
 #define calc_phase_dets(value)                          krsyn_linear_u(value, 0, ks_1(KRSYN_PHASE_MAX_BITS))
-#define calc_envelope_points(value)                      krsyn_linear2_i(value, 0, 1 << KRSYN_ENVELOP_BITS)
+#define calc_envelope_points(value)                      krsyn_linear2_i(value, 0, 1 << KRSYN_ENVELOPE_BITS)
 #define calc_envelope_samples(smp_freq, value)           krsyn_calc_envelope_samples(smp_freq, value)
 #define calc_envelope_release_samples(smp_freq, value)   calc_envelope_samples(smp_ferq,value)
 #define calc_velocity_sens(value)                       krsyn_linear2_u(data->velocity_sens[i], 0, 1 << KRSYN_VELOCITY_SENS_BITS)

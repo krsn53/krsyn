@@ -12,7 +12,7 @@
  * @param data　編集するデータのポインタ。
  * @return GtkWidget* 共通パラメータが編集できるウィジェット。
  */
-GtkWidget* common_params_new(EditorState* state);
+GtkWidget* common_params_new(editor_state* state);
 
 /**
  * @brief operator_params_new オペレータのパラメータ軍を編集する。
@@ -20,6 +20,6 @@ GtkWidget* common_params_new(EditorState* state);
  * @param data 編集するデータのポインタ。
  * @return GtkWidget* オペレータのパラメータが編集できるウィジェット。
  */
-GtkWidget* operator_params_new(EditorState* state);
+GtkWidget* operator_params_new(editor_state* state);
 
 #endif // FM_DATA_PARAMS_H

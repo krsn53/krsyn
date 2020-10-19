@@ -31,9 +31,9 @@ struct wave_header
 int main( void )
 {
   uint32_t sampling_rate = 44100;
-  KrsynFMData   data;
-  KrsynFM        fm;
-  KrsynFMNote   note;
+  krsyn_binary   data;
+  krsyn        fm;
+  krsyn_note   note;
 
   int32_t buf_len = OUTPUT_LENGTH;
   int32_t buf_size = sizeof(int16_t) * buf_len;
@@ -41,7 +41,7 @@ int main( void )
 
   // 金属質な鍵盤っぽい音
   {
-      krsyn_fm_set_data_default(&data);
+      krsyn_binary_set_default(&data);
 
     data.algorithm = 4;
 
@@ -61,33 +61,33 @@ int main( void )
       data.envelope_times[3][i] = 160;
     }
 
-    krsyn_fm_set(sampling_rate, &fm, &data);
+    krsyn_set(&fm, sampling_rate, &data);
   }
 
   {
-    krsyn_fm_note_on(sampling_rate, &fm, &note, 60, 100);
-    krsyn_fm_render(&fm, &note, buf, buf_len/10);
+    krsyn_note_on( &note, &fm, sampling_rate, 60, 100);
+    krsyn_render(&fm, &note, buf, buf_len/10);
     
-    krsyn_fm_note_on(sampling_rate, &fm, &note, 62, 100);
-    krsyn_fm_render(&fm, &note, buf+buf_len/10, buf_len/10);
+    krsyn_note_on(&note, &fm, sampling_rate, 62, 100);
+    krsyn_render(&fm, &note, buf+buf_len/10, buf_len/10);
 
-    krsyn_fm_note_on(sampling_rate, &fm, &note, 64, 100);
-    krsyn_fm_render(&fm, &note, buf+2*buf_len/10, buf_len/10);
+    krsyn_note_on(&note,&fm, sampling_rate,  64, 100);
+    krsyn_render(&fm, &note, buf+2*buf_len/10, buf_len/10);
     
-    krsyn_fm_note_on(sampling_rate, &fm, &note, 65, 100);
-    krsyn_fm_render(&fm, &note, buf+3*buf_len/10, buf_len/10);
+    krsyn_note_on(&note, &fm, sampling_rate, 65, 100);
+    krsyn_render(&fm, &note, buf+3*buf_len/10, buf_len/10);
     
-    krsyn_fm_note_on(sampling_rate, &fm, &note, 64, 100);
-    krsyn_fm_render(&fm, &note, buf+4*buf_len/10, buf_len/10);
+    krsyn_note_on(&note, &fm, sampling_rate, 64, 100);
+    krsyn_render(&fm, &note, buf+4*buf_len/10, buf_len/10);
     
-    krsyn_fm_note_on(sampling_rate, &fm, &note, 62, 100);
-    krsyn_fm_render(&fm, &note, buf+5*buf_len/10, buf_len/10);
+    krsyn_note_on(&note, &fm, sampling_rate, 62, 100);
+    krsyn_render(&fm, &note, buf+5*buf_len/10, buf_len/10);
     
-    krsyn_fm_note_on(sampling_rate, &fm, &note, 60, 100);
-    krsyn_fm_render(&fm, &note, buf+6*buf_len/10, buf_len*3/10);
+    krsyn_note_on(&note, &fm, sampling_rate,  60, 100);
+    krsyn_render(&fm, &note, buf+6*buf_len/10, buf_len*3/10);
 
-    krsyn_fm_note_off(&note);
-    krsyn_fm_render(&fm, &note, buf+9*buf_len/10, buf_len*1/10);
+    krsyn_note_off(&note);
+    krsyn_render(&fm, &note, buf+9*buf_len/10, buf_len*1/10);
   }
 
   {

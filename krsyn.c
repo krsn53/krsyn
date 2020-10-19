@@ -1,8 +1,10 @@
 #include "krsyn.h"
 #include "constants.h"
 
+#include <memory.h>
 
-void krsyn_fm_set_data_default(KrsynFMData* data)
+
+void krsyn_binary_set_default(krsyn_binary* data)
 {
     for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
@@ -44,7 +46,7 @@ void krsyn_fm_set_data_default(KrsynFMData* data)
     data->lfo_det = 0;
 }
 
-static inline void fm_op_set(uint32_t sampling_rate, KrsynFM* fm, const KrsynFMData* data)
+static inline void fm_op_set(uint32_t sampling_rate, krsyn* fm, const krsyn_binary* data)
 {
     for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
@@ -54,7 +56,7 @@ static inline void fm_op_set(uint32_t sampling_rate, KrsynFM* fm, const KrsynFMD
         fm->phase_fines[i] = calc_phase_fines(data->phase_fines[i]);
         fm->phase_dets[i] = calc_phase_dets(data->phase_dets[i]);
 
-        for(unsigned e=0; e < KRSYN_ENVELOP_NUM_POINTS; e++)
+        for(unsigned e=0; e < KRSYN_ENVELOPE_NUM_POINTS; e++)
         {
             fm->envelope_points[e][i] = calc_envelope_points(data->envelope_points[e][i]);
             fm->envelope_samples[e][i] = calc_envelope_samples(sampling_rate, data->envelope_times[e][i]);
@@ -78,7 +80,7 @@ static inline void fm_op_set(uint32_t sampling_rate, KrsynFM* fm, const KrsynFMD
 
 }
 
-static inline void fm_common_set(KrsynFM* fm, const KrsynFMData* data)
+static inline void fm_common_set(krsyn* fm, const krsyn_binary* data)
 {
     fm->algorithm = calc_algorithm(data->algorithm);
     fm->feedback_level = calc_feedback_level(data->feedback_level);
@@ -91,7 +93,7 @@ static inline void fm_common_set(KrsynFM* fm, const KrsynFMData* data)
 }
 
 
-void krsyn_fm_set(uint32_t sampling_rate, KrsynFM* fm, const KrsynFMData* data)
+void krsyn_set(krsyn* fm, uint32_t sampling_rate, const krsyn_binary* data)
 {
     fm_op_set(sampling_rate, fm, data);
     fm_common_set(fm, data);
@@ -155,7 +157,7 @@ static inline uint32_t ks_li(uint32_t index_16, int curve_type)
     return ret;
 }
 
-static inline uint32_t ks_value(const KrsynFM *fm, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
+static inline uint32_t ks_value(const krsyn *fm, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
 {
     uint64_t index_16 = table_index;
     index_16 <<= KRSYN_KS_CURVE_MAX_BITS;
@@ -167,7 +169,7 @@ static inline uint32_t ks_value(const KrsynFM *fm, uint32_t table_index, uint32_
     return ks_li((uint32_t)index_16, curve_type);
 }
 
-static inline uint32_t keyscale(const KrsynFM *fm, uint8_t notenum, unsigned i)
+static inline uint32_t keyscale(const krsyn *fm, uint8_t notenum, unsigned i)
 {
     if(notenum < fm->ks_mid_points[i])
     {
@@ -188,7 +190,7 @@ static inline uint32_t keyscale(const KrsynFM *fm, uint8_t notenum, unsigned i)
     return 1<< KRSYN_KS_CURVE_BITS;
 }
 
-void krsyn_fm_note_on(uint32_t sampling_rate, const KrsynFM *fm, KrsynFMNote* note, uint8_t notenum, uint8_t vel)
+void krsyn_note_on( krsyn_note* note, const krsyn *fm, uint32_t sampling_rate, uint8_t notenum, uint8_t vel)
 {
     note->now_frame = 0;
     note->feedback_log =0;
@@ -225,7 +227,7 @@ void krsyn_fm_note_on(uint32_t sampling_rate, const KrsynFM *fm, KrsynFMNote* no
         uint32_t velocity;
 
         //envelope
-        for(unsigned j=0; j < KRSYN_ENVELOP_NUM_POINTS; j++)
+        for(unsigned j=0; j < KRSYN_ENVELOPE_NUM_POINTS; j++)
         {
             velocity = fm->velocity_sens[i];
             velocity *=  127-vel;
@@ -243,19 +245,21 @@ void krsyn_fm_note_on(uint32_t sampling_rate, const KrsynFM *fm, KrsynFMNote* no
             uint64_t frame = (fm->envelope_samples[j][i]);
             frame *= ratescales;
             frame >>= KRSYN_RS_BITS;
+            frame >>= KRSYN_SAMPLE_PER_FRAMES_BITS;
             note->envelope_samples[j][i] = MAX((uint32_t)frame, 1u);
         }
 
         uint64_t frame = (fm->envelope_release_samples[i]);
         frame *= ratescales;
         frame >>= KRSYN_RS_BITS;
+        frame >>= KRSYN_SAMPLE_PER_FRAMES_BITS;
         note->envelope_release_samples[i] = MAX((uint32_t)frame, 1u);
 
-        note->envelope_deltas[0][i] = note->envelope_points[0][i] / note->envelope_samples[0][i];
-        for(unsigned j=1; j < KRSYN_ENVELOP_NUM_POINTS; j++)
+        note->envelope_deltas[0][i] = note->envelope_points[0][i] / (note->envelope_samples[0][i] << KRSYN_SAMPLE_PER_FRAMES_BITS);
+        for(unsigned j=1; j < KRSYN_ENVELOPE_NUM_POINTS; j++)
         {
             note->envelope_deltas[j][i] = (note->envelope_points[j][i] - note->envelope_points[j-1][i]);
-            note->envelope_deltas[j][i] /= (int32_t)note->envelope_samples[j][i];
+            note->envelope_deltas[j][i] /= (int32_t)note->envelope_samples[j][i] << KRSYN_SAMPLE_PER_FRAMES_BITS;
         }
 
         //envelope state init
@@ -263,18 +267,18 @@ void krsyn_fm_note_on(uint32_t sampling_rate, const KrsynFM *fm, KrsynFMNote* no
         note->envelope_now_times[i] = note->envelope_samples[0][i];
         note->envelope_now_deltas[i] = note->envelope_deltas[0][i];
         note->envelope_now_points[i] = 0;
-        note->envelope_states[i] = KRSYN_ENVELOP_ON;
+        note->envelope_states[i] = KRSYN_ENVELOPE_ON;
 
     }
 }
 
-void krsyn_fm_note_off (KrsynFMNote* note)
+void krsyn_note_off (krsyn_note* note)
 {
     for(unsigned i=0; i< KRSYN_NUM_OPERATORS; i++)
     {
-        note->envelope_states[i] = KRSYN_ENVELOP_RELEASED;
+        note->envelope_states[i] = KRSYN_ENVELOPE_RELEASED;
         note->envelope_now_times[i] = note->envelope_release_samples[i];
-        note->envelope_now_deltas[i] = - note->envelope_now_amps[i] / (int32_t)note->envelope_now_times[i];
+        note->envelope_now_deltas[i] = - note->envelope_now_amps[i] / ((int32_t)note->envelope_now_times[i] << KRSYN_SAMPLE_PER_FRAMES_BITS);
     }
 }
 
@@ -323,9 +327,9 @@ static inline int16_t noise_t(uint32_t phase, uint32_t begin){
 
 static inline int32_t envelope_apply(uint32_t amp, int32_t in)
 {
-    int32_t out = amp;
+    int64_t out = amp;
     out *=in;
-    out >>= 16;
+    out >>= KRSYN_ENVELOPE_BITS;
     return out;
 }
 
@@ -336,7 +340,7 @@ static inline int32_t output_mod(uint32_t phase, int32_t mod, uint32_t envelope)
     return envelope_apply(envelope, out);
 }
 
-static inline int16_t fm_frame(const KrsynFM* fm, KrsynFMNote* note, uint8_t algorithm)
+static inline int16_t fm_frame(const krsyn* fm, krsyn_note* note, uint8_t algorithm)
 {
     int32_t out;
     int32_t feedback;
@@ -531,20 +535,20 @@ static inline int16_t fm_frame(const KrsynFM* fm, KrsynFMNote* note, uint8_t alg
     return out >> 2; //
 }
 
-static inline void envelope_next(KrsynFMNote* note)
+static inline void envelope_next(krsyn_note* note)
 {
     for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
     {
-        if(note->envelope_now_times[i] == 0)
+        if(--note->envelope_now_times[i] <= 0)
         {
             switch(note->envelope_states[i])
             {
-            case KRSYN_ENVELOP_ON:
+            case KRSYN_ENVELOPE_ON:
                 note->envelope_now_amps[i] = note->envelope_points[note->envelope_now_points[i]][i];
                 note->envelope_now_points[i] ++;
-                if(note->envelope_now_points[i] == KRSYN_ENVELOP_NUM_POINTS)
+                if(note->envelope_now_points[i] == KRSYN_ENVELOPE_NUM_POINTS)
                 {
-                    note->envelope_states[i] = KRSYN_ENVELOP_SUSTAINED;
+                    note->envelope_states[i] = KRSYN_ENVELOPE_SUSTAINED;
                     note->envelope_now_deltas[i] = 0;
                 }
                 else
@@ -553,17 +557,17 @@ static inline void envelope_next(KrsynFMNote* note)
                     note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
                 }
                 break;
-            case KRSYN_ENVELOP_RELEASED:
+            case KRSYN_ENVELOPE_RELEASED:
                 note->envelope_now_amps[i] = 0;
                 note->envelope_now_deltas[i] = 0;
-                note->envelope_states[i] = KRSYN_ENVELOP_OFF;
+                note->envelope_states[i] = KRSYN_ENVELOPE_OFF;
                 break;
             }
         }
     }
 }
 
-static inline void fm_lfo_frame(const KrsynFM* fm, KrsynFMNote* note, uint32_t delta[],
+static inline void fm_lfo_frame(const krsyn* fm, krsyn_note* note, uint32_t delta[],
                                       uint8_t lfo_wave_type, bool ams, bool fms)
 {
     if(fms)
@@ -643,7 +647,7 @@ static inline void fm_lfo_frame(const KrsynFM* fm, KrsynFMNote* note, uint32_t d
     }
 }
 
-static inline void krsyn_fm_process(const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len,
+static inline void krsyn_process(const krsyn* fm, krsyn_note* note, int16_t* buf, unsigned len,
                                     uint8_t algorithm, uint8_t lfo_type, bool ams, bool fms)
 {
     uint32_t delta[KRSYN_NUM_OPERATORS];
@@ -658,31 +662,32 @@ static inline void krsyn_fm_process(const KrsynFM* fm, KrsynFMNote* note, int16_
             note->phases[j] = note->phases[j] + delta[j];
         }
 
-        if((ks_mask(note->now_frame, KRSYN_SAMPLE_PER_FRAMES_BITS)) == 0)
+        for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
         {
-            for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
-            {
-                note->envelope_now_amps[j] += note->envelope_now_deltas[j];
-                note->envelope_now_times[j]--;
-            }
+            note->envelope_now_amps[j] += note->envelope_now_deltas[j];
+        }
+        if(ks_mask(note->now_frame, KRSYN_SAMPLE_PER_FRAMES_BITS) == 0)
+        {
             envelope_next(note);
         }
         note->now_frame ++;
     }
 }
 
+#define _algorithm_list _(0) _(1) _(2) _(3) _(4) _(5) _(6) _(7) _(8) _(9) _(10)
+
 #define krsyn_define_fm_render_aw(algorithm, wave) \
-void krsyn_fm_render_ ## algorithm ## _ ## wave ##_0_0(const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len){ \
-    krsyn_fm_process(fm, note, buf, len, algorithm, wave, false, false); \
+void krsyn_render_ ## algorithm ## _ ## wave ##_0_0(const krsyn* fm, krsyn_note* note, int16_t* buf, unsigned len){ \
+    krsyn_process(fm, note, buf, len, algorithm, wave, false, false); \
 } \
-void krsyn_fm_render_ ## algorithm ## _ ## wave  ##_0_1(const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len) {\
-    krsyn_fm_process(fm, note, buf, len, algorithm, wave, false, true); \
+void krsyn_render_ ## algorithm ## _ ## wave  ##_0_1(const krsyn* fm, krsyn_note* note, int16_t* buf, unsigned len) {\
+    krsyn_process(fm, note, buf, len, algorithm, wave, false, true); \
 } \
-void krsyn_fm_render_ ## algorithm ## _ ## wave  ##_1_0(const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len) {\
-    krsyn_fm_process(fm, note, buf, len, algorithm, wave, true, false); \
+void krsyn_render_ ## algorithm ## _ ## wave  ##_1_0(const krsyn* fm, krsyn_note* note, int16_t* buf, unsigned len) {\
+    krsyn_process(fm, note, buf, len, algorithm, wave, true, false); \
 } \
-    void krsyn_fm_render_ ## algorithm ## _ ## wave  ##_1_1(const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len){ \
-    krsyn_fm_process(fm, note, buf, len, algorithm, wave, true, true); \
+    void krsyn_render_ ## algorithm ## _ ## wave  ##_1_1(const krsyn* fm, krsyn_note* note, int16_t* buf, unsigned len){ \
+    krsyn_process(fm, note, buf, len, algorithm, wave, true, true); \
 }
 
 #define krsyn_define_fm_render(algorithm) \
@@ -692,49 +697,40 @@ void krsyn_fm_render_ ## algorithm ## _ ## wave  ##_1_0(const KrsynFM* fm, Krsyn
     krsyn_define_fm_render_aw(algorithm, KRSYN_LFO_WAVE_SQUARE) \
     krsyn_define_fm_render_aw(algorithm, KRSYN_LFO_WAVE_SIN)
 
-krsyn_define_fm_render(0)
-krsyn_define_fm_render(1)
-krsyn_define_fm_render(2)
-krsyn_define_fm_render(3)
-krsyn_define_fm_render(4)
-krsyn_define_fm_render(5)
-krsyn_define_fm_render(6)
-krsyn_define_fm_render(7)
-krsyn_define_fm_render(8)
-krsyn_define_fm_render(9)
-krsyn_define_fm_render(10)
+#undef _
+#define _(x) krsyn_define_fm_render(x)
+#define split
+
+_algorithm_list
 
 #undef krsyn_define_fm_render
 
 
-
-void krsyn_fm_render(const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigned len)
-{
 #define krsyn_lfo_branch(algorithm, wave) \
     if(fm->lfo_ams_enabled) \
     { \
         if(fm->lfo_fms_enabled) \
         { \
-            krsyn_fm_render_ ## algorithm ## _ ## wave ## _1_1 (fm, note, buf, len); \
+            krsyn_render_ ## algorithm ## _ ## wave ## _1_1 (fm, note, buf, len); \
         } \
         else \
         { \
-            krsyn_fm_render_ ## algorithm ## _ ## wave ## _1_0 (fm, note, buf, len); \
+            krsyn_render_ ## algorithm ## _ ## wave ## _1_0 (fm, note, buf, len); \
         } \
     } \
     else \
     { \
         if(fm->lfo_fms_enabled) \
         { \
-            krsyn_fm_render_ ## algorithm ## _ ## wave ## _0_1 (fm, note, buf, len); \
+            krsyn_render_ ## algorithm ## _ ## wave ## _0_1 (fm, note, buf, len); \
         } \
         else \
         { \
-            krsyn_fm_render_ ## algorithm ## _ ## wave ## _0_0 (fm, note, buf, len); \
+            krsyn_render_ ## algorithm ## _ ## wave ## _0_0 (fm, note, buf, len); \
         } \
     }
 
-#define krsyn_fm_render_branch(algorithm) \
+#define krsyn_render_branch(algorithm) \
     switch(fm->lfo_wave_type) {\
     case KRSYN_LFO_WAVE_TRIANGLE: \
         krsyn_lfo_branch(algorithm, KRSYN_LFO_WAVE_TRIANGLE); break; \
@@ -748,45 +744,21 @@ void krsyn_fm_render(const KrsynFM* fm, KrsynFMNote* note, int16_t* buf, unsigne
         krsyn_lfo_branch(algorithm, KRSYN_LFO_WAVE_SIN); break; \
     }
 
-    switch(fm->algorithm)
-    {
-    case 0:
-        krsyn_fm_render_branch(0)
-        break;
-    case 1:
-        krsyn_fm_render_branch(1)
-        break;
-    case 2:
-        krsyn_fm_render_branch(2)
-        break;
-    case 3:
-        krsyn_fm_render_branch(3)
-        break;
-    case 4:
-        krsyn_fm_render_branch(4)
-        break;
-    case 5:
-        krsyn_fm_render_branch(5)
-        break;
-    case 6:
-        krsyn_fm_render_branch(6)
-        break;
-    case 7:
-        krsyn_fm_render_branch(7)
-        break;
-    case 8:
-        krsyn_fm_render_branch(8)
-        break;
-    case 9:
-        krsyn_fm_render_branch(9)
-        break;
-    case 10:
-        krsyn_fm_render_branch(10)
-        break;
+#undef _
+#define _(x) case x : krsyn_render_branch(x) break;
 
+void krsyn_render(const krsyn* fm, krsyn_note* note, int16_t* buf, unsigned len)
+{
+    if(*(uint32_t*)note->envelope_states != 0){
+        switch(fm->algorithm)
+        {
+            _algorithm_list
+        }
+    } else {
+        memset(buf, 0, len*sizeof(int16_t));
     }
-
-#undef krsyn_lfo_branch
 }
 
 
+#undef krsyn_lfo_branch
+#undef _

@@ -9,11 +9,11 @@
 #define NUM_CHANNELS (2)
 #define NUM_SAMPLES (4410)
 
-typedef struct AudioState
+typedef struct audio_state
 {
     uint32_t sampling_rate;
-    KrsynFM     fm;
-    KrsynFMNote note;
+    krsyn     fm;
+    krsyn_note note;
     int8_t noteon;
 
     ALCdevice *device;
@@ -22,13 +22,13 @@ typedef struct AudioState
     ALuint source;
     gboolean is_playing;
     int16_t    buf[NUM_SAMPLES*NUM_CHANNELS];
-}AudioState;
+}audio_state;
 
 
-AudioState* audio_state_new();
-void audio_state_free(AudioState* state);
+audio_state* audio_state_new();
+void audio_state_free(audio_state* state);
 
-GtkWidget* wave_viewer_new(AudioState* state);
-GtkWidget* keyboard_new(EditorState* state);
+GtkWidget* wave_viewer_new(audio_state* state);
+GtkWidget* keyboard_new(editor_state* state);
 
 #endif // AUDIO_MANAGER_H
