@@ -6,22 +6,22 @@
 #include <AL/alc.h>
 
 #define SAMPLE_RATE (44100)
-#define NUM_CHANNELS (2)
+#define NUM_CHANNELS (1)
 #define NUM_SAMPLES (4410)
 
 typedef struct audio_state
 {
-    uint32_t sampling_rate;
-    krsyn     fm;
-    krsyn_note note;
-    int8_t noteon;
+    uint32_t            sampling_rate;
+    krsynth             fm;
+    krsynth_note        note;
+    int8_t              noteon;
 
-    ALCdevice *device;
-    ALCcontext *context ;
-    ALuint buffers[4];
-    ALuint source;
-    gboolean is_playing;
-    int16_t    buf[NUM_SAMPLES*NUM_CHANNELS];
+    ALCdevice           *device;
+    ALCcontext          *context ;
+    ALuint              buffers[4];
+    ALuint              source;
+    gboolean            is_playing;
+    int16_t             buf[NUM_SAMPLES*NUM_CHANNELS];
 }audio_state;
 
 

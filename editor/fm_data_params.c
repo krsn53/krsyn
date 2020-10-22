@@ -5,25 +5,25 @@
 */
 static void operator_fixed_frequency_checked(GtkToggleButton *togglebutton, gpointer user)
 {
-    krsyn_phase_coarse* data = (krsyn_phase_coarse*) user;
+    krsynth_phase_coarse* data = (krsynth_phase_coarse*) user;
     data->fixed_frequency = gtk_toggle_button_get_active(togglebutton);
 }
 
 static void operator_phase_coarse_changed(GtkRange* range, gpointer user)
 {
-    krsyn_phase_coarse* data = (krsyn_phase_coarse*) user;
+    krsynth_phase_coarse* data = (krsynth_phase_coarse*) user;
     data->value = gtk_range_get_value(range);
 }
 
 static void ks_curve_left_changed(GtkComboBox* combo, gpointer user)
 {
-    krsyn_keyscale_curve_t* data = (krsyn_keyscale_curve_t*) user;
+    krsynth_keyscale_curve_t* data = (krsynth_keyscale_curve_t*) user;
     data->left = gtk_combo_box_get_active(combo);
 }
 
 static void ks_curve_right_changed(GtkComboBox* combo, gpointer user)
 {
-    krsyn_keyscale_curve_t* data = (krsyn_keyscale_curve_t*) user;
+    krsynth_keyscale_curve_t* data = (krsynth_keyscale_curve_t*) user;
     data->right = gtk_combo_box_get_active(combo);
 }
 
@@ -40,7 +40,7 @@ static void enum_param_value_changed(GtkComboBox* combo, gpointer user)
 */
 static gchar* phase_coarse_format(GtkScale* scale, gdouble value, gpointer user)
 {
-    krsyn_phase_coarse* data = (krsyn_phase_coarse*) user;
+    krsynth_phase_coarse* data = (krsynth_phase_coarse*) user;
     if(data->fixed_frequency)
     {
         return g_strdup_printf ( "%d", (int)value);
@@ -86,7 +86,7 @@ static gchar* lfo_freq_format(GtkScale* scale, gdouble value, gpointer user)
 
 static gchar* envelope_time_format(GtkScale* scale, gdouble value, gpointer user)
 {
-    double time = krsyn_calc_envelope_times(value) / (double)(1<<16);
+    double time = krsynth_calc_envelope_times(value) / (double)(1<<16);
     if(time < 0.1)
     {
         return g_strdup_printf("%.2f%s", time*1000.0, "msec");
@@ -99,23 +99,23 @@ static gchar* envelope_time_format(GtkScale* scale, gdouble value, gpointer user
 */
 static void fixed_frequency_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), ((krsyn_phase_coarse*)param)->fixed_frequency);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), ((krsynth_phase_coarse*)param)->fixed_frequency);
 }
 
 
 static void phase_coarse_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_range_set_value(GTK_RANGE(widget), ((krsyn_phase_coarse*)param)->value);
+    gtk_range_set_value(GTK_RANGE(widget), ((krsynth_phase_coarse*)param)->value);
 }
 
 static void ks_curve_left_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((krsyn_keyscale_curve_t*)param)->left);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((krsynth_keyscale_curve_t*)param)->left);
 }
 
 static void ks_curve_right_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((krsyn_keyscale_curve_t*)param)->right);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((krsynth_keyscale_curve_t*)param)->right);
 }
 
 /**
@@ -131,7 +131,7 @@ static void add_operator_label(GtkGrid* grid, const char* param_name, int left, 
 /**
   * add widgets
 */
-static void add_operator_fixed_frequency( GtkGrid* grid, const char* param_name, krsyn_phase_coarse* param_ptr, int top)
+static void add_operator_fixed_frequency( GtkGrid* grid, const char* param_name, krsynth_phase_coarse* param_ptr, int top)
 {
     add_operator_label(grid, param_name, 0, top);
 
@@ -181,7 +181,7 @@ static void add_operator_param_base( GtkGrid* grid, const char* param_name, uint
     }
 }
 
-static void add_operator_phase_coarse( GtkGrid* grid, const char* param_name, krsyn_phase_coarse* param_ptr, int top)
+static void add_operator_phase_coarse( GtkGrid* grid, const char* param_name, krsynth_phase_coarse* param_ptr, int top)
 {
     add_operator_param_base(grid, param_name, (uint8_t*)param_ptr, phase_coarse_format,
                             phase_coarse_widget_set, operator_phase_coarse_changed,
@@ -245,7 +245,7 @@ static void* lfo_table_types[] ={
 
 
 
-static void add_ks_curve_left_param( GtkGrid* grid, const char* param_name, krsyn_keyscale_curve_t* param_ptr, int top)
+static void add_ks_curve_left_param( GtkGrid* grid, const char* param_name, krsynth_keyscale_curve_t* param_ptr, int top)
 {
     add_operator_enum_param_base(grid, param_name, (uint8_t*)param_ptr,
                                  ks_curve_left_widget_set, ks_curve_left_changed,
@@ -254,7 +254,7 @@ static void add_ks_curve_left_param( GtkGrid* grid, const char* param_name, krsy
                                  top);
 }
 
-static void add_ks_curve_right_param( GtkGrid* grid, const char* param_name, krsyn_keyscale_curve_t* param_ptr, int top)
+static void add_ks_curve_right_param( GtkGrid* grid, const char* param_name, krsynth_keyscale_curve_t* param_ptr, int top)
 {
     add_operator_enum_param_base(grid, param_name, (uint8_t*)param_ptr,
                                  ks_curve_right_widget_set, ks_curve_right_changed,

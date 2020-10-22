@@ -7,7 +7,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-long-long -pedantic")
 endif()
 
-file(GLOB krsyn_src *.c *.h)
+file(GLOB krsyn_src *.c *.h krsyn/*.c krsyn/*.h)
 add_library(krsyn ${krsyn_src})
 
 add_executable(wav_write_test tests/wav_write_test.c)
@@ -27,7 +27,6 @@ add_executable(krsyn_editor ${krsyn_editor_src})
 target_link(AL openal krsyn_editor)
 target_link(GTK gtk+-3.0 krsyn_editor)
 target_link_libraries(krsyn_editor krsyn)
-target_link_libraries(krsyn_editor m)
 
 add_custom_target(post ALL)
 

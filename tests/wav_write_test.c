@@ -1,12 +1,14 @@
 /**
  * @file wav_write_test.c
  * @author Takaya Kurosaki 
- * @brief krsynで合成した音声をwavファイルに出力
+ * @brief krsynthで合成した音声をwavファイルに出力
  * 参考
  * 音ファイル（拡張子：WAVファイル）のデータ構造について - https://www.youfit.co.jp/archives/1418
  */
-#include <stdint.h>
+
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
 #include "../krsyn.h"
 
 #define OUTPUT_LENGTH 200000
@@ -31,9 +33,7 @@ struct wave_header
 int main( void )
 {
   uint32_t sampling_rate = 44100;
-  krsyn_binary   data;
-  krsyn        fm;
-  krsyn_note   note;
+  krsynth_binary   data;
 
   int32_t buf_len = OUTPUT_LENGTH;
   int32_t buf_size = sizeof(int16_t) * buf_len;
@@ -41,7 +41,7 @@ int main( void )
 
   // 金属質な鍵盤っぽい音
   {
-      krsyn_binary_set_default(&data);
+      krsynth_binary_set_default(&data);
 
     data.algorithm = 4;
 
@@ -61,34 +61,236 @@ int main( void )
       data.envelope_times[3][i] = 160;
     }
 
-    krsyn_set(&fm, sampling_rate, &data);
   }
 
   {
-    krsyn_note_on( &note, &fm, sampling_rate, 60, 100);
-    krsyn_render(&fm, &note, buf, buf_len/10);
-    
-    krsyn_note_on(&note, &fm, sampling_rate, 62, 100);
-    krsyn_render(&fm, &note, buf+buf_len/10, buf_len/10);
+      //
+      krsong* song = krsong_new(sampling_rate, 96, 48*9,
+            krsong_events_new(48*9,(krsong_event[]){
+                                   [0]={
+                                       .num_messages=2,
+                                       .messages = krsong_messages_new(2,
+                                       (krsong_message[]){
+                                           [0] ={
+                                               .status=0x90,
+                                               .datas ={
+                                                   [0]=60,
+                                                   [1]=100,
+                                               },
+                                           },
+                                          [1] ={
+                                              .status=0x90,
+                                              .datas ={
+                                                  [0]=52,
+                                                  [1]=100,
+                                              },
+                                          },
+                                       }
+                                       )
+                                   },
+                                   [96*1/2]={
+                                       .num_messages=2,
+                                       .messages = krsong_messages_new(2,
+                                       (krsong_message[]){
+                                           [0] ={
+                                               .status=0x90,
+                                               .datas ={
+                                                   [0]=62,
+                                                   [1]=100,
+                                               },
+                                           },
+                                          [1] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=60,
+                                              },
+                                          },
+                                       }
+                                       )
+                                   },
+                                   [96*2/2]={
+                                       .num_messages=4,
+                                       .messages = krsong_messages_new(4,
+                                       (krsong_message[]){
+                                           [0] ={
+                                               .status=0x90,
+                                               .datas ={
+                                                   [0]=64,
+                                                   [1]=100,
+                                               },
+                                           },
+                                          [1] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=62,
+                                              },
+                                          },
+                                          [2] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=57,
+                                              },
+                                          },
+                                          [3] ={
+                                              .status=0x90,
+                                              .datas ={
+                                                  [0]=50,
+                                                  [1]=100,
+                                              },
+                                          },
+                                       }
+                                       )
+                                   },
+                                   [96*3/2]={
+                                       .num_messages=2,
+                                       .messages = krsong_messages_new(2,
+                                       (krsong_message[]){
+                                           [0] ={
+                                               .status=0x90,
+                                               .datas ={
+                                                   [0]=65,
+                                                   [1]=100,
+                                               },
+                                           },
+                                          [1] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=64,
+                                              },
+                                          },
+                                       }
+                                       )
+                                   },
+                                   [96*4/2]={
+                                       .num_messages=4,
+                                       .messages = krsong_messages_new(4,
+                                       (krsong_message[]){
+                                           [0] ={
+                                               .status=0x90,
+                                               .datas ={
+                                                   [0]=64,
+                                                   [1]=100,
+                                               },
+                                           },
+                                          [1] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=65,
+                                              },
+                                          },
+                                          [2] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=55,
+                                              },
+                                          },
+                                          [3] ={
+                                              .status=0x90,
+                                              .datas ={
+                                                  [0]=55,
+                                                  [1]=100,
+                                              },
+                                          },
+                                       }
+                                       )
+                                   },
+                                   [96*5/2]={
+                                       .num_messages=2,
+                                       .messages = krsong_messages_new(2,
+                                       (krsong_message[]){
+                                           [0] ={
+                                               .status=0x90,
+                                               .datas ={
+                                                   [0]=62,
+                                                   [1]=100,
+                                               },
+                                           },
+                                          [1] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=55,
+                                              },
+                                          },
+                                       }
+                                       )
+                                   },
+                                   [96*6/2]={
+                                       .num_messages=4,
+                                       .messages = krsong_messages_new(4,
+                                       (krsong_message[]){
+                                           [0] ={
+                                               .status=0x90,
+                                               .datas ={
+                                                   [0]=60,
+                                                   [1]=100,
+                                               },
+                                           },
+                                          [1] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=62,
+                                              },
+                                          },
+                                          [2] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=62,
+                                              },
+                                          },
+                                          [3] ={
+                                              .status=0x90,
+                                              .datas ={
+                                                  [0]=48,
+                                                  [1]=100,
+                                              },
+                                          },
+                                       }
+                                       )
+                                   },
+                                  [96*8/2]={
+                                      .num_messages=2,
+                                      .messages = krsong_messages_new(2,
+                                      (krsong_message[]){
+                                         [0] ={
+                                             .status=0x80,
+                                             .datas ={
+                                                 [0]=60,
+                                             },
+                                         },
+                                        [1] ={
+                                              .status=0x80,
+                                              .datas ={
+                                                  [0]=48,
+                                              },
+                                          },
+                                      }
+                                      )
+                                  },
+                                   [48*9-1]={
+                                       .num_messages=0,
+                                   },
+                               })
+                            );
 
-    krsyn_note_on(&note,&fm, sampling_rate,  64, 100);
-    krsyn_render(&fm, &note, buf+2*buf_len/10, buf_len/10);
-    
-    krsyn_note_on(&note, &fm, sampling_rate, 65, 100);
-    krsyn_render(&fm, &note, buf+3*buf_len/10, buf_len/10);
-    
-    krsyn_note_on(&note, &fm, sampling_rate, 64, 100);
-    krsyn_render(&fm, &note, buf+4*buf_len/10, buf_len/10);
-    
-    krsyn_note_on(&note, &fm, sampling_rate, 62, 100);
-    krsyn_render(&fm, &note, buf+5*buf_len/10, buf_len/10);
-    
-    krsyn_note_on(&note, &fm, sampling_rate,  60, 100);
-    krsyn_render(&fm, &note, buf+6*buf_len/10, buf_len*3/10);
+      song->tones = krtones_new(1, (krtones_bank[]){
+                                    krtones_bank_of(0,0, 1, (krtones_program[1]){
+                                                       [0]={
+                                                           .program_number=0,
+                                                           .synth=krsynth_new(&data, sampling_rate),
+                                                       }
+                                                   }
+                                                )
+                                            }
+                                );
+      for(int i=0; i<16; i++){
+          song->state.channels[i].bank = song->tones->banks;
+      }
 
-    krsyn_note_off(&note);
-    krsyn_render(&fm, &note, buf+9*buf_len/10, buf_len*1/10);
+      krsong_render(song, buf, buf_len);
+
+      krsong_free(song);
   }
+
 
   {
     FILE* fp = fopen("out.wav", "wb");

@@ -186,8 +186,8 @@ static gboolean keyboard_key_pressed(GdkEvent* event, editor_state* state,
     {
         velocity = (event->button.y - y) * 127 / height;
         state->state->noteon = notenum;
-        krsyn_set(&state->state->fm, state->state->sampling_rate,  &state->data);
-        krsyn_note_on(&state->state->note, &state->state->fm,  state->state->sampling_rate, notenum, velocity);
+        krsynth_set(&state->state->fm, state->state->sampling_rate,  &state->data);
+        krsynth_note_on(&state->state->note, &state->state->fm,  state->state->sampling_rate, notenum, velocity);
         return TRUE;
     }
     return FALSE;
@@ -269,15 +269,15 @@ static gboolean keyboard_release(GtkWidget *widget,
     }
 
     state->state->noteon = -1;
-    krsyn_note_off(&state->state->note);
+    krsynth_note_off(&state->state->note);
 
     return FALSE;
 }
 
 void internal_process(audio_state* state, ALuint buffer){
-    krsyn_render(&state->fm, &state->note, state->buf, NUM_CHANNELS*NUM_SAMPLES);
+    krsynth_render(&state->fm, &state->note, state->buf, NUM_CHANNELS*NUM_SAMPLES);
 
-    alBufferData(buffer, AL_FORMAT_STEREO16, state->buf, sizeof(state->buf), SAMPLE_RATE);
+    alBufferData(buffer, AL_FORMAT_MONO16, state->buf, sizeof(state->buf), SAMPLE_RATE);
     alSourceQueueBuffers(state->source, 1, &buffer);
 }
 
@@ -313,7 +313,7 @@ static gboolean audio_stream_update(gpointer ptr)
 audio_state* audio_state_new()
 {
     audio_state *ret = malloc(sizeof(audio_state));
-    krsyn_binary data;
+    krsynth_binary data;
 
     memset(ret, 0, sizeof(audio_state));
 
@@ -329,8 +329,8 @@ audio_state* audio_state_new()
     ret->noteon = -1;
     ret->sampling_rate = SAMPLE_RATE;
 
-    krsyn_binary_set_default(&data);
-    krsyn_set(&ret->fm, ret->sampling_rate, &data);
+    krsynth_binary_set_default(&data);
+    krsynth_set(&ret->fm, ret->sampling_rate, &data);
 
     memset(&ret->note, 0, sizeof(ret->note));
 
