@@ -275,7 +275,7 @@ static gboolean keyboard_release(GtkWidget *widget,
 }
 
 void internal_process(audio_state* state, ALuint buffer){
-    krsynth_render(&state->fm, &state->note, state->buf, NUM_CHANNELS*NUM_SAMPLES);
+    krsynth_render(&state->fm, &state->note, krsyn_fms_depth( ks_v(0, KRSYN_LFO_DEPTH_BITS) ), state->buf, NUM_CHANNELS*NUM_SAMPLES);
 
     alBufferData(buffer, AL_FORMAT_MONO16, state->buf, sizeof(state->buf), SAMPLE_RATE);
     alSourceQueueBuffers(state->source, 1, &buffer);

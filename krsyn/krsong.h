@@ -4,13 +4,14 @@
 */
 #pragma once
 
-#include "krsynth.h"
+#include "./krsynth.h"
 
 #define KRSYN_CHANNEL_BITs         4u
 #define KRSYN_NUM_CHANNELS         16u
 #define KRSYN_MAX_POLYPHONY_BITS   4u
 
 #define KRSYN_PANPOT_BITS          7u
+#define KRSYN_PITCH_BEND_BITS      14u
 
 typedef struct krtones krtones;
 typedef struct krtones_bank krtones_bank;
@@ -74,10 +75,11 @@ bool krsong_note_on(krsong* song, uint8_t channel_number, krsong_channel* channe
 bool krsong_note_off(krsong* song, uint8_t channel_number, krsong_channel* channel, uint8_t note_number);
 bool krsong_program_change(krsong* song, krsong_channel* channel, uint8_t program);
 bool krsong_control_change(krsong* song, krsong_channel* channel, uint8_t type, uint8_t value);
+bool krsong_channel_set_panpot(krsong_channel* ch, uint8_t value);
+bool krsong_channel_set_picthbend(krsong_channel* ch, uint8_t msb, uint8_t lsb);
 bool krsong_bank_select(krsong* song, krsong_channel* channel, uint8_t msb, uint8_t lsb);
 bool krsong_bank_select_msb(krsong* song, krsong_channel* channel, uint8_t msb);
 bool krsong_bank_select_lsb(krsong* song, krsong_channel* channel, uint8_t lsb);
-bool krsong_channel_set_panpot(krsong_channel* ch, uint8_t value);
 void krsong_render(krsong* song, int16_t *buf, unsigned len);
 
 void krsong_event_run(const krsong_event *event, krsong* song);

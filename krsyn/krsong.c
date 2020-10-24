@@ -1,7 +1,7 @@
 #include "logger.h"
 #include "krsong.h"
 #include "krtones.h"
-#include "constants.h"
+#include "math.h"
 
 #include <stdlib.h>
 
@@ -163,6 +163,12 @@ bool krsong_channel_set_panpot(krsong_channel* channel, uint8_t value){
     return true;
 }
 
+bool krsong_channel_set_picthbend(krsong_channel* channel, uint8_t msb, uint8_t lsb){
+    channel->pitchbend;
+
+    return true;
+}
+
 bool krsong_control_change(krsong* song, krsong_channel* channel, uint8_t type, uint8_t value){
     switch (type) {
     case 0x00:
@@ -194,8 +200,8 @@ void krsong_render(krsong* song, int16_t* buf, unsigned len){
             //if(channel->bank->programs[channel->program_number] == NULL) continue;
             krsynth* synth = channel->program;
             krsynth_note* note = &song->state.notes[p].note;
-
-            krsynth_render(synth, note, tmpbuf, frame);
+            int32_t pitchbend = krsyn_fms_depth(channel->pitchbend << (KRSYN_LFO_DEPTH_BITS - KRSYN_PITCH_BEND_BITS));
+            krsynth_render(synth, note, pitchbend, tmpbuf, frame);
 
             for(unsigned b =0; b< frame; b++){
                 int32_t out = tmpbuf[b];
@@ -286,6 +292,7 @@ void krsong_event_run(const krsong_event* event, krsong* song){
                 break;
             // pich wheel change
             case 0xe:
+                krsong_channel_set_picthbend(channel, msg->datas[1], msg->datas[2]);
                 break;
             }
         }

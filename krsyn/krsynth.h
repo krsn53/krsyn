@@ -7,26 +7,7 @@
 //#include <xmmintrin.h> perhaps, my implementation is so bad, so I have compiler vectorize automatically. It is faster.
 #include <stdint.h>
 #include <stdbool.h>
-
-
-#ifndef MAX
-#define MAX(a,b) (((a) > (b)) ? (a) : (b))
-#endif
-#ifndef MIN
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
-#endif
-
-#define ks_v(a, x)                          ((a) << (x))
-#define ks_1(x)                             ks_v(1, x)
-#define ks_m(x)                             (ks_1(x) - 1)
-#define ks_mask(a, x)                       ((a) & ks_m(x))
-
-#define KRSYN_TABLE_BITS                   10u
-#define KRSYN_OUTPUT_BITS                  15u
-#define KRSYN_PHASE_BITS                   16u
-#define KRSYN_PHASE_MAX_BITS               (KRSYN_PHASE_BITS + KRSYN_TABLE_BITS)
-
-#define KRSYN_NOISE_PHASE_BITS             (KRSYN_PHASE_MAX_BITS - 5)
+#include "./math.h"
 
 #define KRSYN_FREQUENCY_BITS               16u
 
@@ -298,7 +279,7 @@ void                        krsynth_set                    (krsynth* synth, uint
  * @param buf Write buffer
  * @param len Length of buffer
 */
-void                        krsynth_render                 (const krsynth *synth, krsynth_note* note, int16_t *buf, unsigned len);
+void                        krsynth_render                 (const krsynth *synth, krsynth_note* note, uint32_t pitchbend, int16_t *buf, unsigned len);
 
 /**
  * @fn krsynth_note_on
@@ -328,7 +309,7 @@ inline static bool          krsynth_note_is_enabled         (const krsynth_note*
 }
 
 
-static inline uint32_t krsynth_exp_u(uint8_t val, uint32_t base, int num_v_bit)
+static inline uint32_t krsyn_exp_u(uint8_t val, uint32_t base, int num_v_bit)
 {
     // ->[e]*(8-num_v_bit) [v]*(num_v_bit)
     // base * 1.(v) * 2^(e)
@@ -343,14 +324,14 @@ static inline uint32_t krsynth_exp_u(uint8_t val, uint32_t base, int num_v_bit)
     return ret;
 }
 
-static inline uint32_t krsynth_calc_envelope_times(uint32_t val)
+static inline uint32_t krsyn_calc_envelope_times(uint32_t val)
 {
-    return krsynth_exp_u(val, 1<<(16-8), 4);// 2^8 <= x < 2^16
+    return krsyn_exp_u(val, 1<<(16-8), 4);// 2^8 <= x < 2^16
 }
 
-static inline uint32_t krsynth_calc_envelope_samples(uint32_t smp_freq, uint8_t val)
+static inline uint32_t krsyn_calc_envelope_samples(uint32_t smp_freq, uint8_t val)
 {
-    uint32_t time = krsynth_calc_envelope_times(val);
+    uint32_t time = krsyn_calc_envelope_times(val);
     uint64_t samples = time;
     samples *= smp_freq;
     samples >>= 16;
@@ -359,7 +340,7 @@ static inline uint32_t krsynth_calc_envelope_samples(uint32_t smp_freq, uint8_t 
 }
 
 // min <= val < max
-static inline int64_t krsynth_linear(uint8_t val, int32_t MIN, int32_t MAX)
+static inline int64_t krsyn_linear(uint8_t val, int32_t MIN, int32_t MAX)
 {
     int32_t range = MAX - MIN;
     int64_t ret = val;
@@ -371,35 +352,43 @@ static inline int64_t krsynth_linear(uint8_t val, int32_t MIN, int32_t MAX)
 }
 
 // min <= val <= max
-static inline int64_t krsynth_linear2(uint8_t val, int32_t MIN, int32_t MAX)
+static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
 {
-    return krsynth_linear(val, MIN, MAX + MAX/256);
+    return krsyn_linear(val, MIN, MAX + MAX/256);
 }
 
-#define krsynth_linear_i (int32_t)krsynth_linear
-#define krsynth_linear_u (uint32_t)krsynth_linear
-#define krsynth_linear2_i (int32_t)krsynth_linear2
-#define krsynth_linear2_u (uint32_t)krsynth_linear2
+static inline uint32_t krsyn_fms_depth(int32_t depth){
+    int64_t ret = ((int64_t)depth*depth)>>(KRSYN_LFO_DEPTH_BITS + 2);
+    ret += (depth >> 2) + (depth >> 1);
+    ret += ks_1(KRSYN_LFO_DEPTH_BITS);
+    return ret;
+}
+
+
+#define krsyn_linear_i (int32_t)krsyn_linear
+#define krsyn_linear_u (uint32_t)krsyn_linear
+#define krsyn_linear2_i (int32_t)krsyn_linear2
+#define krsyn_linear2_u (uint32_t)krsyn_linear2
 
 #define calc_fixed_frequency(value)                     (value)
 #define calc_phase_coarses(value)                       (value)
-#define calc_phase_fines(value)                         krsynth_linear_u(value, 0, 1 << (KRSYN_PHASE_FINE_BITS))
-#define calc_phase_dets(value)                          krsynth_linear_u(value, 0, ks_1(KRSYN_PHASE_MAX_BITS))
-#define calc_envelope_points(value)                      krsynth_linear2_i(value, 0, 1 << KRSYN_ENVELOPE_BITS)
-#define calc_envelope_samples(smp_freq, value)           krsynth_calc_envelope_samples(smp_freq, value)
+#define calc_phase_fines(value)                         krsyn_linear_u(value, 0, 1 << (KRSYN_PHASE_FINE_BITS))
+#define calc_phase_dets(value)                          krsyn_linear_u(value, 0, ks_1(KRSYN_PHASE_MAX_BITS))
+#define calc_envelope_points(value)                      krsyn_linear2_i(value, 0, 1 << KRSYN_ENVELOPE_BITS)
+#define calc_envelope_samples(smp_freq, value)           krsyn_calc_envelope_samples(smp_freq, value)
 #define calc_envelope_release_samples(smp_freq, value)   calc_envelope_samples(smp_ferq,value)
-#define calc_velocity_sens(value)                       krsynth_linear2_u(data->velocity_sens[i], 0, 1 << KRSYN_VELOCITY_SENS_BITS)
-#define calc_ratescales(value)                          krsynth_linear2_u(value, 0, 1 << KRSYN_RS_BITS)
-#define calc_ks_low_depths(value)                       krsynth_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_BITS);
-#define calc_ks_high_depths(value)                      krsynth_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_BITS)
+#define calc_velocity_sens(value)                       krsyn_linear2_u(data->velocity_sens[i], 0, 1 << KRSYN_VELOCITY_SENS_BITS)
+#define calc_ratescales(value)                          krsyn_linear2_u(value, 0, 1 << KRSYN_RS_BITS)
+#define calc_ks_low_depths(value)                       krsyn_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_BITS);
+#define calc_ks_high_depths(value)                      krsyn_linear2_u(value, 0, 1 << KRSYN_KS_DEPTH_BITS)
 #define calc_ks_mid_points(value)                       (value & 0x7f)
 #define calc_ks_curve_types_left(value)                 (value & 0x0f)
 #define calc_ks_curve_types_right(value)                (value >> 4)
-#define calc_lfo_ams_depths(value)                      krsynth_linear2_u(value, 0, 1 << KRSYN_LFO_DEPTH_BITS)
+#define calc_lfo_ams_depths(value)                      krsyn_linear2_u(value, 0, 1 << KRSYN_LFO_DEPTH_BITS)
 #define calc_algorithm(value)                           (value)
-#define calc_feedback_level(value)                      krsynth_linear_u(value, 0, 2<<KRSYN_FEEDBACK_LEVEL_BITS)
+#define calc_feedback_level(value)                      krsyn_linear_u(value, 0, 2<<KRSYN_FEEDBACK_LEVEL_BITS)
 #define calc_lfo_wave_type(value)                      (value)
-#define calc_lfo_fms_depth(value)                       krsynth_exp_u(value, 1 << (KRSYN_LFO_DEPTH_BITS-12), 4)
-#define calc_lfo_freq(value)                            krsynth_exp_u(value, 1<<(KRSYN_FREQUENCY_BITS-5), 4)
-#define calc_lfo_det(value)                             krsynth_linear_u(value, 0, ks_1(KRSYN_PHASE_MAX_BITS))
+#define calc_lfo_fms_depth(value)                       krsyn_exp_u(value, 1 << (KRSYN_LFO_DEPTH_BITS-12), 4)
+#define calc_lfo_freq(value)                            krsyn_exp_u(value, 1<<(KRSYN_FREQUENCY_BITS-5), 4)
+#define calc_lfo_det(value)                             krsyn_linear_u(value, 0, ks_1(KRSYN_PHASE_MAX_BITS))
 

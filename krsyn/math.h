@@ -1,6 +1,27 @@
 #pragma once
 #include <stdint.h>
-static const int16_t sin_table[1024] = {
+#include <stdbool.h>
+
+#ifndef MAX
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#endif
+#ifndef MIN
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+
+#define ks_v(a, x)                          ((a) << (x))
+#define ks_1(x)                             ks_v(1, x)
+#define ks_m(x)                             (ks_1(x) - 1)
+#define ks_mask(a, x)                       ((a) & ks_m(x))
+
+#define KRSYN_TABLE_BITS                   10u
+#define KRSYN_OUTPUT_BITS                  15u
+#define KRSYN_PHASE_BITS                   16u
+#define KRSYN_PHASE_MAX_BITS               (KRSYN_PHASE_BITS + KRSYN_TABLE_BITS)
+
+#define KRSYN_NOISE_PHASE_BITS             (KRSYN_PHASE_MAX_BITS - 5)
+
+static const int16_t sin_table[ks_1(KRSYN_TABLE_BITS)] = {
 	0, 201, 402, 603, 804, 1005, 1206, 1406, 
 	1607, 1808, 2009, 2209, 2410, 2610, 2811, 3011, 
 	3211, 3411, 3611, 3811, 4011, 4210, 4409, 4608, 
@@ -130,7 +151,7 @@ static const int16_t sin_table[1024] = {
 	-3211, -3011, -2811, -2610, -2410, -2209, -2009, -1808, 
 	-1607, -1406, -1206, -1005, -804, -603, -402, -201, 
 };
-static const int16_t saw_table[1024] = {
+static const int16_t saw_table[ks_1(KRSYN_TABLE_BITS)] = {
 	32767, 32704, 32640, 32576, 32512, 32448, 32384, 32320, 
 	32256, 32192, 32128, 32064, 32000, 31936, 31872, 31808, 
 	31744, 31680, 31616, 31552, 31488, 31424, 31360, 31296, 
@@ -175,7 +196,7 @@ static const int16_t saw_table[1024] = {
 	11776, 11712, 11648, 11584, 11520, 11456, 11392, 11328, 
 	11264, 11200, 11136, 11072, 11008, 10944, 10880, 10816, 
 	10752, 10688, 10624, 10560, 10496, 10432, 10368, 10304, 
-	10240, 10176, 10112, 10048, 9984, 9920, 9856, 9792, 
+    10240, 10176, 10112, 10048, 9984, 9920, 9856, 9792,
 	9728, 9664, 9600, 9536, 9472, 9408, 9344, 9280, 
 	9216, 9152, 9088, 9024, 8960, 8896, 8832, 8768, 
 	8704, 8640, 8576, 8512, 8448, 8384, 8320, 8256, 
@@ -193,7 +214,7 @@ static const int16_t saw_table[1024] = {
 	2560, 2496, 2432, 2368, 2304, 2240, 2176, 2112, 
 	2048, 1984, 1920, 1856, 1792, 1728, 1664, 1600, 
 	1536, 1472, 1408, 1344, 1280, 1216, 1152, 1088, 
-	1024, 960, 896, 832, 768, 704, 640, 576, 
+    1024, 960, 896, 832, 768, 704, 640, 576,
 	512, 448, 384, 320, 256, 192, 128, 64, 
 	0, -63, -127, -191, -255, -319, -383, -447, 
 	-511, -575, -639, -703, -767, -831, -895, -959, 
@@ -260,7 +281,7 @@ static const int16_t saw_table[1024] = {
 	-31743, -31807, -31871, -31935, -31999, -32063, -32127, -32191, 
 	-32255, -32319, -32383, -32447, -32511, -32575, -32639, -32703, 
 };
-static const int16_t triangle_table[1024] = {
+static const int16_t triangle_table[ks_1(KRSYN_TABLE_BITS)] = {
 	0, 127, 255, 383, 511, 639, 767, 895, 
 	1023, 1151, 1279, 1407, 1535, 1663, 1791, 1919, 
 	2047, 2175, 2303, 2431, 2559, 2687, 2815, 2943, 
@@ -390,7 +411,7 @@ static const int16_t triangle_table[1024] = {
 	-2047, -1919, -1791, -1663, -1535, -1407, -1279, -1151, 
 	-1023, -895, -767, -639, -511, -383, -255, -127, 
 };
-static const int32_t noise_table[1024] = {
+static const int32_t noise_table[ks_1(KRSYN_TABLE_BITS)] = {
 	27530, 12922, 25659, 26162, 29871, 6473, 10984, 25172, 
 	9101, 18151, 15642, 20606, 11952, 16822, 31201, 30020, 
 	20830, 23503, 4639, 19888, 534, 7958, 4496, 26350, 
@@ -631,3 +652,45 @@ static const uint16_t ks_curves[4][128] = {
         },
 };
 
+
+// liniar interpolution
+static inline int16_t krsyn_table_value_li(const int16_t* table, uint32_t phase, unsigned mask)
+{
+    unsigned index_m = phase >> KRSYN_PHASE_BITS;
+    unsigned index_b = (index_m + 1);
+
+    uint32_t under_fixed_b = ks_mask(phase, KRSYN_PHASE_BITS);
+    uint32_t under_fixed_m = ks_1(KRSYN_PHASE_BITS) - under_fixed_b;
+
+    int64_t sin_31 = table[index_m & mask] * under_fixed_m +
+        table[index_b & mask] * under_fixed_b;
+     sin_31 >>= KRSYN_PHASE_BITS;
+
+    return (int16_t)sin_31;
+}
+
+// sin table value
+static inline int16_t krsyn_sin(uint32_t phase, bool linear_interpolution)
+{
+    return linear_interpolution ? krsyn_table_value_li(sin_table, phase,  ks_m(KRSYN_TABLE_BITS)) :
+                                  sin_table[ks_mask(phase >> KRSYN_PHASE_BITS, KRSYN_TABLE_BITS)];
+}
+
+static inline int16_t krsyn_saw(uint32_t phase)
+{
+    return saw_table[ks_mask((phase >> KRSYN_PHASE_BITS), KRSYN_TABLE_BITS)];
+}
+
+static inline int16_t krsyn_triangle(uint32_t phase)
+{
+    return triangle_table[ks_mask((phase >> KRSYN_PHASE_BITS), KRSYN_TABLE_BITS)];
+}
+
+static inline int16_t krsyn_fake_triangle(uint32_t phase, uint32_t shift)
+{
+    return triangle_table[ks_mask((phase >> (KRSYN_PHASE_BITS +shift) << (shift)), KRSYN_TABLE_BITS)];
+}
+
+static inline int16_t krsyn_noise(uint32_t phase, uint32_t begin){
+    return noise_table[ks_mask((begin + ((phase >> KRSYN_NOISE_PHASE_BITS))), KRSYN_TABLE_BITS)];
+}

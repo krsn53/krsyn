@@ -1,5 +1,5 @@
 #include "krsynth.h"
-#include "constants.h"
+#include "math.h"
 
 #include <memory.h>
 #include <stdlib.h>
@@ -106,9 +106,9 @@ static inline void synth_common_set(krsynth* synth, const krsynth_binary* data)
 
     synth->lfo_wave_type = calc_lfo_wave_type(data->lfo_wave_type);
     synth->lfo_fms_depth = calc_lfo_fms_depth(data->lfo_fms_depth);
-    synth->lfo_fms_enabled = synth->lfo_fms_depth != 0;
+    synth->lfo_fms_enabled = data->lfo_fms_depth != 0;
     synth->lfo_freq = calc_lfo_freq(data->lfo_freq);
-    synth->lfo_det = krsynth_linear_u(data->lfo_det, 0, ks_1(KRSYN_PHASE_MAX_BITS));
+    synth->lfo_det = krsyn_linear_u(data->lfo_det, 0, ks_1(KRSYN_PHASE_MAX_BITS));
 }
 
 
@@ -302,47 +302,6 @@ void krsynth_note_off (krsynth_note* note)
 }
 
 
-// liniar interpolution
-static inline int16_t table_value_li(const int16_t* table, uint32_t phase, unsigned mask)
-{
-    unsigned index_m = phase >> KRSYN_PHASE_BITS;
-    unsigned index_b = (index_m + 1);
-
-    uint32_t under_fixed_b = ks_mask(phase, KRSYN_PHASE_BITS);
-    uint32_t under_fixed_m = ks_1(KRSYN_PHASE_BITS) - under_fixed_b;
-
-    int64_t sin_31 = table[index_m & mask] * under_fixed_m +
-        table[index_b & mask] * under_fixed_b;
-     sin_31 >>= KRSYN_PHASE_BITS;
-
-    return (int16_t)sin_31;
-}
-
-// sin table value
-static inline int16_t sin_t(uint32_t phase, bool linear_interpolution)
-{
-    return linear_interpolution ? table_value_li(sin_table, phase,  ks_m(KRSYN_TABLE_BITS)) :
-                                  sin_table[ks_mask(phase >> KRSYN_PHASE_BITS, KRSYN_TABLE_BITS)];
-}
-
-static inline int16_t saw_t(uint32_t phase)
-{
-    return saw_table[ks_mask((phase >> KRSYN_PHASE_BITS), KRSYN_TABLE_BITS)];
-}
-
-static inline int16_t triangle_t(uint32_t phase)
-{
-    return triangle_table[ks_mask((phase >> KRSYN_PHASE_BITS), KRSYN_TABLE_BITS)];
-}
-
-static inline int16_t fake_triangle_t(uint32_t phase, uint32_t shift)
-{
-    return triangle_table[ks_mask((phase >> (KRSYN_PHASE_BITS +shift) << (shift)), KRSYN_TABLE_BITS)];
-}
-
-static inline int16_t noise_t(uint32_t phase, uint32_t begin){
-    return noise_table[ks_mask((begin + ((phase >> KRSYN_NOISE_PHASE_BITS))), KRSYN_TABLE_BITS)];
-}
 
 static inline int32_t envelope_apply(uint32_t amp, int32_t in)
 {
@@ -355,7 +314,7 @@ static inline int32_t envelope_apply(uint32_t amp, int32_t in)
 static inline int32_t output_mod(uint32_t phase, int32_t mod, uint32_t envelope)
 {
     // mod<<(KRSYN_TABLE_BITS + 1) = double table length = 4pi
-    int32_t out = sin_t(phase + (mod<<(KRSYN_TABLE_BITS + 1)), true);
+    int32_t out = krsyn_sin(phase + (mod<<(KRSYN_TABLE_BITS + 1)), true);
     return envelope_apply(envelope, out);
 }
 
@@ -501,18 +460,18 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
         {
             const uint32_t p1 = note->phases[0];
             const uint32_t p2 = note->phases[0] + (note->phase_deltas[0]>>2);
-            output[0] =(int32_t)saw_t(p1) +saw_t(p2);
+            output[0] =(int32_t)krsyn_saw(p1) +krsyn_saw(p2);
             const uint32_t p3 = note->phases[1] + (note->phase_deltas[1]>>1);
             const uint32_t p4 = note->phases[1] + (note->phase_deltas[1]>>2);
-            output[1] =(int32_t)saw_t(p3)+saw_t(p4);
+            output[1] =(int32_t)krsyn_saw(p3)+krsyn_saw(p4);
         }
         {
             const uint32_t p1 = note->phases[2];
             const uint32_t p2 = note->phases[2] + (note->phase_deltas[2]>>2);
-            output[2] =(int32_t)saw_t(p1) +saw_t(p2);
+            output[2] =(int32_t)krsyn_saw(p1) +krsyn_saw(p2);
             const uint32_t p3 = note->phases[3] + (note->phase_deltas[3]>>1);
             const uint32_t p4 = note->phases[3] + (note->phase_deltas[3]>>2);
-            output[3] =(int32_t)saw_t(p3)+saw_t(p4);
+            output[3] =(int32_t)krsyn_saw(p3)+krsyn_saw(p4);
         }
 
         out =  envelope_apply(note->envelope_now_amps[0], (output[0]+output[1]) >> 2) -
@@ -524,10 +483,10 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
         {
             const uint32_t p1 = note->phases[0];
             const uint32_t p2 = note->phases[0] + (note->phase_deltas[0]>>2);
-            output[0] =(int32_t)fake_triangle_t( p1, synth->phase_coarses[2]) +fake_triangle_t( p2, synth->phase_coarses[2]);
+            output[0] =(int32_t)krsyn_fake_triangle( p1, synth->phase_coarses[2]) +krsyn_fake_triangle( p2, synth->phase_coarses[2]);
             const uint32_t p3 = note->phases[1] + (note->phase_deltas[1]>>1);
             const uint32_t p4 = note->phases[1] + (note->phase_deltas[1]>>2);
-            output[1] =(int32_t)fake_triangle_t(p3, synth->phase_coarses[3])+fake_triangle_t( p4, synth->phase_coarses[3]);
+            output[1] =(int32_t)krsyn_fake_triangle(p3, synth->phase_coarses[3])+krsyn_fake_triangle( p4, synth->phase_coarses[3]);
         }
 
         out =  envelope_apply(note->envelope_now_amps[0], (output[0]+output[1]) >> 2);
@@ -541,7 +500,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
         } else {
             output[1] = note->output_log[1];
         }
-        output[0] = envelope_apply(note->envelope_now_amps[0], noise_t(note->phases[0], output[1]));
+        output[0] = envelope_apply(note->envelope_now_amps[0], krsyn_noise(note->phases[0], output[1]));
         out = output[0];
     }
 
@@ -591,16 +550,10 @@ static inline void lfo_frame(const krsynth* synth, krsynth_note* note, uint32_t 
 {
     if(fms)
     {
-        int64_t depth = note->lfo_log;
-        depth *= synth->lfo_fms_depth;
-        if(lfo_wave_type != KRSYN_LFO_WAVE_SQUARE){
-            depth >>= KRSYN_LFO_DEPTH_BITS - 1;
-            depth += 2<<KRSYN_OUTPUT_BITS;     // MAX 0.0 ~ 2.0, mean 1.0
-        }
-        else {
-            depth >>= KRSYN_LFO_DEPTH_BITS;
-            depth += 3<<KRSYN_OUTPUT_BITS;     // MAX 0.0 ~ 2.0, mean 1.0
-        }
+        int64_t depth = synth->lfo_fms_depth;
+        depth *= note->lfo_log;
+        depth >>= KRSYN_OUTPUT_BITS;
+        depth = krsyn_fms_depth(depth);
 
         for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
         {
@@ -646,27 +599,27 @@ static inline void lfo_frame(const krsynth* synth, krsynth_note* note, uint32_t 
         switch(lfo_wave_type)
         {
         case KRSYN_LFO_WAVE_TRIANGLE:
-            note->lfo_log = triangle_t(note->lfo_phase);
+            note->lfo_log = krsyn_triangle(note->lfo_phase);
             break;
         case KRSYN_LFO_WAVE_SAW_UP:
-            note->lfo_log = saw_t(note->lfo_phase);
+            note->lfo_log = krsyn_saw(note->lfo_phase);
             break;
         case KRSYN_LFO_WAVE_SAW_DOWN:
-            note->lfo_log = - saw_t(note->lfo_phase);
+            note->lfo_log = - krsyn_saw(note->lfo_phase);
             break;
         case KRSYN_LFO_WAVE_SQUARE:
-            note->lfo_log = saw_t(note->lfo_phase);
-            note->lfo_log -= saw_t(note->lfo_phase + (ks_1(KRSYN_PHASE_MAX_BITS) >> 1));
+            note->lfo_log = krsyn_saw(note->lfo_phase);
+            note->lfo_log -= krsyn_saw(note->lfo_phase + (ks_1(KRSYN_PHASE_MAX_BITS) >> 1));
             break;
         case KRSYN_LFO_WAVE_SIN:
-            note->lfo_log = sin_t(note->lfo_phase, true);
+            note->lfo_log = krsyn_sin(note->lfo_phase, true);
             break;
         }
         note->lfo_phase += note->lfo_delta;
     }
 }
 
-static inline void krsynth_process(const krsynth* synth, krsynth_note* note, int16_t* buf, unsigned len,
+static inline void krsynth_process(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len,
                                     uint8_t algorithm, uint8_t lfo_type, bool ams, bool fms)
 {
     uint32_t delta[KRSYN_NUM_OPERATORS];
@@ -678,7 +631,11 @@ static inline void krsynth_process(const krsynth* synth, krsynth_note* note, int
 
         for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
         {
-            note->phases[j] = note->phases[j] + delta[j];
+            uint64_t d = delta[j];
+            d*= pitchbend;
+            d >>= KRSYN_LFO_DEPTH_BITS;
+
+            note->phases[j] = note->phases[j] + d;
         }
 
         for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
@@ -696,17 +653,17 @@ static inline void krsynth_process(const krsynth* synth, krsynth_note* note, int
 #define _algorithm_list _(0) _(1) _(2) _(3) _(4) _(5) _(6) _(7) _(8) _(9) _(10)
 
 #define krsynth_define_synth_render_aw(algorithm, wave) \
-void krsynth_render_ ## algorithm ## _ ## wave ##_0_0(const krsynth* synth, krsynth_note* note, int16_t* buf, unsigned len){ \
-    krsynth_process(synth, note, buf, len, algorithm, wave, false, false); \
+void krsynth_render_ ## algorithm ## _ ## wave ##_0_0(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len){ \
+    krsynth_process(synth, note, pitchbend, buf, len, algorithm, wave, false, false); \
 } \
-void krsynth_render_ ## algorithm ## _ ## wave  ##_0_1(const krsynth* synth, krsynth_note* note, int16_t* buf, unsigned len) {\
-    krsynth_process(synth, note, buf, len, algorithm, wave, false, true); \
+void krsynth_render_ ## algorithm ## _ ## wave  ##_0_1(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len) {\
+    krsynth_process(synth, note,pitchbend,  buf, len, algorithm, wave, false, true); \
 } \
-void krsynth_render_ ## algorithm ## _ ## wave  ##_1_0(const krsynth* synth, krsynth_note* note, int16_t* buf, unsigned len) {\
-    krsynth_process(synth, note, buf, len, algorithm, wave, true, false); \
+void krsynth_render_ ## algorithm ## _ ## wave  ##_1_0(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len) {\
+    krsynth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, false); \
 } \
-    void krsynth_render_ ## algorithm ## _ ## wave  ##_1_1(const krsynth* synth, krsynth_note* note, int16_t* buf, unsigned len){ \
-    krsynth_process(synth, note, buf, len, algorithm, wave, true, true); \
+    void krsynth_render_ ## algorithm ## _ ## wave  ##_1_1(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len){ \
+    krsynth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, true); \
 }
 
 #define krsynth_define_synth_render(algorithm) \
@@ -730,22 +687,22 @@ _algorithm_list
     { \
         if(synth->lfo_fms_enabled) \
         { \
-            krsynth_render_ ## algorithm ## _ ## wave ## _1_1 (synth, note, buf, len); \
+            krsynth_render_ ## algorithm ## _ ## wave ## _1_1 (synth, note, pitchbend,  buf, len); \
         } \
         else \
         { \
-            krsynth_render_ ## algorithm ## _ ## wave ## _1_0 (synth, note, buf, len); \
+            krsynth_render_ ## algorithm ## _ ## wave ## _1_0 (synth, note, pitchbend, buf, len); \
         } \
     } \
     else \
     { \
         if(synth->lfo_fms_enabled) \
         { \
-            krsynth_render_ ## algorithm ## _ ## wave ## _0_1 (synth, note, buf, len); \
+            krsynth_render_ ## algorithm ## _ ## wave ## _0_1 (synth, note, pitchbend, buf, len); \
         } \
         else \
         { \
-            krsynth_render_ ## algorithm ## _ ## wave ## _0_0 (synth, note, buf, len); \
+            krsynth_render_ ## algorithm ## _ ## wave ## _0_0 (synth, note, pitchbend, buf, len); \
         } \
     }
 
@@ -766,7 +723,7 @@ _algorithm_list
 #undef _
 #define _(x) case x : krsynth_render_branch(x) break;
 
-void krsynth_render(const krsynth* synth, krsynth_note* note, int16_t *buf, unsigned len)
+void krsynth_render(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t *buf, unsigned len)
 {
     if(*(uint32_t*)note->envelope_states != 0){
         switch(synth->algorithm)
