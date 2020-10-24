@@ -11,7 +11,8 @@
 #include <stdint.h>
 #include "../krsyn.h"
 
-#define OUTPUT_LENGTH 200000
+#define SAMPLING_RATE 48000
+#define OUTPUT_LENGTH SAMPLING_RATE*4.5;
 
 struct wave_header
 {
@@ -32,7 +33,7 @@ struct wave_header
 
 int main( void )
 {
-  uint32_t sampling_rate = 44100;
+  uint32_t sampling_rate = SAMPLING_RATE;
   krsynth_binary   data;
 
   int32_t buf_len = OUTPUT_LENGTH;
@@ -64,8 +65,18 @@ int main( void )
   }
 
   {
-      //
-      krsong* song = krsong_new(sampling_rate, 96, 48*9,
+      krtones* tones = krtones_new(1, (krtones_bank[]){
+                                          krtones_bank_of(0,0, 1, (krtones_program[1]){
+                                                             [0]={
+                                                                 .program_number=0,
+                                                                 .synth=krsynth_new(&data, sampling_rate),
+                                                             }
+                                                         }
+                                                      )
+                                                  }
+                                      );
+
+      krsong* song = krsong_new(sampling_rate, 96, tones, 48*9,
             krsong_events_new(48*9,(krsong_event[]){
                                    [0]={
                                        .num_messages=2,
@@ -128,7 +139,7 @@ int main( void )
                                           [2] ={
                                               .status=0x80,
                                               .datas ={
-                                                  [0]=57,
+                                                  [0]=52,
                                               },
                                           },
                                           [3] ={
@@ -181,7 +192,7 @@ int main( void )
                                           [2] ={
                                               .status=0x80,
                                               .datas ={
-                                                  [0]=55,
+                                                  [0]=50,
                                               },
                                           },
                                           [3] ={
@@ -271,21 +282,6 @@ int main( void )
                                    },
                                })
                             );
-
-      song->tones = krtones_new(1, (krtones_bank[]){
-                                    krtones_bank_of(0,0, 1, (krtones_program[1]){
-                                                       [0]={
-                                                           .program_number=0,
-                                                           .synth=krsynth_new(&data, sampling_rate),
-                                                       }
-                                                   }
-                                                )
-                                            }
-                                );
-      for(int i=0; i<16; i++){
-          song->state.channels[i].bank = song->tones->banks;
-      }
-
       krsong_render(song, buf, buf_len);
 
       krsong_free(song);
@@ -304,8 +300,8 @@ int main( void )
     head.fmt_chunk_byte_num = 16;
     head.tone_format = 1;
     head.channel_num = 2;
-    head.sampling_freq = 44100;
-    head.mean_byte_num_per_sec = 88200;
+    head.sampling_freq = SAMPLING_RATE;
+    head.mean_byte_num_per_sec = SAMPLING_RATE*2;
     head.block_size = 4;
     head.sample_bits = 16;
     head.sub_chunk_id = 0x61746164;

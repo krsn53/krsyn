@@ -12,11 +12,11 @@ typedef struct krtones_bank_number{
     uint16_t lsb:7;
     uint16_t msb: 7;
     uint16_t percussion : 1;
-    uint16_t enable : 1;
 } krtones_bank_number;
 
 
 typedef struct krtones_bank{
+    bool                emplaced;
     krtones_bank_number bank_number;
     krsynth             *programs[KRSYN_NUM_MAX_PROGRAMS];
 }krtones_bank;
@@ -36,7 +36,7 @@ krtones* krtones_new(uint32_t num_banks, krtones_bank banks[num_banks]);
 void krtones_free(krtones* tones);
 bool krtones_set_bank(krtones* tones, const krtones_bank* bank);
 krtones_bank krtones_bank_of(uint8_t msb, uint8_t lsb, uint32_t num_programs, krtones_program programs[num_programs]);
-krtones_bank* krtones_find_bank(krtones* tones, krtones_bank_number bank_number);
+krtones_bank* krtones_find_bank(const krtones* tones, krtones_bank_number bank_number);
 
 
 krtones_bank* krtones_banks_new(uint32_t num_banks);
@@ -48,7 +48,7 @@ static inline uint32_t krtones_bank_number_hash(krtones_bank_number bank_number)
 }
 
 static inline bool krtones_bank_is_empty(const krtones_bank* bank){
-    return bank->bank_number.enable == 0;
+    return bank->emplaced == false;
 }
 
 // XG like ???
@@ -56,7 +56,6 @@ static inline krtones_bank_number krtones_bank_number_of(uint8_t msb, uint8_t ls
     return (krtones_bank_number){
         .msb = msb,
         .lsb = lsb,
-        .enable=1,
         .percussion = (lsb==127 ? 1: 0)
     };
 }

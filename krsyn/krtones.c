@@ -51,7 +51,7 @@ bool krtones_set_bank(krtones* tones, const krtones_bank* bank){
     return true;
 }
 
-krtones_bank* krtones_find_bank(krtones* tones, krtones_bank_number bank_number){
+krtones_bank* krtones_find_bank(const krtones* tones, krtones_bank_number bank_number){
     uint16_t hash = krtones_bank_number_hash(bank_number);
     uint16_t masked_hash = hash % tones->num_banks;
 
@@ -67,6 +67,7 @@ krtones_bank* krtones_find_bank(krtones* tones, krtones_bank_number bank_number)
 
 krtones_bank krtones_bank_of(uint8_t msb, uint8_t lsb, uint32_t num_programs, krtones_program programs[num_programs]){
     krtones_bank ret;
+    ret.emplaced = true;
     ret.bank_number = krtones_bank_number_of(msb,lsb);
 
     for(unsigned i=0; i<KRSYN_NUM_MAX_PROGRAMS; i++){
