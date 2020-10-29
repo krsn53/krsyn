@@ -14,6 +14,15 @@ typedef struct krtones_bank_number{
     uint16_t percussion : 1;
 } krtones_bank_number;
 
+typedef struct krtones_bank_binary{
+    krtones_bank_number bank_number;
+    krsynth_binary      *programs[KRSYN_NUM_MAX_PROGRAMS];
+}krtones_bank_binary;
+
+typedef struct krtones_binary{
+    uint16_t            num_banks;
+    krtones_bank_binary *banks;
+}krtones_binary;
 
 typedef struct krtones_bank{
     bool                emplaced;
@@ -26,16 +35,12 @@ typedef struct krtones{
     krtones_bank        *banks;
 }krtones;
 
-typedef struct krtones_program{
-    uint32_t            program_number;
-    krsynth             *synth;
-}krtones_program;
 
-
+krtones* krtones_new_from_binary(uint32_t sampling_rate, const krtones_binary *bin);
 krtones* krtones_new(uint32_t num_banks, krtones_bank banks[num_banks]);
 void krtones_free(krtones* tones);
 bool krtones_set_bank(krtones* tones, const krtones_bank* bank);
-krtones_bank krtones_bank_of(uint8_t msb, uint8_t lsb, uint32_t num_programs, krtones_program programs[num_programs]);
+krtones_bank krtones_bank_of(uint8_t msb, uint8_t lsb, krsynth* programs[KRSYN_NUM_MAX_PROGRAMS]);
 krtones_bank* krtones_find_bank(const krtones* tones, krtones_bank_number bank_number);
 
 

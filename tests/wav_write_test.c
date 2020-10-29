@@ -33,7 +33,6 @@ struct wave_header
 
 int main( void )
 {
-  uint32_t sampling_rate = SAMPLING_RATE;
   krsynth_binary   data;
 
   int32_t buf_len = OUTPUT_LENGTH;
@@ -65,18 +64,20 @@ int main( void )
   }
 
   {
-      krtones* tones = krtones_new(1, (krtones_bank[]){
-                                          krtones_bank_of(0,0, 1, (krtones_program[1]){
-                                                             [0]={
-                                                                 .program_number=0,
-                                                                 .synth=krsynth_new(&data, sampling_rate),
-                                                             }
-                                                         }
-                                                      )
-                                                  }
-                                      );
+      krtones_bank_binary bankbin ={
+          .bank_number = krtones_bank_number_of(0, 0),
+          .programs = {
+              [0]= &data
+          },
+      };
+      krtones_binary tonebin ={
+          .num_banks=1,
+          .banks = &bankbin,
+    };
 
-      krsong* song = krsong_new(sampling_rate, 96, tones, 48*9,
+      krtones* tones = krtones_new_from_binary(SAMPLING_RATE, &tonebin);
+
+      krsong* song = krsong_new(96, 48*9,
             krsong_events_new(48*9,(krsong_event[]){
                                    [0]={
                                        .num_messages=2,
@@ -282,7 +283,11 @@ int main( void )
                                    },
                                })
                             );
-      krsong_render(song, buf, buf_len);
+
+      krsong_state state;
+      krsong_state_set_default(&state, tones, SAMPLING_RATE, song->resolution);
+
+      krsong_render(song, SAMPLING_RATE, &state, tones, buf, buf_len);
 
       krsong_free(song);
   }

@@ -4,6 +4,31 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+krtones* krtones_new_from_binary(uint32_t sampling_rate, const krtones_binary* bin){
+    uint32_t num_banks = bin->num_banks;
+    krtones_bank banks[num_banks];
+
+    for(unsigned i=0; i<num_banks; i++){
+        banks[i].bank_number = bin->banks[i].bank_number;
+        banks[i].emplaced = true;
+
+        for(unsigned p=0; p< KRSYN_NUM_MAX_PROGRAMS; p++){
+            if(bin->banks[i].programs[p] == NULL) continue;
+
+            krsynth* synth;
+            if(bin->banks[i].bank_number.percussion){
+                synth = krsynth_array_new(KRSYN_NUM_MAX_PROGRAMS, bin->banks[i].programs[p], sampling_rate);
+            } else {
+                synth = krsynth_new(bin->banks[i].programs[p], sampling_rate);
+            }
+
+            banks[i].programs[p] = synth;
+        }
+    }
+
+    return krtones_new(bin->num_banks, banks);
+}
+
 krtones* krtones_new(uint32_t num_banks, krtones_bank banks[num_banks]){
     krtones* ret = malloc(sizeof(krtones));
     ret->banks = krtones_banks_new(num_banks);
@@ -65,19 +90,15 @@ krtones_bank* krtones_find_bank(const krtones* tones, krtones_bank_number bank_n
     return & tones->banks[it];
 }
 
-krtones_bank krtones_bank_of(uint8_t msb, uint8_t lsb, uint32_t num_programs, krtones_program programs[num_programs]){
+krtones_bank krtones_bank_of(uint8_t msb, uint8_t lsb, krsynth *programs[KRSYN_NUM_MAX_PROGRAMS]){
     krtones_bank ret;
     ret.emplaced = true;
     ret.bank_number = krtones_bank_number_of(msb,lsb);
 
     for(unsigned i=0; i<KRSYN_NUM_MAX_PROGRAMS; i++){
-        ret.programs[i] = NULL;
+        ret.programs[i] = programs[i];
     }
 
-    for(unsigned i=0; i<num_programs; i++){
-        uint8_t program_number = programs[i].program_number;
-        ret.programs[program_number] = programs[i].synth;
-    }
 
     return ret;
 }

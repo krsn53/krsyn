@@ -56,35 +56,32 @@ typedef struct krsong_event{
     krsong_message      *messages;
 }krsong_event;
 
-
-
 typedef struct krsong{
     uint16_t            resolution;
-    uint32_t            sampling_rate;
-    krsong_state        state;
-    const krtones       *tones;
     uint32_t            num_events;
     const krsong_event  *events;
 }krsong;
 
 
-krsong* krsong_new(uint32_t sampling_rate, uint32_t resolution, const krtones *tones, uint32_t num_events, const krsong_event *events);
+krsong* krsong_new(uint32_t resolution, uint32_t num_events, const krsong_event *events);
 void krsong_free(krsong* song);
 
-bool krsong_note_on(krsong* song, uint8_t channel_number, krsong_channel* channel, uint8_t note_number, uint8_t velocity);
-bool krsong_note_off(krsong* song, uint8_t channel_number, krsong_channel* channel, uint8_t note_number);
-bool krsong_program_change(krsong* song, krsong_channel* channel, uint8_t program);
-bool krsong_control_change(krsong* song, krsong_channel* channel, uint8_t type, uint8_t value);
+bool krsong_state_note_on(krsong_state* state, uint32_t sampling_rate, uint8_t channel_number, krsong_channel* channel, uint8_t note_number, uint8_t velocity);
+bool krsong_state_note_off(krsong_state* state, uint8_t channel_number, krsong_channel* channel, uint8_t note_number);
+bool krsong_state_program_change(krsong_state* state, const krtones*tones, krsong_channel* channel, uint8_t program);
+bool krsong_vcontrol_change(krsong_state* state, krsong_channel* channel, uint8_t type, uint8_t value);
 bool krsong_channel_set_panpot(krsong_channel* ch, uint8_t value);
 bool krsong_channel_set_picthbend(krsong_channel* ch, uint8_t msb, uint8_t lsb);
-bool krsong_bank_select(krsong* song, krsong_channel* channel, uint8_t msb, uint8_t lsb);
-bool krsong_bank_select_msb(krsong* song, krsong_channel* channel, uint8_t msb);
-bool krsong_bank_select_lsb(krsong* song, krsong_channel* channel, uint8_t lsb);
-void krsong_render(krsong* song, int16_t *buf, unsigned len);
+bool krsong_state_bank_select(krsong_state* state, const krtones* tones,  krsong_channel* channel, uint8_t msb, uint8_t lsb);
+bool krsong_state_bank_select_msb(krsong_state* state, const krtones* tones, krsong_channel* channel, uint8_t msb);
+bool krsong_state_bank_select_lsb(krsong_state* state, const krtones* tones, krsong_channel* channel, uint8_t lsb);
 
-void krsong_event_run(const krsong_event *event, krsong* song);
 
-void krsong_state_set_default(krsong *song, uint32_t sampling_rate, uint32_t resolution);
+void krsong_render(krsong* song, uint32_t sampling_rate, krsong_state *state, const krtones *tones, int16_t *buf, unsigned len);
+
+void krsong_event_run(const krsong_event *event, uint32_t sampling_rate, krsong_state* state, const krtones* tones);
+
+void krsong_state_set_default(krsong_state *state, const krtones *tones, uint32_t sampling_rate, uint32_t resolution);
 
 krsong_event* krsong_events_new(uint32_t num_events, krsong_event events[num_events]);
 void krsong_events_free(uint32_t num_events, const krsong_event *events);
