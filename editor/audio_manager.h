@@ -12,8 +12,8 @@
 typedef struct audio_state
 {
     uint32_t            sampling_rate;
-    krsynth             fm;
-    krsynth_note        note;
+    ks_synth             fm;
+    ks_synth_note        note;
     int8_t              noteon;
 
     ALCdevice           *device;

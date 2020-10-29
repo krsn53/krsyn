@@ -1,31 +1,31 @@
-#include "krsynth.h"
+#include "synth.h"
 #include "math.h"
 
 #include <memory.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-krsynth* krsynth_new(krsynth_binary* data, uint32_t sampling_rate){
-    krsynth* ret = malloc(sizeof(krsynth));
-    krsynth_set(ret, sampling_rate, data);
+ks_synth* ks_synth_new(ks_synth_binary* data, uint32_t sampling_rate){
+    ks_synth* ret = malloc(sizeof(ks_synth));
+    ks_synth_set(ret, sampling_rate, data);
     return ret;
 }
 
-krsynth* krsynth_array_new(uint32_t length, krsynth_binary data[length], uint32_t sampling_rate){
-    krsynth* ret = malloc(sizeof(krsynth)*length);
+ks_synth* ks_synth_array_new(uint32_t length, ks_synth_binary data[length], uint32_t sampling_rate){
+    ks_synth* ret = malloc(sizeof(ks_synth)*length);
     for(uint32_t i=0; i<length; i++){
-        krsynth_set(ret+i, sampling_rate, data+i);
+        ks_synth_set(ret+i, sampling_rate, data+i);
     }
     return ret;
 }
 
-void krsynth_free(krsynth* synth){
+void ks_synth_free(ks_synth* synth){
     free(synth);
 }
 
-void krsynth_binary_set_default(krsynth_binary* data)
+void ks_synth_binary_set_default(ks_synth_binary* data)
 {
-    for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
+    for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
     {
         data->phase_coarses[i].fixed_frequency = false;
         data->phase_coarses[i].value = 2;
@@ -47,11 +47,11 @@ void krsynth_binary_set_default(krsynth_binary* data)
         data->velocity_sens[i] = UINT8_MAX;
 
         data->ratescales[i] = 32; // about 0.125
-        data->ks_low_depths[i] = 0;
-        data->ks_high_depths[i] = 0;
-        data->ks_mid_points[i] = 69;
-        data->ks_curve_types[i].left = 0;
-        data->ks_curve_types[i].right = 0;
+        data->keyscale_low_depths[i] = 0;
+        data->keyscale_high_depths[i] = 0;
+        data->keyscale_mid_points[i] = 69;
+        data->keyscale_curve_types[i].left = 0;
+        data->keyscale_curve_types[i].right = 0;
 
         data->lfo_ams_depths[i] = 0;
     }
@@ -59,15 +59,15 @@ void krsynth_binary_set_default(krsynth_binary* data)
     data->algorithm = 0;
     data->feedback_level = 0;
 
-    data->lfo_wave_type = KRSYN_LFO_WAVE_TRIANGLE;
+    data->lfo_wave_type = KS_LFO_WAVE_TRIANGLE;
     data->lfo_fms_depth = 0;
     data->lfo_freq = 128; // 1 Hz ?
     data->lfo_det = 0;
 }
 
-static inline void synth_op_set(uint32_t sampling_rate, krsynth* synth, const krsynth_binary* data)
+static inline void synth_op_set(uint32_t sampling_rate, ks_synth* synth, const ks_synth_binary* data)
 {
-    for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
+    for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
     {
         synth->fixed_frequency[i] = calc_fixed_frequency(data->phase_coarses[i].fixed_frequency);
         synth->phase_coarses[i] = calc_phase_coarses(data->phase_coarses[i].value);
@@ -75,7 +75,7 @@ static inline void synth_op_set(uint32_t sampling_rate, krsynth* synth, const kr
         synth->phase_fines[i] = calc_phase_fines(data->phase_fines[i]);
         synth->phase_dets[i] = calc_phase_dets(data->phase_dets[i]);
 
-        for(unsigned e=0; e < KRSYN_ENVELOPE_NUM_POINTS; e++)
+        for(unsigned e=0; e < KS_ENVELOPE_NUM_POINTS; e++)
         {
             synth->envelope_points[e][i] = calc_envelope_points(data->envelope_points[e][i]);
             synth->envelope_samples[e][i] = calc_envelope_samples(sampling_rate, data->envelope_times[e][i]);
@@ -86,11 +86,11 @@ static inline void synth_op_set(uint32_t sampling_rate, krsynth* synth, const kr
         synth->velocity_sens[i] = calc_velocity_sens(data->velocity_sens[i]);
 
         synth->ratescales[i] = calc_ratescales(data->ratescales[i]);
-        synth->ks_low_depths[i] = calc_ks_low_depths(data->ks_low_depths[i]);
-        synth->ks_high_depths[i] = calc_ks_high_depths(data->ks_high_depths[i]);
-        synth->ks_mid_points[i] = calc_ks_mid_points(data->ks_mid_points[i]);
-        synth->ks_curve_types[0][i] = calc_ks_curve_types_left(data->ks_curve_types[i].left);
-        synth->ks_curve_types[1][i] = calc_ks_curve_types_right(data->ks_curve_types[i].right);
+        synth->keyscale_low_depths[i] = calc_keyscale_low_depths(data->keyscale_low_depths[i]);
+        synth->keyscale_high_depths[i] = calc_keyscale_high_depths(data->keyscale_high_depths[i]);
+        synth->keyscale_mid_points[i] = calc_keyscale_mid_points(data->keyscale_mid_points[i]);
+        synth->keyscale_curve_types[0][i] = calc_keyscale_curve_types_left(data->keyscale_curve_types[i].left);
+        synth->keyscale_curve_types[1][i] = calc_keyscale_curve_types_right(data->keyscale_curve_types[i].right);
 
         synth->lfo_ams_depths[i] = calc_lfo_ams_depths(data->lfo_ams_depths[i]);
     }
@@ -99,7 +99,7 @@ static inline void synth_op_set(uint32_t sampling_rate, krsynth* synth, const kr
 
 }
 
-static inline void synth_common_set(krsynth* synth, const krsynth_binary* data)
+static inline void synth_common_set(ks_synth* synth, const ks_synth_binary* data)
 {
     synth->algorithm = calc_algorithm(data->algorithm);
     synth->feedback_level = calc_feedback_level(data->feedback_level);
@@ -108,11 +108,11 @@ static inline void synth_common_set(krsynth* synth, const krsynth_binary* data)
     synth->lfo_fms_depth = calc_lfo_fms_depth(data->lfo_fms_depth);
     synth->lfo_fms_enabled = data->lfo_fms_depth != 0;
     synth->lfo_freq = calc_lfo_freq(data->lfo_freq);
-    synth->lfo_det = krsyn_linear_u(data->lfo_det, 0, ks_1(KRSYN_PHASE_MAX_BITS));
+    synth->lfo_det = krsyn_linear_u(data->lfo_det, 0, ks_1(KS_PHASE_MAX_BITS));
 }
 
 
-void krsynth_set(krsynth* synth, uint32_t sampling_rate, const krsynth_binary* data)
+void ks_synth_set(ks_synth* synth, uint32_t sampling_rate, const ks_synth_binary* data)
 {
     synth_op_set(sampling_rate, synth, data);
     synth_common_set(synth, data);
@@ -121,7 +121,7 @@ void krsynth_set(krsynth* synth, uint32_t sampling_rate, const krsynth_binary* d
 
 static inline uint32_t phase_lfo_delta(uint32_t sampling_rate, uint32_t freq)
 {
-    uint64_t freq_11 = ((uint64_t)freq) << KRSYN_TABLE_BITS;
+    uint64_t freq_11 = ((uint64_t)freq) << KS_TABLE_BITS;
     uint64_t delta_11 = (uint32_t)(freq_11 / sampling_rate);
 
     return (uint32_t)delta_11;
@@ -130,12 +130,12 @@ static inline uint32_t phase_lfo_delta(uint32_t sampling_rate, uint32_t freq)
 static inline uint32_t phase_delta_fix_freq(uint32_t sampling_rate, uint32_t coarse, uint32_t fine)
 {
     uint32_t freq = note_freq[coarse];
-    uint64_t freq_11 = ((uint64_t)freq) << KRSYN_TABLE_BITS;
+    uint64_t freq_11 = ((uint64_t)freq) << KS_TABLE_BITS;
     // 5461 ~ 2^16 * 1/12
-    uint32_t freq_rate = (1<<KRSYN_FREQUENCY_BITS) + ((5461 * fine) >> KRSYN_PHASE_FINE_BITS);
+    uint32_t freq_rate = (1<<KS_FREQUENCY_BITS) + ((5461 * fine) >> KS_PHASE_FINE_BITS);
 
     freq_11 *= freq_rate;
-    freq_11 >>= KRSYN_FREQUENCY_BITS;
+    freq_11 >>= KS_FREQUENCY_BITS;
 
     uint32_t delta_11 = (uint32_t)(freq_11 / sampling_rate);
     return delta_11;
@@ -144,72 +144,72 @@ static inline uint32_t phase_delta_fix_freq(uint32_t sampling_rate, uint32_t coa
 static inline uint32_t phase_delta(uint32_t sampling_rate, uint8_t notenum, uint32_t coarse, uint32_t fine)
 {
     uint32_t freq = note_freq[notenum];
-    uint64_t freq_11 = ((uint64_t)freq) << KRSYN_TABLE_BITS;
+    uint64_t freq_11 = ((uint64_t)freq) << KS_TABLE_BITS;
 
-    uint32_t freq_rate = (coarse << (KRSYN_FREQUENCY_BITS - KRSYN_PHASE_COARSE_BITS)) + fine;
+    uint32_t freq_rate = (coarse << (KS_FREQUENCY_BITS - KS_PHASE_COARSE_BITS)) + fine;
     uint64_t delta_11 = (uint32_t)(freq_11 / sampling_rate);
     delta_11 *= freq_rate;
-    delta_11 >>= KRSYN_FREQUENCY_BITS;
+    delta_11 >>= KS_FREQUENCY_BITS;
 
     return (uint32_t)delta_11;
 }
 
 static inline uint32_t ks_li(uint32_t index_16, int curve_type)
 {
-    uint32_t index_m = (uint32_t)(index_16>> KRSYN_KS_CURVE_BITS);
+    uint32_t index_m = (uint32_t)(index_16>> KS_KEYSCALE_CURVE_BITS);
 
-    if(index_m >= ks_1(KRSYN_KS_CURVE_TABLE_BITS)-1)
+    if(index_m >= ks_1(KS_KEYSCALE_CURVE_TABLE_BITS)-1)
     {
-        return ks_curves[curve_type][ks_1(KRSYN_KS_CURVE_TABLE_BITS)-1];
+        return ks_curves[curve_type][ks_1(KS_KEYSCALE_CURVE_TABLE_BITS)-1];
     }
 
     uint32_t index_b = index_m+1;
 
-    uint32_t under_fixed_b = index_16 & ((1<<KRSYN_KS_CURVE_BITS)-1);
-    uint32_t under_fixed_m = (1<<KRSYN_KS_CURVE_BITS) - under_fixed_b;
+    uint32_t under_fixed_b = index_16 & ((1<<KS_KEYSCALE_CURVE_BITS)-1);
+    uint32_t under_fixed_m = (1<<KS_KEYSCALE_CURVE_BITS) - under_fixed_b;
 
     uint32_t ret = ks_curves[curve_type][index_m] * under_fixed_m +
         ks_curves[curve_type][index_b] * under_fixed_b;
 
-    ret >>= KRSYN_KS_CURVE_BITS;
+    ret >>= KS_KEYSCALE_CURVE_BITS;
 
     return ret;
 }
 
-static inline uint32_t ks_value(const krsynth *synth, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
+static inline uint32_t ks_value(const ks_synth *synth, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
 {
     uint64_t index_16 = table_index;
-    index_16 <<= KRSYN_KS_CURVE_MAX_BITS;
+    index_16 <<= KS_KEYSCALE_CURVE_MAX_BITS;
     index_16 /= table_range;
-    index_16 *= (low_note ? synth->ks_low_depths[i] : synth->ks_high_depths[i]);
-    index_16 >>= KRSYN_KS_DEPTH_BITS;
+    index_16 *= (low_note ? synth->keyscale_low_depths[i] : synth->keyscale_high_depths[i]);
+    index_16 >>= KS_KEYSCALE_DEPTH_BITS;
 
-    int curve_type = synth->ks_curve_types[low_note ? 0 : 1][i];
+    int curve_type = synth->keyscale_curve_types[low_note ? 0 : 1][i];
     return ks_li((uint32_t)index_16, curve_type);
 }
 
-static inline uint32_t keyscale(const krsynth *synth, uint8_t notenum, unsigned i)
+static inline uint32_t keyscale(const ks_synth *synth, uint8_t notenum, unsigned i)
 {
-    if(notenum < synth->ks_mid_points[i])
+    if(notenum < synth->keyscale_mid_points[i])
     {
-        if(synth->ks_curve_types[0][i] <= KRSYN_KS_CURVE_ED || synth->ks_curve_types[1][i] > KRSYN_KS_CURVE_ED)
+        if(synth->keyscale_curve_types[0][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[1][i] > KS_KEYSCALE_CURVE_ED)
         {
-            return ks_value(synth, synth->ks_mid_points[i] - notenum - 1, synth->ks_mid_points[i], true, i);
+            return ks_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i);
         }
         else
         {
-            return 1<< KRSYN_KS_CURVE_BITS;
+            return 1<< KS_KEYSCALE_CURVE_BITS;
         }
     }
 
-    if(synth->ks_curve_types[1][i] <= KRSYN_KS_CURVE_ED || synth->ks_curve_types[0][i] > KRSYN_KS_CURVE_ED )
+    if(synth->keyscale_curve_types[1][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[0][i] > KS_KEYSCALE_CURVE_ED )
     {
-        return ks_value(synth, notenum - synth->ks_mid_points[i], ks_1(KRSYN_KS_CURVE_TABLE_BITS) - synth->ks_mid_points[i], false, i);
+        return ks_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i);
     }
-    return 1<< KRSYN_KS_CURVE_BITS;
+    return 1<< KS_KEYSCALE_CURVE_BITS;
 }
 
-void krsynth_note_on( krsynth_note* note, const krsynth *synth, uint32_t sampling_rate, uint8_t notenum, uint8_t vel)
+void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, uint32_t sampling_rate, uint8_t notenum, uint8_t vel)
 {
     note->now_frame = 0;
     note->feedback_log =0;
@@ -218,7 +218,7 @@ void krsynth_note_on( krsynth_note* note, const krsynth *synth, uint32_t samplin
     note->lfo_phase= synth->lfo_det;
     note->lfo_delta = phase_lfo_delta(sampling_rate, synth->lfo_freq);
 
-    for(unsigned i=0; i< KRSYN_NUM_OPERATORS; i++)
+    for(unsigned i=0; i< KS_NUM_OPERATORS; i++)
     {
         //phase
         note->phases[i] = synth->phase_dets[i];
@@ -236,8 +236,8 @@ void krsynth_note_on( krsynth_note* note, const krsynth *synth, uint32_t samplin
         //rate scale
         int64_t ratescales = synth->ratescales[i];
         ratescales *= ratescale[notenum];
-        ratescales >>= KRSYN_RS_BITS;
-        ratescales += 1<<KRSYN_RS_BITS;
+        ratescales >>= KS_RS_BITS;
+        ratescales += 1<<KS_RS_BITS;
 
         //key scale
         uint64_t keysc = keyscale(synth, notenum, i);
@@ -246,39 +246,39 @@ void krsynth_note_on( krsynth_note* note, const krsynth *synth, uint32_t samplin
         uint32_t velocity;
 
         //envelope
-        for(unsigned j=0; j < KRSYN_ENVELOPE_NUM_POINTS; j++)
+        for(unsigned j=0; j < KS_ENVELOPE_NUM_POINTS; j++)
         {
             velocity = synth->velocity_sens[i];
             velocity *=  127-vel;
             velocity >>= 7;
-            velocity = (1 << KRSYN_VELOCITY_SENS_BITS) -  velocity;
+            velocity = (1 << KS_VELOCITY_SENS_BITS) -  velocity;
 
             target = synth->envelope_points[j][i];
             target *= keysc;
-            target >>= KRSYN_KS_CURVE_BITS;
+            target >>= KS_KEYSCALE_CURVE_BITS;
             target *= velocity;
-            target >>= KRSYN_VELOCITY_SENS_BITS;
+            target >>= KS_VELOCITY_SENS_BITS;
 
             note->envelope_points[j][i] = (int32_t)target;
 
             uint64_t frame = (synth->envelope_samples[j][i]);
             frame *= ratescales;
-            frame >>= KRSYN_RS_BITS;
-            frame >>= KRSYN_SAMPLE_PER_FRAMES_BITS;
+            frame >>= KS_RS_BITS;
+            frame >>= KS_SAMPLE_PER_FRAMES_BITS;
             note->envelope_samples[j][i] = MAX((uint32_t)frame, 1u);
         }
 
         uint64_t frame = (synth->envelope_release_samples[i]);
         frame *= ratescales;
-        frame >>= KRSYN_RS_BITS;
-        frame >>= KRSYN_SAMPLE_PER_FRAMES_BITS;
+        frame >>= KS_RS_BITS;
+        frame >>= KS_SAMPLE_PER_FRAMES_BITS;
         note->envelope_release_samples[i] = MAX((uint32_t)frame, 1u);
 
-        note->envelope_deltas[0][i] = note->envelope_points[0][i] / (note->envelope_samples[0][i] << KRSYN_SAMPLE_PER_FRAMES_BITS);
-        for(unsigned j=1; j < KRSYN_ENVELOPE_NUM_POINTS; j++)
+        note->envelope_deltas[0][i] = note->envelope_points[0][i] / (note->envelope_samples[0][i] << KS_SAMPLE_PER_FRAMES_BITS);
+        for(unsigned j=1; j < KS_ENVELOPE_NUM_POINTS; j++)
         {
             note->envelope_deltas[j][i] = (note->envelope_points[j][i] - note->envelope_points[j-1][i]);
-            note->envelope_deltas[j][i] /= (int32_t)note->envelope_samples[j][i] << KRSYN_SAMPLE_PER_FRAMES_BITS;
+            note->envelope_deltas[j][i] /= (int32_t)note->envelope_samples[j][i] << KS_SAMPLE_PER_FRAMES_BITS;
         }
 
         //envelope state init
@@ -286,18 +286,18 @@ void krsynth_note_on( krsynth_note* note, const krsynth *synth, uint32_t samplin
         note->envelope_now_times[i] = note->envelope_samples[0][i];
         note->envelope_now_deltas[i] = note->envelope_deltas[0][i];
         note->envelope_now_points[i] = 0;
-        note->envelope_states[i] = KRSYN_ENVELOPE_ON;
+        note->envelope_states[i] = KS_ENVELOPE_ON;
 
     }
 }
 
-void krsynth_note_off (krsynth_note* note)
+void ks_synth_note_off (ks_synth_note* note)
 {
-    for(unsigned i=0; i< KRSYN_NUM_OPERATORS; i++)
+    for(unsigned i=0; i< KS_NUM_OPERATORS; i++)
     {
-        note->envelope_states[i] = KRSYN_ENVELOPE_RELEASED;
+        note->envelope_states[i] = KS_ENVELOPE_RELEASED;
         note->envelope_now_times[i] = note->envelope_release_samples[i];
-        note->envelope_now_deltas[i] = - note->envelope_now_amps[i] / ((int32_t)note->envelope_now_times[i] << KRSYN_SAMPLE_PER_FRAMES_BITS);
+        note->envelope_now_deltas[i] = - note->envelope_now_amps[i] / ((int32_t)note->envelope_now_times[i] << KS_SAMPLE_PER_FRAMES_BITS);
     }
 }
 
@@ -307,22 +307,22 @@ static inline int32_t envelope_apply(uint32_t amp, int32_t in)
 {
     int64_t out = amp;
     out *=in;
-    out >>= KRSYN_ENVELOPE_BITS;
+    out >>= KS_ENVELOPE_BITS;
     return out;
 }
 
 static inline int32_t output_mod(uint32_t phase, int32_t mod, uint32_t envelope)
 {
-    // mod<<(KRSYN_TABLE_BITS + 1) = double table length = 4pi
-    int32_t out = krsyn_sin(phase + (mod<<(KRSYN_TABLE_BITS + 1)), true);
+    // mod<<(KS_TABLE_BITS + 1) = double table length = 4pi
+    int32_t out = krsyn_sin(phase + (mod<<(KS_TABLE_BITS + 1)), true);
     return envelope_apply(envelope, out);
 }
 
-static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint8_t algorithm)
+static inline int16_t synth_frame(const ks_synth* synth, ks_synth_note* note, uint8_t algorithm)
 {
     int32_t out;
     int32_t feedback;
-    int32_t output[KRSYN_NUM_OPERATORS];
+    int32_t output[KS_NUM_OPERATORS];
 
     if(algorithm == 0)
     {
@@ -337,7 +337,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
 
         feedback = synth->feedback_level;
         feedback *= output[0];
-        feedback >>= KRSYN_FEEDBACK_LEVEL_BITS;
+        feedback >>= KS_FEEDBACK_LEVEL_BITS;
 
     }
     if(algorithm == 1)
@@ -354,7 +354,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
 
         feedback = synth->feedback_level;
         feedback *= output[0];
-        feedback >>= KRSYN_FEEDBACK_LEVEL_BITS;
+        feedback >>= KS_FEEDBACK_LEVEL_BITS;
     }
     if(algorithm == 2)
     {
@@ -370,7 +370,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
 
         feedback = synth->feedback_level;
         feedback *= output[0];
-        feedback >>= KRSYN_FEEDBACK_LEVEL_BITS;
+        feedback >>= KS_FEEDBACK_LEVEL_BITS;
     }
     if(algorithm == 3)
     {
@@ -386,7 +386,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
 
         feedback = synth->feedback_level;
         feedback *= output[0];
-        feedback >>= KRSYN_FEEDBACK_LEVEL_BITS;
+        feedback >>= KS_FEEDBACK_LEVEL_BITS;
     }
     if(algorithm == 4)
     {
@@ -402,7 +402,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
 
         feedback = synth->feedback_level;
         feedback *= output[0];
-        feedback >>= KRSYN_FEEDBACK_LEVEL_BITS;
+        feedback >>= KS_FEEDBACK_LEVEL_BITS;
     }
     if(algorithm == 5)
     {
@@ -419,7 +419,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
 
         feedback = synth->feedback_level;
         feedback *= output[0];
-        feedback >>= KRSYN_FEEDBACK_LEVEL_BITS;
+        feedback >>= KS_FEEDBACK_LEVEL_BITS;
     }
     if(algorithm == 6)
     {
@@ -437,7 +437,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
 
         feedback = synth->feedback_level;
         feedback *= output[0];
-        feedback >>= KRSYN_FEEDBACK_LEVEL_BITS;
+        feedback >>= KS_FEEDBACK_LEVEL_BITS;
     }
     if(algorithm ==7)
     {
@@ -452,7 +452,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
 
         feedback = synth->feedback_level;
         feedback *= output[0];
-        feedback >>= KRSYN_FEEDBACK_LEVEL_BITS;
+        feedback >>= KS_FEEDBACK_LEVEL_BITS;
     }
     if(algorithm ==8)
     {
@@ -494,7 +494,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
     if(algorithm ==10)
     {
         // noise
-        if((ks_mask(note->phases[0], KRSYN_PHASE_MAX_BITS)) < note->phase_deltas[0]) {
+        if((ks_mask(note->phases[0], KS_PHASE_MAX_BITS)) < note->phase_deltas[0]) {
             srand(note->output_log[1]);
             output[1] = rand();
         } else {
@@ -504,7 +504,7 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
         out = output[0];
     }
 
-    for(unsigned i =0; i< KRSYN_NUM_OPERATORS; i++)
+    for(unsigned i =0; i< KS_NUM_OPERATORS; i++)
     {
         note->output_log[i] = output[i];
     }
@@ -513,20 +513,20 @@ static inline int16_t synth_frame(const krsynth* synth, krsynth_note* note, uint
     return out >> 2; //
 }
 
-static inline void envelope_next(krsynth_note* note)
+static inline void envelope_next(ks_synth_note* note)
 {
-    for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
+    for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
     {
         if(--note->envelope_now_times[i] <= 0)
         {
             switch(note->envelope_states[i])
             {
-            case KRSYN_ENVELOPE_ON:
+            case KS_ENVELOPE_ON:
                 note->envelope_now_amps[i] = note->envelope_points[note->envelope_now_points[i]][i];
                 note->envelope_now_points[i] ++;
-                if(note->envelope_now_points[i] == KRSYN_ENVELOPE_NUM_POINTS)
+                if(note->envelope_now_points[i] == KS_ENVELOPE_NUM_POINTS)
                 {
-                    note->envelope_states[i] = KRSYN_ENVELOPE_SUSTAINED;
+                    note->envelope_states[i] = KS_ENVELOPE_SUSTAINED;
                     note->envelope_now_deltas[i] = 0;
                 }
                 else
@@ -535,37 +535,37 @@ static inline void envelope_next(krsynth_note* note)
                     note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
                 }
                 break;
-            case KRSYN_ENVELOPE_RELEASED:
+            case KS_ENVELOPE_RELEASED:
                 note->envelope_now_amps[i] = 0;
                 note->envelope_now_deltas[i] = 0;
-                note->envelope_states[i] = KRSYN_ENVELOPE_OFF;
+                note->envelope_states[i] = KS_ENVELOPE_OFF;
                 break;
             }
         }
     }
 }
 
-static inline void lfo_frame(const krsynth* synth, krsynth_note* note, uint32_t delta[],
+static inline void lfo_frame(const ks_synth* synth, ks_synth_note* note, uint32_t delta[],
                                       uint8_t lfo_wave_type, bool ams, bool fms)
 {
     if(fms)
     {
         int64_t depth = synth->lfo_fms_depth;
         depth *= note->lfo_log;
-        depth >>= KRSYN_OUTPUT_BITS;
+        depth >>= KS_OUTPUT_BITS;
         depth = krsyn_fms_depth(depth);
 
-        for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
+        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
         {
             int64_t d = note->phase_deltas[j];
             d *= depth;
-            d >>= KRSYN_LFO_DEPTH_BITS;
+            d >>= KS_LFO_DEPTH_BITS;
             delta[j] = (uint32_t)d;
         }
     }
     else
     {
-        for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
+        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
         {
             delta[j] = note->phase_deltas[j];
         }
@@ -573,22 +573,22 @@ static inline void lfo_frame(const krsynth* synth, krsynth_note* note, uint32_t 
 
     if(ams)
     {
-        for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
+        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
         {
             int64_t depth = note->lfo_log;      // -1.0 ~ 1.0
             depth *= synth->lfo_ams_depths[j];
-            depth >>= KRSYN_LFO_DEPTH_BITS;
+            depth >>= KS_LFO_DEPTH_BITS;
             depth >>= 1;
-            depth += 1<<(KRSYN_OUTPUT_BITS);     // 0 ~ 2.0
+            depth += 1<<(KS_OUTPUT_BITS);     // 0 ~ 2.0
 
 
             uint32_t ams_size =  synth->lfo_ams_depths[j];
-            ams_size >>= (KRSYN_LFO_DEPTH_BITS - KRSYN_OUTPUT_BITS) + 1; // MAX 0.0 ~ 1.0, mean 1-ams_depth/2
+            ams_size >>= (KS_LFO_DEPTH_BITS - KS_OUTPUT_BITS) + 1; // MAX 0.0 ~ 1.0, mean 1-ams_depth/2
 
             depth -= ams_size;
 
             depth *= note->output_log[j];
-            depth >>= KRSYN_LFO_DEPTH_BITS;
+            depth >>= KS_LFO_DEPTH_BITS;
             note->output_log[j] = (int32_t)depth;
         }
     }
@@ -598,20 +598,20 @@ static inline void lfo_frame(const krsynth* synth, krsynth_note* note, uint32_t 
 
         switch(lfo_wave_type)
         {
-        case KRSYN_LFO_WAVE_TRIANGLE:
+        case KS_LFO_WAVE_TRIANGLE:
             note->lfo_log = krsyn_triangle(note->lfo_phase);
             break;
-        case KRSYN_LFO_WAVE_SAW_UP:
+        case KS_LFO_WAVE_SAW_UP:
             note->lfo_log = krsyn_saw(note->lfo_phase);
             break;
-        case KRSYN_LFO_WAVE_SAW_DOWN:
+        case KS_LFO_WAVE_SAW_DOWN:
             note->lfo_log = - krsyn_saw(note->lfo_phase);
             break;
-        case KRSYN_LFO_WAVE_SQUARE:
+        case KS_LFO_WAVE_SQUARE:
             note->lfo_log = krsyn_saw(note->lfo_phase);
-            note->lfo_log -= krsyn_saw(note->lfo_phase + (ks_1(KRSYN_PHASE_MAX_BITS) >> 1));
+            note->lfo_log -= krsyn_saw(note->lfo_phase + (ks_1(KS_PHASE_MAX_BITS) >> 1));
             break;
-        case KRSYN_LFO_WAVE_SIN:
+        case KS_LFO_WAVE_SIN:
             note->lfo_log = krsyn_sin(note->lfo_phase, true);
             break;
         }
@@ -619,30 +619,30 @@ static inline void lfo_frame(const krsynth* synth, krsynth_note* note, uint32_t 
     }
 }
 
-static inline void krsynth_process(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len,
+static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len,
                                     uint8_t algorithm, uint8_t lfo_type, bool ams, bool fms)
 {
-    uint32_t delta[KRSYN_NUM_OPERATORS];
+    uint32_t delta[KS_NUM_OPERATORS];
 
     for(unsigned i=0; i<len; i++)
     {
         buf[i] = synth_frame(synth, note, algorithm);
         lfo_frame(synth, note, delta, lfo_type, ams, fms);
 
-        for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
+        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
         {
             uint64_t d = delta[j];
             d*= pitchbend;
-            d >>= KRSYN_LFO_DEPTH_BITS;
+            d >>= KS_LFO_DEPTH_BITS;
 
             note->phases[j] = note->phases[j] + d;
         }
 
-        for(unsigned j=0; j<KRSYN_NUM_OPERATORS; j++)
+        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
         {
             note->envelope_now_amps[j] += note->envelope_now_deltas[j];
         }
-        if(ks_mask(note->now_frame, KRSYN_SAMPLE_PER_FRAMES_BITS) == 0)
+        if(ks_mask(note->now_frame, KS_SAMPLE_PER_FRAMES_BITS) == 0)
         {
             envelope_next(note);
         }
@@ -652,78 +652,78 @@ static inline void krsynth_process(const krsynth* synth, krsynth_note* note, uin
 
 #define _algorithm_list _(0) _(1) _(2) _(3) _(4) _(5) _(6) _(7) _(8) _(9) _(10)
 
-#define krsynth_define_synth_render_aw(algorithm, wave) \
-void krsynth_render_ ## algorithm ## _ ## wave ##_0_0(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len){ \
-    krsynth_process(synth, note, pitchbend, buf, len, algorithm, wave, false, false); \
+#define ks_synth_define_synth_render_aw(algorithm, wave) \
+void ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len){ \
+    ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, false, false); \
 } \
-void krsynth_render_ ## algorithm ## _ ## wave  ##_0_1(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len) {\
-    krsynth_process(synth, note,pitchbend,  buf, len, algorithm, wave, false, true); \
+void ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len) {\
+    ks_synth_process(synth, note,pitchbend,  buf, len, algorithm, wave, false, true); \
 } \
-void krsynth_render_ ## algorithm ## _ ## wave  ##_1_0(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len) {\
-    krsynth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, false); \
+void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len) {\
+    ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, false); \
 } \
-    void krsynth_render_ ## algorithm ## _ ## wave  ##_1_1(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len){ \
-    krsynth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, true); \
+    void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len){ \
+    ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, true); \
 }
 
-#define krsynth_define_synth_render(algorithm) \
-    krsynth_define_synth_render_aw(algorithm, KRSYN_LFO_WAVE_TRIANGLE) \
-    krsynth_define_synth_render_aw(algorithm, KRSYN_LFO_WAVE_SAW_UP) \
-    krsynth_define_synth_render_aw(algorithm, KRSYN_LFO_WAVE_SAW_DOWN) \
-    krsynth_define_synth_render_aw(algorithm, KRSYN_LFO_WAVE_SQUARE) \
-    krsynth_define_synth_render_aw(algorithm, KRSYN_LFO_WAVE_SIN)
+#define ks_synth_define_synth_render(algorithm) \
+    ks_synth_define_synth_render_aw(algorithm, KS_LFO_WAVE_TRIANGLE) \
+    ks_synth_define_synth_render_aw(algorithm, KS_LFO_WAVE_SAW_UP) \
+    ks_synth_define_synth_render_aw(algorithm, KS_LFO_WAVE_SAW_DOWN) \
+    ks_synth_define_synth_render_aw(algorithm, KS_LFO_WAVE_SQUARE) \
+    ks_synth_define_synth_render_aw(algorithm, KS_LFO_WAVE_SIN)
 
 #undef _
-#define _(x) krsynth_define_synth_render(x)
+#define _(x) ks_synth_define_synth_render(x)
 #define split
 
 _algorithm_list
 
-#undef krsynth_define_synth_render
+#undef ks_synth_define_synth_render
 
 
-#define krsynth_lfo_branch(algorithm, wave) \
+#define ks_synth_lfo_branch(algorithm, wave) \
     if(synth->lfo_ams_enabled) \
     { \
         if(synth->lfo_fms_enabled) \
         { \
-            krsynth_render_ ## algorithm ## _ ## wave ## _1_1 (synth, note, pitchbend,  buf, len); \
+            ks_synth_render_ ## algorithm ## _ ## wave ## _1_1 (synth, note, pitchbend,  buf, len); \
         } \
         else \
         { \
-            krsynth_render_ ## algorithm ## _ ## wave ## _1_0 (synth, note, pitchbend, buf, len); \
+            ks_synth_render_ ## algorithm ## _ ## wave ## _1_0 (synth, note, pitchbend, buf, len); \
         } \
     } \
     else \
     { \
         if(synth->lfo_fms_enabled) \
         { \
-            krsynth_render_ ## algorithm ## _ ## wave ## _0_1 (synth, note, pitchbend, buf, len); \
+            ks_synth_render_ ## algorithm ## _ ## wave ## _0_1 (synth, note, pitchbend, buf, len); \
         } \
         else \
         { \
-            krsynth_render_ ## algorithm ## _ ## wave ## _0_0 (synth, note, pitchbend, buf, len); \
+            ks_synth_render_ ## algorithm ## _ ## wave ## _0_0 (synth, note, pitchbend, buf, len); \
         } \
     }
 
-#define krsynth_render_branch(algorithm) \
+#define ks_synth_render_branch(algorithm) \
     switch(synth->lfo_wave_type) {\
-    case KRSYN_LFO_WAVE_TRIANGLE: \
-        krsynth_lfo_branch(algorithm, KRSYN_LFO_WAVE_TRIANGLE); break; \
-    case KRSYN_LFO_WAVE_SAW_UP: \
-        krsynth_lfo_branch(algorithm, KRSYN_LFO_WAVE_SAW_UP); break; \
-    case KRSYN_LFO_WAVE_SAW_DOWN: \
-        krsynth_lfo_branch(algorithm, KRSYN_LFO_WAVE_SAW_DOWN); break; \
-    case KRSYN_LFO_WAVE_SQUARE: \
-        krsynth_lfo_branch(algorithm, KRSYN_LFO_WAVE_SQUARE); break; \
-    case KRSYN_LFO_WAVE_SIN: \
-        krsynth_lfo_branch(algorithm, KRSYN_LFO_WAVE_SIN); break; \
+    case KS_LFO_WAVE_TRIANGLE: \
+        ks_synth_lfo_branch(algorithm, KS_LFO_WAVE_TRIANGLE); break; \
+    case KS_LFO_WAVE_SAW_UP: \
+        ks_synth_lfo_branch(algorithm, KS_LFO_WAVE_SAW_UP); break; \
+    case KS_LFO_WAVE_SAW_DOWN: \
+        ks_synth_lfo_branch(algorithm, KS_LFO_WAVE_SAW_DOWN); break; \
+    case KS_LFO_WAVE_SQUARE: \
+        ks_synth_lfo_branch(algorithm, KS_LFO_WAVE_SQUARE); break; \
+    case KS_LFO_WAVE_SIN: \
+        ks_synth_lfo_branch(algorithm, KS_LFO_WAVE_SIN); break; \
     }
 
 #undef _
-#define _(x) case x : krsynth_render_branch(x) break;
+#define _(x) case x : ks_synth_render_branch(x) break;
 
-void krsynth_render(const krsynth* synth, krsynth_note* note, uint32_t pitchbend, int16_t *buf, unsigned len)
+void ks_synth_render(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t *buf, unsigned len)
 {
     if(*(uint32_t*)note->envelope_states != 0){
         switch(synth->algorithm)
@@ -736,6 +736,6 @@ void krsynth_render(const krsynth* synth, krsynth_note* note, uint32_t pitchbend
 }
 
 
-#undef krsynth_lfo_branch
+#undef ks_synth_lfo_branch
 #undef _
 

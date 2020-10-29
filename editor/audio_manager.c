@@ -25,14 +25,14 @@ static gboolean wave_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data)
     cairo_rectangle(cr, 0, 0,width, height);
     cairo_fill (cr);
 
-    env_width = (double)width / KRSYN_NUM_OPERATORS;
+    env_width = (double)width / KS_NUM_OPERATORS;
     env_draw_width = env_width*0.8;
     cairo_set_source_rgb(cr, 0, 0, 1);
     env_reg = env_width*0.1;
-    for(unsigned i = 0; i<KRSYN_NUM_OPERATORS; i++, env_reg+=env_width)
+    for(unsigned i = 0; i<KS_NUM_OPERATORS; i++, env_reg+=env_width)
     {
         double envelope_amp = state->note.envelope_now_amps[i];
-        envelope_amp /= (double)(1<<KRSYN_ENVELOPE_BITS);
+        envelope_amp /= (double)(1<<KS_ENVELOPE_BITS);
         envelope_amp *= height;
 
         cairo_rectangle(cr, env_reg, height - envelope_amp, env_draw_width, envelope_amp);
@@ -186,8 +186,8 @@ static gboolean keyboard_key_pressed(GdkEvent* event, editor_state* state,
     {
         velocity = (event->button.y - y) * 127 / height;
         state->state->noteon = notenum;
-        krsynth_set(&state->state->fm, state->state->sampling_rate,  &state->data);
-        krsynth_note_on(&state->state->note, &state->state->fm,  state->state->sampling_rate, notenum, velocity);
+        ks_synth_set(&state->state->fm, state->state->sampling_rate,  &state->data);
+        ks_synth_note_on(&state->state->note, &state->state->fm,  state->state->sampling_rate, notenum, velocity);
         return TRUE;
     }
     return FALSE;
@@ -269,13 +269,13 @@ static gboolean keyboard_release(GtkWidget *widget,
     }
 
     state->state->noteon = -1;
-    krsynth_note_off(&state->state->note);
+    ks_synth_note_off(&state->state->note);
 
     return FALSE;
 }
 
 void internal_process(audio_state* state, ALuint buffer){
-    krsynth_render(&state->fm, &state->note, krsyn_fms_depth( ks_v(0, KRSYN_LFO_DEPTH_BITS) ), state->buf, NUM_CHANNELS*NUM_SAMPLES);
+    ks_synth_render(&state->fm, &state->note, krsyn_fms_depth( ks_v(0, KS_LFO_DEPTH_BITS) ), state->buf, NUM_CHANNELS*NUM_SAMPLES);
 
     alBufferData(buffer, AL_FORMAT_MONO16, state->buf, sizeof(state->buf), SAMPLE_RATE);
     alSourceQueueBuffers(state->source, 1, &buffer);
@@ -313,7 +313,7 @@ static gboolean audio_stream_update(gpointer ptr)
 audio_state* audio_state_new()
 {
     audio_state *ret = malloc(sizeof(audio_state));
-    krsynth_binary data;
+    ks_synth_binary data;
 
     memset(ret, 0, sizeof(audio_state));
 
@@ -329,8 +329,8 @@ audio_state* audio_state_new()
     ret->noteon = -1;
     ret->sampling_rate = SAMPLE_RATE;
 
-    krsynth_binary_set_default(&data);
-    krsynth_set(&ret->fm, ret->sampling_rate, &data);
+    ks_synth_binary_set_default(&data);
+    ks_synth_set(&ret->fm, ret->sampling_rate, &data);
 
     memset(&ret->note, 0, sizeof(ret->note));
 

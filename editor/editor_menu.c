@@ -52,7 +52,7 @@ static void new_menu_activate(GtkMenuItem *item, gpointer user_data){
     editor_state* state;
 
     state = user_data;
-    krsynth_binary_set_default(&state->data);
+    ks_synth_binary_set_default(&state->data);
     emit_update_params_signal(state->param_editor);
     set_title(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(state->param_editor))), "");
     memset(state->save_file, 0, sizeof(state->save_file));

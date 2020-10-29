@@ -5,25 +5,25 @@
 */
 static void operator_fixed_frequency_checked(GtkToggleButton *togglebutton, gpointer user)
 {
-    krsynth_phase_coarse* data = (krsynth_phase_coarse*) user;
+    ks_synth_phase_coarse* data = (ks_synth_phase_coarse*) user;
     data->fixed_frequency = gtk_toggle_button_get_active(togglebutton);
 }
 
 static void operator_phase_coarse_changed(GtkRange* range, gpointer user)
 {
-    krsynth_phase_coarse* data = (krsynth_phase_coarse*) user;
+    ks_synth_phase_coarse* data = (ks_synth_phase_coarse*) user;
     data->value = gtk_range_get_value(range);
 }
 
 static void ks_curve_left_changed(GtkComboBox* combo, gpointer user)
 {
-    krsynth_keyscale_curve_t* data = (krsynth_keyscale_curve_t*) user;
+    ks_synth_keyscale_curve_t* data = (ks_synth_keyscale_curve_t*) user;
     data->left = gtk_combo_box_get_active(combo);
 }
 
 static void ks_curve_right_changed(GtkComboBox* combo, gpointer user)
 {
-    krsynth_keyscale_curve_t* data = (krsynth_keyscale_curve_t*) user;
+    ks_synth_keyscale_curve_t* data = (ks_synth_keyscale_curve_t*) user;
     data->right = gtk_combo_box_get_active(combo);
 }
 
@@ -40,7 +40,7 @@ static void enum_param_value_changed(GtkComboBox* combo, gpointer user)
 */
 static gchar* phase_coarse_format(GtkScale* scale, gdouble value, gpointer user)
 {
-    krsynth_phase_coarse* data = (krsynth_phase_coarse*) user;
+    ks_synth_phase_coarse* data = (ks_synth_phase_coarse*) user;
     if(data->fixed_frequency)
     {
         return g_strdup_printf ( "%d", (int)value);
@@ -99,23 +99,23 @@ static gchar* envelope_time_format(GtkScale* scale, gdouble value, gpointer user
 */
 static void fixed_frequency_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), ((krsynth_phase_coarse*)param)->fixed_frequency);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), ((ks_synth_phase_coarse*)param)->fixed_frequency);
 }
 
 
 static void phase_coarse_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_range_set_value(GTK_RANGE(widget), ((krsynth_phase_coarse*)param)->value);
+    gtk_range_set_value(GTK_RANGE(widget), ((ks_synth_phase_coarse*)param)->value);
 }
 
 static void ks_curve_left_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((krsynth_keyscale_curve_t*)param)->left);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((ks_synth_keyscale_curve_t*)param)->left);
 }
 
 static void ks_curve_right_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((krsynth_keyscale_curve_t*)param)->right);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((ks_synth_keyscale_curve_t*)param)->right);
 }
 
 /**
@@ -131,11 +131,11 @@ static void add_operator_label(GtkGrid* grid, const char* param_name, int left, 
 /**
   * add widgets
 */
-static void add_operator_fixed_frequency( GtkGrid* grid, const char* param_name, krsynth_phase_coarse* param_ptr, int top)
+static void add_operator_fixed_frequency( GtkGrid* grid, const char* param_name, ks_synth_phase_coarse* param_ptr, int top)
 {
     add_operator_label(grid, param_name, 0, top);
 
-    for(int i=0; i < KRSYN_NUM_OPERATORS; i++)
+    for(int i=0; i < KS_NUM_OPERATORS; i++)
     {
         GtkWidget* check = gtk_check_button_new();
 
@@ -155,7 +155,7 @@ static void add_operator_enum_param_base( GtkGrid* grid, const char* param_name,
 {
     add_operator_label(grid, param_name, 0, top);
 
-    for(int i=0; i < KRSYN_NUM_OPERATORS; i++)
+    for(int i=0; i < KS_NUM_OPERATORS; i++)
     {
         GtkWidget* combo = enum_param_new(param_ptr+i,
                                           widget_set, setter,
@@ -173,7 +173,7 @@ static void add_operator_param_base( GtkGrid* grid, const char* param_name, uint
 {
     add_operator_label(grid, param_name, 0, top);
 
-    for(int i=0; i < KRSYN_NUM_OPERATORS; i++)
+    for(int i=0; i < KS_NUM_OPERATORS; i++)
     {
         GtkWidget* scale = param_new(param_ptr+i, format, widget_set, setter, min, max);
         g_signal_connect(scale, "update-params", G_CALLBACK(widget_set), param_ptr+i);
@@ -181,7 +181,7 @@ static void add_operator_param_base( GtkGrid* grid, const char* param_name, uint
     }
 }
 
-static void add_operator_phase_coarse( GtkGrid* grid, const char* param_name, krsynth_phase_coarse* param_ptr, int top)
+static void add_operator_phase_coarse( GtkGrid* grid, const char* param_name, ks_synth_phase_coarse* param_ptr, int top)
 {
     add_operator_param_base(grid, param_name, (uint8_t*)param_ptr, phase_coarse_format,
                             phase_coarse_widget_set, operator_phase_coarse_changed,
@@ -245,21 +245,21 @@ static void* lfo_table_types[] ={
 
 
 
-static void add_ks_curve_left_param( GtkGrid* grid, const char* param_name, krsynth_keyscale_curve_t* param_ptr, int top)
+static void add_keyscale_curve_left_param( GtkGrid* grid, const char* param_name, ks_synth_keyscale_curve_t* param_ptr, int top)
 {
     add_operator_enum_param_base(grid, param_name, (uint8_t*)param_ptr,
                                  ks_curve_left_widget_set, ks_curve_left_changed,
                                  gtk_cell_renderer_text_new(), G_TYPE_STRING,
-                                 ks_curve_types, KRSYN_KS_CURVE_NUM_TYPES,
+                                 ks_curve_types, KS_KEYSCALE_CURVE_NUM_TYPES,
                                  top);
 }
 
-static void add_ks_curve_right_param( GtkGrid* grid, const char* param_name, krsynth_keyscale_curve_t* param_ptr, int top)
+static void add_keyscale_curve_right_param( GtkGrid* grid, const char* param_name, ks_synth_keyscale_curve_t* param_ptr, int top)
 {
     add_operator_enum_param_base(grid, param_name, (uint8_t*)param_ptr,
                                  ks_curve_right_widget_set, ks_curve_right_changed,
                                  gtk_cell_renderer_text_new(), G_TYPE_STRING,
-                                 ks_curve_types, KRSYN_KS_CURVE_NUM_TYPES,
+                                 ks_curve_types, KS_KEYSCALE_CURVE_NUM_TYPES,
                                  top);
 }
 
@@ -321,7 +321,7 @@ GtkWidget* common_params_new(editor_state *state)
 
     add_enum_pixbuf_param(grid, "Algorithm", &state->data.algorithm, algorithm_types, 11,  row++);
     add_param(grid, "Feedback Level", &state->data.feedback_level, feedback_level_format, 255, row++);
-    add_enum_param(grid, "LFO Wave Type", &state->data.lfo_wave_type, lfo_table_types, KRSYN_LFO_NUM_WAVES, row++);
+    add_enum_param(grid, "LFO Wave Type", &state->data.lfo_wave_type, lfo_table_types, KS_LFO_NUM_WAVES, row++);
     add_param(grid, "LFO Frequency", &state->data.lfo_freq, lfo_freq_format, 255, row++);
     add_param(grid, "FLO Det", &state->data.lfo_det, phase_det_format, 255, row++);
     add_param(grid, "LFO FMS Depth", &state->data.lfo_fms_depth, lfo_fms_format, 240, row++);
@@ -364,11 +364,11 @@ GtkWidget*  operator_params_new(editor_state *state)
     add_operator_param(grid, "Release Time", state->data.envelope_release_times, envelope_time_format, 255, row++);
 
     add_operator_param(grid, "Rate Scale", state->data.ratescales, zero_one_format2, 255, row++);
-    add_operator_param(grid, "KS Low Depth", state->data.ks_low_depths, zero_one_format2, 255, row++);
-    add_operator_param(grid, "KS High Depth", state->data.ks_high_depths, zero_one_format2, 255, row++);
-    add_operator_param(grid, "KS Mid Point", state->data.ks_mid_points, NULL, 127, row++);
-    add_ks_curve_left_param(grid, "KS Type Left", state->data.ks_curve_types, row++);
-    add_ks_curve_right_param(grid, "KS Type Right", state->data.ks_curve_types, row++);
+    add_operator_param(grid, "KS Low Depth", state->data.keyscale_low_depths, zero_one_format2, 255, row++);
+    add_operator_param(grid, "KS High Depth", state->data.keyscale_high_depths, zero_one_format2, 255, row++);
+    add_operator_param(grid, "KS Mid Point", state->data.keyscale_mid_points, NULL, 127, row++);
+    add_keyscale_curve_left_param(grid, "KS Type Left", state->data.keyscale_curve_types, row++);
+    add_keyscale_curve_right_param(grid, "KS Type Right", state->data.keyscale_curve_types, row++);
 
     add_operator_param(grid, "LFO AMS Depth", state->data.lfo_ams_depths,  zero_one_format2, 255, row++);
 

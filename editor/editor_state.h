@@ -11,6 +11,6 @@ typedef struct editor_state
     audio_state* state;
     GtkWidget* param_editor;
     char save_file[256];
-    krsynth_binary data;
+    ks_synth_binary data;
 }editor_state;
 #endif // EDITOR_STATE_H

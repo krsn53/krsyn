@@ -1,7 +1,7 @@
 /**
  * @file wav_write_test.c
  * @author Takaya Kurosaki 
- * @brief krsynthで合成した音声をwavファイルに出力
+ * @brief ks_synthで合成した音声をwavファイルに出力
  * 参考
  * 音ファイル（拡張子：WAVファイル）のデータ構造について - https://www.youfit.co.jp/archives/1418
  */
@@ -33,7 +33,7 @@ struct wave_header
 
 int main( void )
 {
-  krsynth_binary   data;
+  ks_synth_binary   data;
 
   int32_t buf_len = OUTPUT_LENGTH;
   int32_t buf_size = sizeof(int16_t) * buf_len;
@@ -41,7 +41,7 @@ int main( void )
 
   // 金属質な鍵盤っぽい音
   {
-      krsynth_binary_set_default(&data);
+      ks_synth_binary_set_default(&data);
 
     data.algorithm = 4;
 
@@ -50,7 +50,7 @@ int main( void )
     data.phase_coarses[2].value = 26;
     data.phase_coarses[3].value = 8;
 
-    for(unsigned i=0; i<KRSYN_NUM_OPERATORS; i++)
+    for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
     {
       data.envelope_points[1][i] = 192 >> (i&1 ? 0 : 1);
       data.envelope_points[2][i] = 64 >> (i&1 ? 0 : 1);
@@ -64,25 +64,25 @@ int main( void )
   }
 
   {
-      krtones_bank_binary bankbin ={
-          .bank_number = krtones_bank_number_of(0, 0),
+      ks_tones_bank_binary bankbin ={
+          .bank_number = ks_tones_bank_number_of(0, 0),
           .programs = {
               [0]= &data
           },
       };
-      krtones_binary tonebin ={
+      ks_tones_binary tonebin ={
           .num_banks=1,
           .banks = &bankbin,
     };
 
-      krtones* tones = krtones_new_from_binary(SAMPLING_RATE, &tonebin);
+      ks_tones* tones = ks_tones_new_from_binary(SAMPLING_RATE, &tonebin);
 
-      krsong* song = krsong_new(96, 48*9,
-            krsong_events_new(48*9,(krsong_event[]){
+      ks_score* song = ks_score_new(96, 48*9,
+            ks_score_events_new(48*9,(ks_score_event[]){
                                    [0]={
                                        .num_messages=2,
-                                       .messages = krsong_messages_new(2,
-                                       (krsong_message[]){
+                                       .messages = ks_score_messages_new(2,
+                                       (ks_score_message[]){
                                            [0] ={
                                                .status=0x90,
                                                .datas ={
@@ -102,8 +102,8 @@ int main( void )
                                    },
                                    [96*1/2]={
                                        .num_messages=2,
-                                       .messages = krsong_messages_new(2,
-                                       (krsong_message[]){
+                                       .messages = ks_score_messages_new(2,
+                                       (ks_score_message[]){
                                            [0] ={
                                                .status=0x90,
                                                .datas ={
@@ -122,8 +122,8 @@ int main( void )
                                    },
                                    [96*2/2]={
                                        .num_messages=4,
-                                       .messages = krsong_messages_new(4,
-                                       (krsong_message[]){
+                                       .messages = ks_score_messages_new(4,
+                                       (ks_score_message[]){
                                            [0] ={
                                                .status=0x90,
                                                .datas ={
@@ -155,8 +155,8 @@ int main( void )
                                    },
                                    [96*3/2]={
                                        .num_messages=2,
-                                       .messages = krsong_messages_new(2,
-                                       (krsong_message[]){
+                                       .messages = ks_score_messages_new(2,
+                                       (ks_score_message[]){
                                            [0] ={
                                                .status=0x90,
                                                .datas ={
@@ -175,8 +175,8 @@ int main( void )
                                    },
                                    [96*4/2]={
                                        .num_messages=4,
-                                       .messages = krsong_messages_new(4,
-                                       (krsong_message[]){
+                                       .messages = ks_score_messages_new(4,
+                                       (ks_score_message[]){
                                            [0] ={
                                                .status=0x90,
                                                .datas ={
@@ -208,8 +208,8 @@ int main( void )
                                    },
                                    [96*5/2]={
                                        .num_messages=2,
-                                       .messages = krsong_messages_new(2,
-                                       (krsong_message[]){
+                                       .messages = ks_score_messages_new(2,
+                                       (ks_score_message[]){
                                            [0] ={
                                                .status=0x90,
                                                .datas ={
@@ -228,8 +228,8 @@ int main( void )
                                    },
                                    [96*6/2]={
                                        .num_messages=4,
-                                       .messages = krsong_messages_new(4,
-                                       (krsong_message[]){
+                                       .messages = ks_score_messages_new(4,
+                                       (ks_score_message[]){
                                            [0] ={
                                                .status=0x90,
                                                .datas ={
@@ -261,8 +261,8 @@ int main( void )
                                    },
                                   [96*8/2]={
                                       .num_messages=2,
-                                      .messages = krsong_messages_new(2,
-                                      (krsong_message[]){
+                                      .messages = ks_score_messages_new(2,
+                                      (ks_score_message[]){
                                          [0] ={
                                              .status=0x80,
                                              .datas ={
@@ -284,12 +284,12 @@ int main( void )
                                })
                             );
 
-      krsong_state state;
-      krsong_state_set_default(&state, tones, SAMPLING_RATE, song->resolution);
+      ks_score_state state;
+      ks_score_state_set_default(&state, tones, SAMPLING_RATE, song->resolution);
 
-      krsong_render(song, SAMPLING_RATE, &state, tones, buf, buf_len);
+      ks_score_render(song, SAMPLING_RATE, &state, tones, buf, buf_len);
 
-      krsong_free(song);
+      ks_score_free(song);
   }
 
 

@@ -5,16 +5,16 @@
 #include <stdarg.h>
 
 enum krsyn_log_types{
-    KRSYN_LOG_INFO,
-    KRSYN_LOG_WARNING,
-    KRSYN_LOG_ERROR,
+    KS_LOG_INFO,
+    KS_LOG_WARNING,
+    KS_LOG_ERROR,
 
-    NUM_KRSYN_LOG_TYPES,
+    NUM_KS_LOG_TYPES,
 };
 
 static inline int krsyn_log(int type, const char* message, ...){
     const unsigned pre_size = sizeof ("krsyn Warning : ");
-    const char* pre[NUM_KRSYN_LOG_TYPES]= {
+    const char* pre[NUM_KS_LOG_TYPES]= {
         "krsyn Info    : ",
         "krsyn Warning : ",
         "krsyn Error   : "
@@ -29,6 +29,6 @@ static inline int krsyn_log(int type, const char* message, ...){
     return ret;
 }
 
-#define krsyn_info(...) krsyn_log(KRSYN_LOG_INFO , __VA_ARGS__ )
-#define krsyn_warning(...) krsyn_log(KRSYN_LOG_WARNING, __VA_ARGS__ )
-#define krsyn_error(...) krsyn_log(KRSYN_LOG_ERROR,  __VA_ARGS__ )
+#define krsyn_info(...) krsyn_log(KS_LOG_INFO , __VA_ARGS__ )
+#define krsyn_warning(...) krsyn_log(KS_LOG_WARNING, __VA_ARGS__ )
+#define krsyn_error(...) krsyn_log(KS_LOG_ERROR,  __VA_ARGS__ )

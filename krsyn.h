@@ -4,9 +4,9 @@
 extern "C" {
 #endif
 
-#include "krsyn/krsynth.h"
-#include "krsyn/krtones.h"
-#include "krsyn/krsong.h"
+#include "krsyn/synth.h"
+#include "krsyn/tones.h"
+#include "krsyn/score.h"
 
 #ifdef __cplusplus
 } // extern "C"

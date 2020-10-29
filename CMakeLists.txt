@@ -35,6 +35,10 @@ target_link(GTK gtk+-3.0 krsyn_editor)
 target_link_libraries(krsyn_editor krsyn)
 
 
+#file(GLOB krsyn_raygui_editor_src raygui_editor/*.h raygui_editor/*.c)
+#add_executable(krsyn_raygui_editor ${krsyn_raygui_editor_src})
+#target_link_libraries(krsyn_raygui_editor raylib raygui krsyn)
+
 add_custom_target(post ALL)
 
 file(GLOB_RECURSE krsyn_editor_resources RELATIVE "${CMAKE_SOURCE_DIR}/editor" "editor/resource/*")
