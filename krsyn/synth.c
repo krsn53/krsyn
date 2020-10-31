@@ -154,13 +154,13 @@ static inline uint32_t phase_delta(uint32_t sampling_rate, uint8_t notenum, uint
     return (uint32_t)delta_11;
 }
 
-static inline uint32_t ks_li(uint32_t index_16, int curve_type)
+static inline uint32_t keyscale_li(uint32_t index_16, int curve_type)
 {
     uint32_t index_m = (uint32_t)(index_16>> KS_KEYSCALE_CURVE_BITS);
 
     if(index_m >= ks_1(KS_KEYSCALE_CURVE_TABLE_BITS)-1)
     {
-        return ks_curves[curve_type][ks_1(KS_KEYSCALE_CURVE_TABLE_BITS)-1];
+        return keyscale_curves[curve_type][ks_1(KS_KEYSCALE_CURVE_TABLE_BITS)-1];
     }
 
     uint32_t index_b = index_m+1;
@@ -168,15 +168,15 @@ static inline uint32_t ks_li(uint32_t index_16, int curve_type)
     uint32_t under_fixed_b = index_16 & ((1<<KS_KEYSCALE_CURVE_BITS)-1);
     uint32_t under_fixed_m = (1<<KS_KEYSCALE_CURVE_BITS) - under_fixed_b;
 
-    uint32_t ret = ks_curves[curve_type][index_m] * under_fixed_m +
-        ks_curves[curve_type][index_b] * under_fixed_b;
+    uint32_t ret = keyscale_curves[curve_type][index_m] * under_fixed_m +
+        keyscale_curves[curve_type][index_b] * under_fixed_b;
 
     ret >>= KS_KEYSCALE_CURVE_BITS;
 
     return ret;
 }
 
-static inline uint32_t ks_value(const ks_synth *synth, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
+static inline uint32_t keyscale_value(const ks_synth *synth, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
 {
     uint64_t index_16 = table_index;
     index_16 <<= KS_KEYSCALE_CURVE_MAX_BITS;
@@ -185,7 +185,7 @@ static inline uint32_t ks_value(const ks_synth *synth, uint32_t table_index, uin
     index_16 >>= KS_KEYSCALE_DEPTH_BITS;
 
     int curve_type = synth->keyscale_curve_types[low_note ? 0 : 1][i];
-    return ks_li((uint32_t)index_16, curve_type);
+    return keyscale_li((uint32_t)index_16, curve_type);
 }
 
 static inline uint32_t keyscale(const ks_synth *synth, uint8_t notenum, unsigned i)
@@ -194,7 +194,7 @@ static inline uint32_t keyscale(const ks_synth *synth, uint8_t notenum, unsigned
     {
         if(synth->keyscale_curve_types[0][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[1][i] > KS_KEYSCALE_CURVE_ED)
         {
-            return ks_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i);
+            return keyscale_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i);
         }
         else
         {
@@ -204,7 +204,7 @@ static inline uint32_t keyscale(const ks_synth *synth, uint8_t notenum, unsigned
 
     if(synth->keyscale_curve_types[1][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[0][i] > KS_KEYSCALE_CURVE_ED )
     {
-        return ks_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i);
+        return keyscale_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i);
     }
     return 1<< KS_KEYSCALE_CURVE_BITS;
 }

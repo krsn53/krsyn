@@ -153,7 +153,7 @@ bool ks_score_channel_set_panpot(ks_score_channel* channel, uint8_t value){
 
 bool ks_score_channel_set_picthbend(ks_score_channel* channel, uint8_t msb, uint8_t lsb){
     channel->pitchbend = ks_v(msb, 7) + lsb;
-
+    channel->pitchbend = krsyn_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_BITS));
     return true;
 }
 
@@ -188,8 +188,7 @@ void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* sta
             //if(channel->bank->programs[channel->program_number] == NULL) continue;
             ks_synth* synth = channel->program;
             ks_synth_note* note = &state->notes[p].note;
-            int32_t pitchbend = krsyn_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_BITS));
-            ks_synth_render(synth, note, pitchbend, tmpbuf, frame);
+            ks_synth_render(synth, note, channel->pitchbend, tmpbuf, frame);
 
             for(unsigned b =0; b< frame; b++){
                 int32_t out = tmpbuf[b];

@@ -300,17 +300,17 @@ GtkWidget* common_params_new(editor_state *state)
 
     void* algorithm_types[] =
     {
-            gdk_pixbuf_new_from_file("resource/images/algorithm_00.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_01.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_02.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_03.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_04.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_05.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_06.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_07.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_08.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_09.png", NULL),
-            gdk_pixbuf_new_from_file("resource/images/algorithm_10.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_00.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_01.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_02.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_03.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_04.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_05.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_06.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_07.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_08.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_09.png", NULL),
+            gdk_pixbuf_new_from_file("resources/images/algorithm_10.png", NULL),
     };
 
     int row = 0;
