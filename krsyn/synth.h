@@ -19,7 +19,7 @@
 #define KS_ENVELOPE_BITS                 30u
 #define KS_ENVELOPE_NUM_POINTS            4u
 
-#define KS_RS_BITS                      16u
+#define KS_RATESCALE_BITS                      16u
 #define KS_VELOCITY_SENS_BITS           16u
 
 #define KS_KEYSCALE_CURVE_TABLE_BITS    7u
@@ -378,7 +378,7 @@ static inline uint32_t krsyn_fms_depth(int32_t depth){
 #define calc_envelope_samples(smp_freq, value)           krsyn_calc_envelope_samples(smp_freq, value)
 #define calc_envelope_release_samples(smp_freq, value)   calc_envelope_samples(smp_ferq,value)
 #define calc_velocity_sens(value)                       krsyn_linear2_u(value, 0, 1 << KS_VELOCITY_SENS_BITS)
-#define calc_ratescales(value)                          krsyn_linear2_u(value, 0, 1 << KS_RS_BITS)
+#define calc_ratescales(value)                          krsyn_linear2_u(value, 0, 1 << KS_RATESCALE_BITS)
 #define calc_keyscale_low_depths(value)                 krsyn_linear2_u(value, 0, 1 << KS_KEYSCALE_DEPTH_BITS)
 #define calc_keyscale_high_depths(value)                krsyn_linear2_u(value, 0, 1 << KS_KEYSCALE_DEPTH_BITS)
 #define calc_keyscale_mid_points(value)                 (value & 0x7f)

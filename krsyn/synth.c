@@ -236,8 +236,8 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, uint32_t samp
         //rate scale
         int64_t ratescales = synth->ratescales[i];
         ratescales *= ratescale[notenum];
-        ratescales >>= KS_RS_BITS;
-        ratescales += 1<<KS_RS_BITS;
+        ratescales >>= KS_RATESCALE_BITS;
+        ratescales += 1<<KS_RATESCALE_BITS;
 
         //key scale
         uint64_t keysc = keyscale(synth, notenum, i);
@@ -263,14 +263,14 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, uint32_t samp
 
             uint64_t frame = (synth->envelope_samples[j][i]);
             frame *= ratescales;
-            frame >>= KS_RS_BITS;
+            frame >>= KS_RATESCALE_BITS;
             frame >>= KS_SAMPLE_PER_FRAMES_BITS;
             note->envelope_samples[j][i] = MAX((uint32_t)frame, 1u);
         }
 
         uint64_t frame = (synth->envelope_release_samples[i]);
         frame *= ratescales;
-        frame >>= KS_RS_BITS;
+        frame >>= KS_RATESCALE_BITS;
         frame >>= KS_SAMPLE_PER_FRAMES_BITS;
         note->envelope_release_samples[i] = MAX((uint32_t)frame, 1u);
 

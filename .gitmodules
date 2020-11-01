@@ -1,6 +1,6 @@
 [submodule "raylib"]
-	path = raylib
+	path = raygui_editor/raylib
 	url = https://github.com/raysan5/raylib
 [submodule "raygui"]
-	path = raygui
+	path = raygui_editor/raygui
 	url = https://github.com/raysan5/raygui
