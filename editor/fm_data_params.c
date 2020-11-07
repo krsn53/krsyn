@@ -5,26 +5,26 @@
 */
 static void operator_fixed_frequency_checked(GtkToggleButton *togglebutton, gpointer user)
 {
-    ks_synth_phase_coarse* data = (ks_synth_phase_coarse*) user;
-    data->fixed_frequency = gtk_toggle_button_get_active(togglebutton);
+    ks_phase_coarse_t* data = (ks_phase_coarse_t*) user;
+    data->str.fixed_frequency = gtk_toggle_button_get_active(togglebutton);
 }
 
 static void operator_phase_coarse_changed(GtkRange* range, gpointer user)
 {
-    ks_synth_phase_coarse* data = (ks_synth_phase_coarse*) user;
-    data->value = gtk_range_get_value(range);
+    ks_phase_coarse_t* data = (ks_phase_coarse_t*) user;
+    data->str.value = gtk_range_get_value(range);
 }
 
 static void ks_curve_left_changed(GtkComboBox* combo, gpointer user)
 {
-    ks_synth_keyscale_curve_t* data = (ks_synth_keyscale_curve_t*) user;
-    data->left = gtk_combo_box_get_active(combo);
+    ks_keyscale_curve_t* data = (ks_keyscale_curve_t*) user;
+    data->str.left = gtk_combo_box_get_active(combo);
 }
 
 static void ks_curve_right_changed(GtkComboBox* combo, gpointer user)
 {
-    ks_synth_keyscale_curve_t* data = (ks_synth_keyscale_curve_t*) user;
-    data->right = gtk_combo_box_get_active(combo);
+    ks_keyscale_curve_t* data = (ks_keyscale_curve_t*) user;
+    data->str.right = gtk_combo_box_get_active(combo);
 }
 
 static void enum_param_value_changed(GtkComboBox* combo, gpointer user)
@@ -40,8 +40,8 @@ static void enum_param_value_changed(GtkComboBox* combo, gpointer user)
 */
 static gchar* phase_coarse_format(GtkScale* scale, gdouble value, gpointer user)
 {
-    ks_synth_phase_coarse* data = (ks_synth_phase_coarse*) user;
-    if(data->fixed_frequency)
+    ks_phase_coarse_t* data = (ks_phase_coarse_t*) user;
+    if(data->str.fixed_frequency)
     {
         return g_strdup_printf ( "%d", (int)value);
     }
@@ -99,23 +99,23 @@ static gchar* envelope_time_format(GtkScale* scale, gdouble value, gpointer user
 */
 static void fixed_frequency_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), ((ks_synth_phase_coarse*)param)->fixed_frequency);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), ((ks_phase_coarse_t*)param)->str.fixed_frequency);
 }
 
 
 static void phase_coarse_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_range_set_value(GTK_RANGE(widget), ((ks_synth_phase_coarse*)param)->value);
+    gtk_range_set_value(GTK_RANGE(widget), ((ks_phase_coarse_t*)param)->str.value);
 }
 
 static void ks_curve_left_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((ks_synth_keyscale_curve_t*)param)->left);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((ks_keyscale_curve_t*)param)->str.left);
 }
 
 static void ks_curve_right_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((ks_synth_keyscale_curve_t*)param)->right);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), ((ks_keyscale_curve_t*)param)->str.right);
 }
 
 /**
@@ -131,7 +131,7 @@ static void add_operator_label(GtkGrid* grid, const char* param_name, int left, 
 /**
   * add widgets
 */
-static void add_operator_fixed_frequency( GtkGrid* grid, const char* param_name, ks_synth_phase_coarse* param_ptr, int top)
+static void add_operator_fixed_frequency( GtkGrid* grid, const char* param_name, ks_phase_coarse_t* param_ptr, int top)
 {
     add_operator_label(grid, param_name, 0, top);
 
@@ -139,7 +139,7 @@ static void add_operator_fixed_frequency( GtkGrid* grid, const char* param_name,
     {
         GtkWidget* check = gtk_check_button_new();
 
-        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check), param_ptr[i].fixed_frequency);
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check), param_ptr[i].str.fixed_frequency);
         gtk_grid_attach(grid, check, i+1, top, 1, 1);
 
         g_signal_connect(check, "update-params", G_CALLBACK(fixed_frequency_widget_set), param_ptr + i);
@@ -181,7 +181,7 @@ static void add_operator_param_base( GtkGrid* grid, const char* param_name, uint
     }
 }
 
-static void add_operator_phase_coarse( GtkGrid* grid, const char* param_name, ks_synth_phase_coarse* param_ptr, int top)
+static void add_operator_phase_coarse( GtkGrid* grid, const char* param_name, ks_phase_coarse_t* param_ptr, int top)
 {
     add_operator_param_base(grid, param_name, (uint8_t*)param_ptr, phase_coarse_format,
                             phase_coarse_widget_set, operator_phase_coarse_changed,
@@ -245,7 +245,7 @@ static void* lfo_table_types[] ={
 
 
 
-static void add_keyscale_curve_left_param( GtkGrid* grid, const char* param_name, ks_synth_keyscale_curve_t* param_ptr, int top)
+static void add_keyscale_curve_left_param( GtkGrid* grid, const char* param_name, ks_keyscale_curve_t* param_ptr, int top)
 {
     add_operator_enum_param_base(grid, param_name, (uint8_t*)param_ptr,
                                  ks_curve_left_widget_set, ks_curve_left_changed,
@@ -254,7 +254,7 @@ static void add_keyscale_curve_left_param( GtkGrid* grid, const char* param_name
                                  top);
 }
 
-static void add_keyscale_curve_right_param( GtkGrid* grid, const char* param_name, ks_synth_keyscale_curve_t* param_ptr, int top)
+static void add_keyscale_curve_right_param( GtkGrid* grid, const char* param_name, ks_keyscale_curve_t* param_ptr, int top)
 {
     add_operator_enum_param_base(grid, param_name, (uint8_t*)param_ptr,
                                  ks_curve_right_widget_set, ks_curve_right_changed,

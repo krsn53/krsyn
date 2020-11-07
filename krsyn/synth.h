@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "./math.h"
+#include "./io.h"
 
 #define KS_FREQUENCY_BITS               16u
 
@@ -80,17 +81,23 @@ typedef enum ks_lfo_wave_t
 }ks_synth_lfo_wave_t;
 
 
-typedef struct ks_phase_coarse
+typedef union ks_phase_coarse_t
 {
-    uint8_t fixed_frequency: 1;
-    uint8_t value :7;
-}ks_synth_phase_coarse;
+    struct {
+        uint8_t fixed_frequency: 1;
+        uint8_t value :7;
+    } str;
+    uint8_t u8;
+}ks_phase_coarse_t;
 
-typedef struct ks_keyscale_curve_t
+typedef union ks_keyscale_curve_t
 {
-    uint8_t left : 4;
-    uint8_t right : 4;
-}ks_synth_keyscale_curve_t;
+    struct {
+        uint8_t left : 4;
+        uint8_t right : 4;
+    } str;
+    uint8_t u8;
+}ks_keyscale_curve_t;
 
 /**
  * @struct ks_synth_binary
@@ -99,7 +106,7 @@ typedef struct ks_keyscale_curve_t
 typedef struct ks_synth_binary
 {
     //! Frequency magnification of output.
-    ks_synth_phase_coarse          phase_coarses           [KS_NUM_OPERATORS];
+    ks_phase_coarse_t       phase_coarses           [KS_NUM_OPERATORS];
 
     //! Detune of frequency. Max value is half octave.
     uint8_t                     phase_fines             [KS_NUM_OPERATORS];
@@ -124,16 +131,16 @@ typedef struct ks_synth_binary
     uint8_t                     ratescales              [KS_NUM_OPERATORS];
 
     //! Volume change degree by note number when note number is smaller than keyscale_mid_points.
-    uint8_t                     keyscale_low_depths          [KS_NUM_OPERATORS];
+    uint8_t                     keyscale_low_depths     [KS_NUM_OPERATORS];
 
     //! Volume change degree by note number when note number is bigger than keyscale_mid_points.
-    uint8_t                     keyscale_high_depths         [KS_NUM_OPERATORS];
+    uint8_t                     keyscale_high_depths    [KS_NUM_OPERATORS];
 
     //! Note number which is center of keyscale.
-    uint8_t                     keyscale_mid_points           [KS_NUM_OPERATORS];
+    uint8_t                     keyscale_mid_points     [KS_NUM_OPERATORS];
 
     //! Kind of keyscale curve. Upper 4 bits are value for the notes which bellow keyscale_mid_points, and lower 4 bits are value for the notes which above keyscale_mid_points.
-    ks_synth_keyscale_curve_t   keyscale_curve_types    [KS_NUM_OPERATORS];
+    ks_keyscale_curve_t         keyscale_curve_types    [KS_NUM_OPERATORS];
     
 
     //! Amplitude modulation sensitivity of LFO.
@@ -231,6 +238,17 @@ typedef  struct ks_synth_note
     uint32_t    now_frame;
 }
 ks_synth_note;
+
+/**
+ * @brief ks_io_synth_binary
+ * @param io
+ * @param funcs
+ * @param data
+ * @param offset
+ * @param serialize
+ * @return If success, true otherwise false
+ */
+ks_io_decl_custom_func(ks_synth_binary);
 
 /**
  * @brief ks_synth_new Allocate synth data from binary

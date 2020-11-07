@@ -45,10 +45,10 @@ int main( void )
 
     data.algorithm = 4;
 
-    data.phase_coarses[0].value = 6;
-    data.phase_coarses[1].value = 2;
-    data.phase_coarses[2].value = 26;
-    data.phase_coarses[3].value = 8;
+    data.phase_coarses[0].str.value = 6;
+    data.phase_coarses[1].str.value = 2;
+    data.phase_coarses[2].str.value = 26;
+    data.phase_coarses[3].str.value = 8;
 
     for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
     {

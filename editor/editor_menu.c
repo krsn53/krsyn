@@ -1,7 +1,6 @@
 #include "editor_menu.h"
 #include <stdlib.h>
 
-static const char file_check[5] = {'F', 'M', 'T', 'N', 0};
 
 static void emit_update_params_signal(GtkWidget* current)
 {
@@ -18,8 +17,8 @@ static void emit_update_params_signal(GtkWidget* current)
 
 static GtkFileFilter* tone_file_filter_new(){
     GtkFileFilter *ret = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(ret, "*.fmt");
-
+    gtk_file_filter_add_pattern(ret, "*.ksyb");
+    gtk_file_filter_add_pattern(ret, "*.ksyt");
     return ret;
 }
 
@@ -61,35 +60,22 @@ static void new_menu_activate(GtkMenuItem *item, gpointer user_data){
 gboolean editor_open_tone(const char* file, editor_state* state)
 {
     FILE* fp;
-
-    if((fp = fopen(file, "rb")) != NULL)
+    bool text_format = strcmp(file + strlen(file) - 4, "ksyt") == 0;
+    if((fp = fopen(file, text_format ? "r": "rb")) != NULL)
     {
-        char fmtn[5];
 
-        fread( fmtn, 1, 4, fp );
-        fmtn[4] = 0;
-        if(strcmp(fmtn, file_check) != 0)
-        {
-            GtkWidget *error_dialog;
-
-            error_dialog = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(state->param_editor))),
-                                                  GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR,
-                                                  GTK_BUTTONS_OK, "Failed to load tone");
-
-            gtk_dialog_run(GTK_DIALOG(error_dialog));
-            gtk_widget_destroy(error_dialog);
-
-            fclose(fp);
-            return FALSE;
+        ks_string *str = ks_string_new(sizeof(ks_synth_binary));
+        char c;
+        while(fscanf(fp, "%c", &c) != EOF){
+            ks_string_add_c(str, c);
         }
-        fread( &state->data, 1,sizeof(state->data), fp );
+        ks_io io ={ .str =str, .seek =0};
+
+        gboolean ret = ks_io_custom_func(ks_synth_binary)(&io, text_format ? &default_io : &binary_io, &state->data, 0, false);
+
+        ks_string_free(str);
         fclose(fp);
-
-        memset(state->save_file, 0, sizeof(state->save_file));
-        strcpy(state->save_file, file);
-
-        set_title(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(state->param_editor))), state->save_file);
-        return TRUE;
+        return ret;
     }
     return FALSE;
 }
@@ -101,24 +87,25 @@ gboolean editor_save_tone(const char* file, editor_state* state){
 
     len = strlen(file);
 
-    if(strcmp(file + len - 4, ".fmt") != 0){
-        file_path = g_strdup_printf("%s.fmt", file);
+    bool text_format = strcmp(file + len - 4, "ksyt") == 0;
+
+    if(strcmp(file + len - 4, ".ksyb") != 0 && !text_format){
+        file_path = g_strdup_printf("%s.ksyb", file);
     }
     else {
         file_path = g_strdup(file);
     }
 
-    if((fp = fopen(file_path, "wb")) != NULL){
-        fwrite(file_check, 1, 4, fp);
-        fwrite(&state->data, 1, sizeof(state->data), fp);
+    if((fp = fopen(file_path, text_format ? "w": "wb")) != NULL){
+        ks_string *str = ks_string_new(sizeof(ks_synth_binary));
+        ks_io io ={ .str =str, .seek =0};
+
+        gboolean ret = ks_io_custom_func(ks_synth_binary)(&io, text_format ? &default_io : &binary_io, &state->data, 0, true);
+
+        if(ret)fwrite(str->ptr, 1, str->length, fp);
+
         fclose(fp);
-
-        memset(state->save_file, 0, sizeof(state->save_file));
-        strcpy(state->save_file, file_path);
-
-        set_title(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(state->param_editor))), state->save_file);
-        g_free(file_path);
-        return TRUE;
+        return ret;
     }
     g_free(file_path);
     return FALSE;

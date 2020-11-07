@@ -31,7 +31,7 @@ static void activate (GtkApplication *app,  gpointer user_data)
     error = NULL;
 
     // CSSファイルの読み込み.
-    gtk_css_provider_load_from_path(provider, "resource/css/style.css", &error);
+    gtk_css_provider_load_from_path(provider, "resources/css/style.css", &error);
 
     if( error != NULL ){
 
