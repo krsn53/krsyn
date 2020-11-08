@@ -1,5 +1,4 @@
 #include "synth.h"
-#include "math.h"
 
 #include <memory.h>
 #include <stdlib.h>

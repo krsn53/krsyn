@@ -265,7 +265,7 @@ ks_synth*                    ks_synth_new                     (ks_synth_binary* 
  * @param sampling_rate Sampling rate
  * @return Allocated synth data array
  */
-ks_synth*                    ks_synth_array_new               (uint32_t length, ks_synth_binary data[length], uint32_t sampling_rate);
+ks_synth*                    ks_synth_array_new               (uint32_t length, ks_synth_binary data[], uint32_t sampling_rate);
 
 /**
  * @brief ks_synth_free

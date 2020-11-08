@@ -12,6 +12,7 @@ enum krsyn_log_types{
     NUM_KS_LOG_TYPES,
 };
 
+
 static inline int krsyn_log(int type, const char* message, ...){
     const unsigned pre_size = sizeof ("krsyn Warning : ");
     const char* pre[NUM_KS_LOG_TYPES]= {
@@ -28,6 +29,8 @@ static inline int krsyn_log(int type, const char* message, ...){
 
     return ret;
 }
+
+
 
 #define krsyn_info(...) krsyn_log(KS_LOG_INFO , __VA_ARGS__ )
 #define krsyn_warning(...) krsyn_log(KS_LOG_WARNING, __VA_ARGS__ )

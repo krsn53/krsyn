@@ -37,7 +37,7 @@ typedef struct ks_tones{
 
 
 ks_tones* ks_tones_new_from_binary(uint32_t sampling_rate, const ks_tones_binary *bin);
-ks_tones* ks_tones_new(uint32_t num_banks, ks_tones_bank banks[num_banks]);
+ks_tones* ks_tones_new(uint32_t num_banks, ks_tones_bank banks[]);
 void ks_tones_free(ks_tones* tones);
 bool ks_tones_set_bank(ks_tones* tones, const ks_tones_bank* bank);
 ks_tones_bank ks_tones_bank_of(uint8_t msb, uint8_t lsb, ks_synth* programs[KS_NUM_MAX_PROGRAMS]);

@@ -174,18 +174,18 @@ void ks_string_reserve(ks_string* str, unsigned cap);
 void ks_string_set(ks_string* str, const char* ch);
 void ks_string_add(ks_string* str, const char* ch);
 
-static inline char* ks_string_fill(char v, unsigned length, char c[length+1]){
-    for(unsigned i=0; i<length; i++){
+static inline char* ks_string_fill(char v, unsigned length, char c[]){
+    for(unsigned i=0; i<length-1; i++){
         c[i] = v;
     }
-    c[length] = 0;
+    c[length-1] = 0;
     return c;
 }
 
 static inline bool ks_io_print_indent(ks_io* io,  char indent, bool serialize){
     if(!serialize) return true;
     char c[io->indent+1];
-    ks_string_add(io->str, ks_string_fill(indent, io->indent, c));
+    ks_string_add(io->str, ks_string_fill(indent, io->indent+1, c));
     return true;
 }
 
