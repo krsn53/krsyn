@@ -86,7 +86,7 @@ static gchar* lfo_freq_format(GtkScale* scale, gdouble value, gpointer user)
 
 static gchar* envelope_time_format(GtkScale* scale, gdouble value, gpointer user)
 {
-    double time = krsyn_calc_envelope_times(value) / (double)(1<<16);
+    double time = ks_calc_envelope_times(value) / (double)(1<<16);
     if(time < 0.1)
     {
         return g_strdup_printf("%.2f%s", time*1000.0, "msec");

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "synth.h"
-
+typedef struct ks_synth ks_synth;
+typedef struct ks_synth_binary ks_synth_binary;
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -47,20 +47,9 @@ ks_tones_bank* ks_tones_find_bank(const ks_tones* tones, ks_tones_bank_number ba
 ks_tones_bank* ks_tones_banks_new(uint32_t num_banks);
 void            ks_tones_banks_free(uint32_t num_banks, ks_tones_bank* banks);
 
-static inline uint32_t ks_tones_bank_number_hash(ks_tones_bank_number bank_number){
-    return ks_v(bank_number.msb, 7) +  bank_number.lsb;
+ uint32_t ks_tones_bank_number_hash(ks_tones_bank_number bank_number);
 
-}
-
-static inline bool ks_tones_bank_is_empty(const ks_tones_bank* bank){
-    return bank->emplaced == false;
-}
+bool ks_tones_bank_is_empty(const ks_tones_bank* bank);
 
 // XG like ???
-static inline ks_tones_bank_number ks_tones_bank_number_of(uint8_t msb, uint8_t lsb){
-    return (ks_tones_bank_number){
-        .msb = msb,
-        .lsb = lsb,
-        .percussion = (lsb==127 ? 1: 0)
-    };
-}
+ks_tones_bank_number ks_tones_bank_number_of(uint8_t msb, uint8_t lsb);

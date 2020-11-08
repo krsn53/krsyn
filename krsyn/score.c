@@ -6,6 +6,24 @@
 #include <stdlib.h>
 
 
+inline bool ks_score_note_is_enabled(const ks_score_note* note){
+    return ks_synth_note_is_enabled(&note->note);
+}
+inline bool ks_score_note_info_equals(ks_score_note_info i1, ks_score_note_info i2){
+    return (((i1.channel)<<7) + i1.note_number) == (((i2.channel)<<7) + i2.note_number);
+}
+
+inline int16_t ks_score_note_info_hash(ks_score_note_info id){
+    return id.note_number +  id.channel;
+}
+
+inline ks_score_note_info ks_score_note_info_of(uint8_t note_number, uint8_t channel){
+    return (ks_score_note_info){
+                .note_number = note_number,
+                .channel = channel,
+            };
+}
+
 
 ks_score* ks_score_new(uint32_t resolution, uint32_t num_events, const ks_score_event* events){
     ks_score* ret = malloc(sizeof(ks_score));
@@ -32,7 +50,7 @@ bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8
 
      ks_synth* synth = channel->program;
      if(synth == NULL) {
-         krsyn_error("Failed to run note_on for not set program of channel %d at tick %d", channel_number, state->current_tick);
+         ks_error("Failed to run note_on for not set program of channel %d at tick %d", channel_number, state->current_tick);
          return false;
      }
 
@@ -44,7 +62,7 @@ bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8
         index++;
         index = ks_mask(index, KS_MAX_POLYPHONY_BITS);
         if(index == begin) {
-            krsyn_warning("Failed to run note_on for exceeded maximum of polyphony at tick %d", channel_number, state->current_tick);
+            ks_warning("Failed to run note_on for exceeded maximum of polyphony at tick %d", channel_number, state->current_tick);
             return false;
         }
     }
@@ -59,12 +77,12 @@ bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8
 bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_score_channel* channel, uint8_t note_number){
     ks_tones_bank* bank = channel->bank;
     if(bank == NULL) {
-        krsyn_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
+        ks_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
         return false;
     }
 
     if(ks_tones_bank_is_empty(bank)) {
-        krsyn_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
+        ks_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
         return false;
     }
     ks_score_note_info info =ks_score_note_info_of(note_number, channel_number);
@@ -75,7 +93,7 @@ bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_s
         index++;
         index = ks_mask(index, KS_MAX_POLYPHONY_BITS);
         if(index == begin) {
-            krsyn_warning("Failed to run note_off for not found note with note number %d and channel %d at tick %d", note_number, channel_number, state->current_tick);
+            ks_warning("Failed to run note_off for not found note with note number %d and channel %d at tick %d", note_number, channel_number, state->current_tick);
             return false;
         }
     }
@@ -88,7 +106,7 @@ bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_s
 bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t program){
 
     if(channel->bank == NULL) {
-        krsyn_error("Failed to run program_change of channel %d for not set bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
+        ks_error("Failed to run program_change of channel %d for not set bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
         return false;
     }
 
@@ -106,7 +124,7 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones,
             it++;
             it %= tones->num_banks;
             if(it == 0){
-                krsyn_error("Failed to run program_change of channel %d for not found program %d at tick %d",(channel - state->channels) / sizeof(ks_score_channel), program,state->current_tick);
+                ks_error("Failed to run program_change of channel %d for not found program %d at tick %d",(channel - state->channels) / sizeof(ks_score_channel), program,state->current_tick);
                 return  false;
             }
         }
@@ -119,7 +137,7 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones,
 bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t msb, uint8_t lsb){
     ks_tones_bank *bank = ks_tones_find_bank(tones, ks_tones_bank_number_of(msb, lsb));
     if(bank == NULL) {
-        krsyn_error("Failed to run bank_select of channel %d for not found bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
+        ks_error("Failed to run bank_select of channel %d for not found bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
         return false;
     }
 
@@ -145,15 +163,15 @@ bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones
 }
 
 bool ks_score_channel_set_panpot(ks_score_channel* channel, uint8_t value){
-    channel->panpot_left =  sin_table[ks_v(value + ks_1(KS_PANPOT_BITS - 1), KS_TABLE_BITS - KS_PANPOT_BITS - 2)];
-    channel->panpot_right = sin_table[ks_v(value + ks_v(3, KS_PANPOT_BITS - 1), KS_TABLE_BITS - KS_PANPOT_BITS - 2)];
+    channel->panpot_left =  ks_sin(ks_v(value + ks_1(KS_PANPOT_BITS - 1), KS_PHASE_MAX_BITS - KS_PANPOT_BITS - 2 ), false);
+    channel->panpot_right = ks_sin(ks_v(value + ks_v(3, KS_PANPOT_BITS - 1), KS_PHASE_MAX_BITS - KS_PANPOT_BITS - 2 ), false);
 
     return true;
 }
 
 bool ks_score_channel_set_picthbend(ks_score_channel* channel, uint8_t msb, uint8_t lsb){
     channel->pitchbend = ks_v(msb, 7) + lsb;
-    channel->pitchbend = krsyn_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_BITS));
+    channel->pitchbend = ks_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_BITS));
     return true;
 }
 
@@ -219,7 +237,7 @@ void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* sta
     }while(2*i<len);
 }
 
-ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[num_events]){
+ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[]){
     ks_score_event* ret = malloc(sizeof(ks_score_event) * num_events);
     for(unsigned i=0; i<num_events; i++){
         ret[i] = events[i];
@@ -237,7 +255,7 @@ void ks_score_events_free(uint32_t num_events, const ks_score_event* events){
 }
 
 
-ks_score_message* ks_score_messages_new(uint32_t num_messages, ks_score_message messages[num_messages]){
+ks_score_message* ks_score_messages_new(uint32_t num_messages, ks_score_message messages[]){
     ks_score_message* ret = malloc(sizeof(ks_score_message) * num_messages);
     for(unsigned i=0; i< num_messages; i++){
         ret[i] = messages[i];
@@ -298,6 +316,7 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, ui
     for(unsigned i =0; i<KS_NUM_CHANNELS; i++){
         state->channels[i] = (ks_score_channel){ 0 };
         ks_score_channel_set_panpot(&state->channels[i], 0);
+        ks_score_channel_set_picthbend(&state->channels[i], 0, 0);
         ks_score_state_bank_select(state, tones, &state->channels[i], 0, 0);
     }
 }

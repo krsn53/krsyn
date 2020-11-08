@@ -5,11 +5,12 @@ project(krsyn LANGUAGES C)
 set(BUILD_RAYGUI_EXAMPLES OFF)
 set(BUILD_EXAMPLES OFF)
 
-add_subdirectory(raygui_editor)
 
 
 file(GLOB krsyn_src *.c *.h krsyn/*.c krsyn/*.h)
 add_library(krsyn ${krsyn_src})
+
+set_property(TARGET krsyn PROPERTY C_STANDARD 11)
 
 add_executable(wav_write_test tests/wav_write_test.c)
 target_link_libraries(wav_write_test krsyn)
@@ -27,6 +28,8 @@ function(target_link as lib proj)
 endfunction()
 
 if(NOT ${CMAKE_C_COMPILER_ID} STREQUAL TinyCC)
+    add_subdirectory(raygui_editor)
+
     file(GLOB krsyn_editor_src editor/*.h editor/*.c)
     add_executable(krsyn_editor ${krsyn_editor_src})
     target_link(AL openal krsyn_editor)

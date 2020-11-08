@@ -23,7 +23,7 @@ typedef struct ks_score_channel{
 
     int16_t             panpot_left;
     int16_t             panpot_right;
-    int16_t             pitchbend;
+    int32_t             pitchbend;
 }ks_score_channel;
 
 typedef struct ks_score_note_info{
@@ -83,30 +83,16 @@ void ks_score_event_run(const ks_score_event *event, uint32_t sampling_rate, ks_
 
 void ks_score_state_set_default(ks_score_state *state, const ks_tones *tones, uint32_t sampling_rate, uint32_t resolution);
 
-ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[num_events]);
+ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[]);
 void ks_score_events_free(uint32_t num_events, const ks_score_event *events);
 
-ks_score_message* ks_score_messages_new(uint32_t num_messages, ks_score_message messages[num_messages]);
+ks_score_message* ks_score_messages_new(uint32_t num_messages, ks_score_message messages[]);
 void ks_score_messages_free(ks_score_message* messages);
 
 
 
+bool ks_score_note_is_enabled(const ks_score_note* note);
 
-static inline bool ks_score_note_is_enabled(const ks_score_note* note){
-    return ks_synth_note_is_enabled(&note->note);
-}
-
-static inline bool ks_score_note_info_equals(ks_score_note_info i1, ks_score_note_info i2){
-    return (((i1.channel)<<7) + i1.note_number) == (((i2.channel)<<7) + i2.note_number);
-}
-
-static inline int16_t ks_score_note_info_hash(ks_score_note_info id){
-    return id.note_number +  id.channel;
-}
-
-static inline ks_score_note_info ks_score_note_info_of(uint8_t note_number, uint8_t channel){
-    return (ks_score_note_info){
-                .note_number = note_number,
-                .channel = channel,
-            };
-}
+bool ks_score_note_info_equals(ks_score_note_info i1, ks_score_note_info i2);
+int16_t ks_score_note_info_hash(ks_score_note_info id);
+ks_score_note_info ks_score_note_info_of(uint8_t note_number, uint8_t channel);

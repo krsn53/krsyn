@@ -4,6 +4,24 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+inline uint32_t ks_tones_bank_number_hash(ks_tones_bank_number bank_number){
+    return ks_v(bank_number.msb, 7) +  bank_number.lsb;
+
+}
+
+inline bool ks_tones_bank_is_empty(const ks_tones_bank* bank){
+    return bank->emplaced == false;
+}
+
+// XG like ???
+inline ks_tones_bank_number ks_tones_bank_number_of(uint8_t msb, uint8_t lsb){
+    return (ks_tones_bank_number){
+        .msb = msb,
+        .lsb = lsb,
+        .percussion = (lsb==127 ? 1: 0)
+    };
+}
+
 ks_tones* ks_tones_new_from_binary(uint32_t sampling_rate, const ks_tones_binary* bin){
     uint32_t num_banks = bin->num_banks;
     ks_tones_bank banks[num_banks];

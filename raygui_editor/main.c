@@ -249,7 +249,7 @@ int main()
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                     if(synth_bin.phase_coarses[i].str.fixed_frequency){
-                        text = FormatText("%.1f Hz", note_freq[synth_bin.phase_coarses[i].str.value] / (float)ks_1(KS_FREQUENCY_BITS));
+                        text = FormatText("%.1f Hz", ks_notefreq(synth_bin.phase_coarses[i].str.value) / (float)ks_1(KS_FREQUENCY_BITS));
                     }
                     else {
                         text = FormatText("%.1f", calc_phase_coarses(synth_bin.phase_coarses[i].str.value) / 2.0f);
@@ -293,7 +293,7 @@ int main()
                         synth_bin.envelope_points[e][i] = PropertyInt(pos2, text, synth_bin.envelope_points[e][i], 0, 255, 1);
                         pos2.x += step_x / 2.0f;
 
-                        float sec = krsyn_calc_envelope_times(synth_bin.envelope_times[e][i]) / (float)ks_1(16);
+                        float sec = ks_calc_envelope_times(synth_bin.envelope_times[e][i]) / (float)ks_1(16);
                         if(sec >= 1.0f){
                             text = FormatText("%.1f s", sec);
                         }
@@ -314,7 +314,7 @@ int main()
                 GuiAlignedLabel("Release Time", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    float sec = krsyn_calc_envelope_times(synth_bin.envelope_release_times[i]) / (float)ks_1(16);
+                    float sec = ks_calc_envelope_times(synth_bin.envelope_release_times[i]) / (float)ks_1(16);
                     if(sec >= 1.0f){
                         text = FormatText("%.1f s", sec);
                     }

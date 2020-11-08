@@ -1,5 +1,5 @@
 #include "../krsyn.h"
-
+#include <stdio.h>
 
 
 int main ( void ){

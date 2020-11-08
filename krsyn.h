@@ -4,7 +4,6 @@
 extern "C" {
 #endif
 
-#include "krsyn/synth.h"
 #include "krsyn/tones.h"
 #include "krsyn/score.h"
 

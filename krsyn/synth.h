@@ -322,91 +322,44 @@ void                        ks_synth_note_off                (ks_synth_note* not
  * @param note Checked note which is enabled or not
  * @return
  */
-inline static bool          ks_synth_note_is_enabled         (const ks_synth_note* note){
-    return *((uint32_t*)note->envelope_states) != 0;
-}
+bool                        ks_synth_note_is_enabled        (const ks_synth_note* note);
 
+uint32_t ks_exp_u(uint8_t val, uint32_t base, int num_v_bit);
 
-static inline uint32_t krsyn_exp_u(uint8_t val, uint32_t base, int num_v_bit)
-{
-    // ->[e]*(8-num_v_bit) [v]*(num_v_bit)
-    // base * 1.(v) * 2^(e)
-    int8_t v = val & ((1 << num_v_bit) - 1);
-    v |= ((val== 0) ? 0 : 1) << num_v_bit;    // add 1
-    int8_t e = val >> num_v_bit;
+uint32_t ks_calc_envelope_times(uint32_t val);
 
-    uint64_t ret = (uint64_t)base * v;
-    ret <<= e;
-    ret >>= (8 - num_v_bit - 1);
-    ret >>= num_v_bit;
-    return ret;
-}
-
-static inline uint32_t krsyn_calc_envelope_times(uint32_t val)
-{
-    return krsyn_exp_u(val, 1<<(16-8), 4);// 2^8 <= x < 2^16
-}
-
-static inline uint32_t krsyn_calc_envelope_samples(uint32_t smp_freq, uint8_t val)
-{
-    uint32_t time = krsyn_calc_envelope_times(val);
-    uint64_t samples = time;
-    samples *= smp_freq;
-    samples >>= 16;
-    samples = MAX(1u, samples);  // note : maybe dont need this line
-    return (uint32_t)samples;
-}
-
+uint32_t ks_calc_envelope_samples(uint32_t smp_freq, uint8_t val);
 // min <= val < max
-static inline int64_t krsyn_linear(uint8_t val, int32_t MIN, int32_t MAX)
-{
-    int32_t range = MAX - MIN;
-    int64_t ret = val;
-    ret *= range;
-    ret >>= 8;
-    ret += MIN;
-
-    return ret;
-}
-
+int64_t ks_linear(uint8_t val, int32_t MIN, int32_t MAX);
 // min <= val <= max
-static inline int64_t krsyn_linear2(uint8_t val, int32_t MIN, int32_t MAX)
-{
-    return krsyn_linear(val, MIN, MAX + MAX/256);
-}
-
-static inline uint32_t krsyn_fms_depth(int32_t depth){
-    int64_t ret = ((int64_t)depth*depth)>>(KS_LFO_DEPTH_BITS + 2);
-    ret += (depth >> 2) + (depth >> 1);
-    ret += ks_1(KS_LFO_DEPTH_BITS);
-    return ret;
-}
+int64_t ks_linear2(uint8_t val, int32_t MIN, int32_t MAX);
+uint32_t ks_fms_depth(int32_t depth);
 
 
-#define krsyn_linear_i (int32_t)krsyn_linear
-#define krsyn_linear_u (uint32_t)krsyn_linear
-#define krsyn_linear2_i (int32_t)krsyn_linear2
-#define krsyn_linear2_u (uint32_t)krsyn_linear2
+#define ks_linear_i (int32_t)ks_linear
+#define ks_linear_u (uint32_t)ks_linear
+#define ks_linear2_i (int32_t)ks_linear2
+#define ks_linear2_u (uint32_t)ks_linear2
 
 #define calc_fixed_frequency(value)                     (value)
 #define calc_phase_coarses(value)                       (value)
-#define calc_phase_fines(value)                         krsyn_linear_u(value, 0, 1 << (KS_PHASE_FINE_BITS))
-#define calc_phase_dets(value)                          krsyn_linear_u(value, 0, ks_1(KS_PHASE_MAX_BITS))
-#define calc_envelope_points(value)                      krsyn_linear2_i(value, 0, 1 << KS_ENVELOPE_BITS)
-#define calc_envelope_samples(smp_freq, value)           krsyn_calc_envelope_samples(smp_freq, value)
+#define calc_phase_fines(value)                         ks_linear_u(value, 0, 1 << (KS_PHASE_FINE_BITS))
+#define calc_phase_dets(value)                          ks_linear_u(value, 0, ks_1(KS_PHASE_MAX_BITS))
+#define calc_envelope_points(value)                      ks_linear2_i(value, 0, 1 << KS_ENVELOPE_BITS)
+#define calc_envelope_samples(smp_freq, value)           ks_calc_envelope_samples(smp_freq, value)
 #define calc_envelope_release_samples(smp_freq, value)   calc_envelope_samples(smp_ferq,value)
-#define calc_velocity_sens(value)                       krsyn_linear2_u(value, 0, 1 << KS_VELOCITY_SENS_BITS)
-#define calc_ratescales(value)                          krsyn_linear2_u(value, 0, 1 << KS_RATESCALE_BITS)
-#define calc_keyscale_low_depths(value)                 krsyn_linear2_u(value, 0, 1 << KS_KEYSCALE_DEPTH_BITS)
-#define calc_keyscale_high_depths(value)                krsyn_linear2_u(value, 0, 1 << KS_KEYSCALE_DEPTH_BITS)
+#define calc_velocity_sens(value)                       ks_linear2_u(value, 0, 1 << KS_VELOCITY_SENS_BITS)
+#define calc_ratescales(value)                          ks_linear2_u(value, 0, 1 << KS_RATESCALE_BITS)
+#define calc_keyscale_low_depths(value)                 ks_linear2_u(value, 0, 1 << KS_KEYSCALE_DEPTH_BITS)
+#define calc_keyscale_high_depths(value)                ks_linear2_u(value, 0, 1 << KS_KEYSCALE_DEPTH_BITS)
 #define calc_keyscale_mid_points(value)                 (value & 0x7f)
 #define calc_keyscale_curve_types_left(value)           (value & 0x0f)
 #define calc_keyscale_curve_types_right(value)          (value >> 4)
-#define calc_lfo_ams_depths(value)                      krsyn_linear2_u(value, 0, 1 << KS_LFO_DEPTH_BITS)
+#define calc_lfo_ams_depths(value)                      ks_linear2_u(value, 0, 1 << KS_LFO_DEPTH_BITS)
 #define calc_algorithm(value)                           (value)
-#define calc_feedback_level(value)                      krsyn_linear_u(value, 0, 2<<KS_FEEDBACK_LEVEL_BITS)
+#define calc_feedback_level(value)                      ks_linear_u(value, 0, 2<<KS_FEEDBACK_LEVEL_BITS)
 #define calc_lfo_wave_type(value)                      (value)
-#define calc_lfo_fms_depth(value)                       krsyn_exp_u(value, 1 << (KS_LFO_DEPTH_BITS-12), 4)
-#define calc_lfo_freq(value)                            krsyn_exp_u(value, 1<<(KS_FREQUENCY_BITS-5), 4)
-#define calc_lfo_det(value)                             krsyn_linear_u(value, 0, ks_1(KS_PHASE_MAX_BITS))
+#define calc_lfo_fms_depth(value)                       ks_exp_u(value, 1 << (KS_LFO_DEPTH_BITS-12), 4)
+#define calc_lfo_freq(value)                            ks_exp_u(value, 1<<(KS_FREQUENCY_BITS-5), 4)
+#define calc_lfo_det(value)                             ks_linear_u(value, 0, ks_1(KS_PHASE_MAX_BITS))
 
