@@ -1,6 +1,7 @@
 #include "string.h"
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <memory.h>
 
 ks_string *ks_string_new(unsigned capacity) {
@@ -38,7 +39,7 @@ void ks_string_add_n(ks_string* str, unsigned n, const char* ch){
         ks_string_reserve(str, str->capacity*2);
     }
 
-    strncpy(str->ptr + str->length, ch, n);
+    memcpy(str->ptr + str->length, ch, n);
     str->length = out_len;
 }
 

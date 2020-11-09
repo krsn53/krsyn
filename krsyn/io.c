@@ -2,7 +2,13 @@
 #include "logger.h"
 #include <stdarg.h>
 
+inline ks_value ks_value_ptr(void* ptr, ks_value_func func) {
+    return (ks_value){ func, ptr};
+}
 
+inline ks_property ks_prop_v(const char* name, ks_value value) {
+    return (ks_property){name, value};
+}
 
 inline bool ks_io_print_indent(ks_io* io,  char indent, bool serialize){
     if(!serialize) return true;

@@ -5,7 +5,9 @@
 #define RAYGUI_SUPPORT_ICONS
 #include "raygui.h"
 
-#define SCREEN_WIDTH 800
+#define GUI_FILE_DIALOG_IMPLEMENTATION
+#include "gui_file_dialog.h"
+#define SCREEN_WIDTH 535
 #define SCREEN_HEIGHT 600
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -18,23 +20,46 @@
 
 #include "../krsyn.h"
 
+
 int GetLineWidth();
 Color GetTextColorDefault();
 void GuiAlignedLabel(const char* text, Rectangle rec, GuiTextAlignment align);
 int PropertyInt(Rectangle rec, const char* innerText, int value, int min_value, int max_value, int step);
 int PropertyIntImage(Rectangle rec, Texture2D tex, int value, int min_value, int max_value, int step);
+//------------------------------------------------------------------------------------
+bool ReadWriteSynth(ks_synth_binary* bin, ks_string* str, GuiFileDialogState* file_dialog_state, bool serialize){
+    ks_io io ={
+        .indent =0,
+        .seek = 0,
+        .str = str,
+    };
+    const ks_io_funcs* funcs;
+    if(IsFileExtension(file_dialog_state->fileNameText, ".ksyb")){
+        funcs = &binary_io;
+    } else {
+        if(!IsFileExtension(file_dialog_state->fileNameText, ".ksyt")){
+            strcpy(file_dialog_state->fileNameText + strlen(file_dialog_state->fileNameText), ".ksyt");
+        }
+        funcs = &default_io;
+    }
+    return ks_io_custom_func(ks_synth_binary)(&io, funcs, bin, 0, serialize);
+}
 
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
 int main()
 {
+    ks_synth_binary temp;
     ks_synth_binary synth_bin;
     ks_synth synth;
     ks_synth_note note = { 0 };
     int8_t noteon_number = -1;
+    bool dirty = false;
+    GuiFileDialogState file_dialog_state;
 
     ks_synth_binary_set_default(&synth_bin);
+    ks_synth_binary_set_default(&temp);
 
     InitAudioDevice();
 
@@ -42,11 +67,17 @@ int main()
     int16_t *buf = malloc(sizeof(int16_t)*MAX_SAMPLES_PER_UPDATE* NUM_CHANNELS);
     PlayAudioStream(audiostream);
 
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn raygui editor");
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn editor");
     SetTargetFPS(60);
 
 
     //--------------------------------------------------------------------------------------
+    enum{
+        EDIT,
+        CONFIRM_NEW,
+        SAVE_DIALOG,
+        LOAD_DIALOG,
+    }state = EDIT;
 
 
     int margin = GuiGetStyle(DEFAULT, BORDER_WIDTH)*5;
@@ -68,7 +99,10 @@ int main()
     SetTextureFilter(lfo_wave_images, FILTER_BILINEAR);
     SetTextureFilter(keyscale_left_images, FILTER_BILINEAR);
     SetTextureFilter(keyscale_right_images, FILTER_BILINEAR);
-    
+
+    file_dialog_state = InitGuiFileDialog(500, 500, file_dialog_state.dirPathText, false);
+    strcpy(file_dialog_state.filterExt, ".ksyb;.ksyt");
+
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
@@ -76,10 +110,22 @@ int main()
             ks_synth_render(&synth, &note, ks_1(KS_LFO_DEPTH_BITS), buf, MAX_SAMPLES_PER_UPDATE);
             UpdateAudioStream(audiostream, buf, MAX_SAMPLES_PER_UPDATE*NUM_CHANNELS);
         }
+        // Update
+        //----------------------------------------------------------------------------------
+        if(state == EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
+            if(memcmp(&synth_bin, &temp, sizeof(ks_synth_binary)) != 0 ){
+                dirty = true;
+                temp = synth_bin;
+            }
+        }
+
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
             ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+
+            if(state == EDIT) GuiEnable();
+            else GuiDisable();
 
             Rectangle x_pos = base_pos;
             Rectangle pos = base_pos;
@@ -88,10 +134,52 @@ int main()
             {
                 pos2 = pos;
                 pos2.height *= 2;
+                pos.y += step *2;
 
+                float step_x = pos2.width + margin;
+                if(GuiButton(pos2, "#8#New")){
+                    state = CONFIRM_NEW;
+                }
+                pos2.x += step_x;
+
+                if(GuiButton(pos2, "#1#Open")){
+                    state = LOAD_DIALOG;
+                    strcpy(file_dialog_state.titleText, "Load Synth");
+                    file_dialog_state.fileDialogActive = true;
+                }
+                pos2.x += step_x;
+
+                if(GuiButton(pos2, "#2#Save")){
+                    if(strcmp(file_dialog_state.fileNameText, "") == 0){
+                        strcpy(file_dialog_state.titleText, "Save Synth");
+                        file_dialog_state.fileDialogActive = true;
+                        state = SAVE_DIALOG;
+                    } else {
+                        ks_string * str = ks_string_new(0);
+                        if(ReadWriteSynth(&synth_bin, str, &file_dialog_state, true)){
+                            const char* file_path = FormatText("%s/%s", file_dialog_state.dirPathText ,file_dialog_state.fileNameText);
+                            SaveFileData(file_path, str->ptr, str->length);
+                            dirty = false;
+                        }
+                        ks_string_free(str);
+                    }
+                }
+                pos2.x += step_x;
+
+                if(GuiButton(pos2, "#2#Save As")){
+                    strcpy(file_dialog_state.titleText, "Save Synth");
+                    file_dialog_state.fileDialogActive = true;
+                    state = SAVE_DIALOG;
+                }
+                pos2.x += step_x;
+
+                if(GuiButton(pos2, "#159#Exit")){
+                    break;
+                }
             }
 
-            x_pos.x += step_x*2;
+            x_pos.y += step*2;
+
             pos.x = x_pos.x;
             pos.y += step / 2.0;
 
@@ -218,10 +306,14 @@ int main()
                     DrawLineV((Vector2){base_x, y - buf[i]*amp}, (Vector2){base_x+dx, y - buf[i+1]*amp}, GREEN);
                     x+= dx;
                 }
+
+                if(state != EDIT ){
+                    DrawRectangleRec(wave_rec, (Color){200,200,200,128});
+                }
             }
 
 
-            GuiGroupBox((Rectangle){pos.x, base_pos.y, step_x*2, pos.y - base_pos.y}, "Common Params");
+            GuiGroupBox((Rectangle){pos.x, x_pos.y, step_x*2, pos.y - x_pos.y}, "Common Params");
             pos.y += step / 2.0f;
             x_pos.y = pos.y;
 
@@ -335,7 +427,7 @@ int main()
                pos.x += step_x;
                for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                    text = FormatText("%.1f %%", 100.0*calc_ratescales(synth_bin.ratescales[i]) / (float)ks_1(KS_RATESCALE_BITS));
-                   synth_bin.phase_dets[i] = PropertyInt(pos, text, synth_bin.ratescales[i], 0, 255, 1);
+                   synth_bin.ratescales[i] = PropertyInt(pos, text, synth_bin.ratescales[i], 0, 255, 1);
                    pos.x += step_x;
                }
                pos.x = x_pos.x; pos.y += step;
@@ -442,11 +534,11 @@ int main()
                         if(n == noteon_number){
                             noteon_rec = rec;
                             DrawRectangleRec(rec, SKYBLUE);
-                            DrawRectangleLinesEx(rec, 1, GRAY);
+                            DrawRectangleLinesEx(rec, 1, state != EDIT ? LIGHTGRAY : GRAY);
                         }
                         else {
                             DrawRectangleRec(rec, RAYWHITE);
-                            DrawRectangleLinesEx(rec, 1, GRAY);
+                            DrawRectangleLinesEx(rec, 1, state != EDIT ? LIGHTGRAY : GRAY);
                         }
 
                         x2 += white.x;
@@ -454,8 +546,6 @@ int main()
 
                     x2 = x + white.x * 0.6;
                     for(int k=0; k<5; k++){
-
-
 
                         Rectangle rec = recs[blacks[k]] = (Rectangle){x2, y, black.x, black.y};
                         int8_t n = blacks[k]+ offset;
@@ -465,34 +555,37 @@ int main()
                             noteon_rec = rec;
                             DrawRectangleRec(rec, DARKBLUE);
                         } else {
-                            DrawRectangleRec(rec, DARKGRAY);
+                            DrawRectangleRec(rec, state != EDIT ? LIGHTGRAY : DARKGRAY);
                         }
 
 
                         x2 += (k != 1 && k != 4) ? white.x : white.x*2;
                     }
 
-                    for(int i=0; i<7; i++){
-                        int8_t n = offset + whites[i];
-                        Vector2 mouse = GetMousePosition();
-                        if(CheckCollisionPointRec(mouse, recs[whites[i]]) ){
-                            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && noteon_number != n){
-                                    noteon = n;
-                                    velocity = (mouse.y - recs[whites[i]].y)*127 / recs[whites[i]].height;
-                            }
-                        }
-                    }
-                    for(int i=0; i<5; i++){
-                        int8_t n = offset + blacks[i];
-                        Vector2 mouse = GetMousePosition();
-                        if(CheckCollisionPointRec(mouse, recs[blacks[i]]) ){
-                            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && noteon_number != n){
-                                    noteon = n;
-                                    velocity = (mouse.y - recs[blacks[i]].y)*127 / recs[blacks[i]].height;
-                            }
-                        }
-                    }
 
+                    if(state ==EDIT){
+                        for(int i=0; i<7; i++){
+                            int8_t n = offset + whites[i];
+                            Vector2 mouse = GetMousePosition();
+                            if(CheckCollisionPointRec(mouse, recs[whites[i]]) ){
+                                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && noteon_number != n){
+                                        noteon = n;
+                                        velocity = (mouse.y - recs[whites[i]].y)*127 / recs[whites[i]].height;
+                                }
+                            }
+                        }
+                        for(int i=0; i<5; i++){
+                            int8_t n = offset + blacks[i];
+                            Vector2 mouse = GetMousePosition();
+                            if(CheckCollisionPointRec(mouse, recs[blacks[i]]) ){
+                                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && noteon_number != n){
+                                        noteon = n;
+                                        velocity = (mouse.y - recs[blacks[i]].y)*127 / recs[blacks[i]].height;
+                                }
+                            }
+                        }
+
+                    }
                     x += white.x*7;
                 }
 
@@ -509,6 +602,98 @@ int main()
                     noteon_number = noteon;
                 }
             }
+
+            GuiEnable();
+
+            switch (state) {
+
+            case CONFIRM_NEW:{
+                bool run_new = !dirty;
+
+                if(dirty){
+                    Rectangle rec={0,0, 300, 100};
+                    rec.x = (SCREEN_WIDTH - rec.width)/ 2;
+                    rec.y = (SCREEN_HEIGHT - rec.height) / 2;
+                    int res = GuiMessageBox(rec, "Confirm", "Save before create a new synth ?" , "Yes;No;Cancel");
+
+                    if(res == 0 || res ==3){
+                        state = EDIT;
+                    }
+                    else if(res == 1) {
+                        // save
+                    }
+                    else if(res == 2) {
+                        run_new = true;
+                    }
+                }
+
+                if(run_new){
+                    dirty = false;
+                    state = EDIT;
+                    ks_synth_binary_set_default(&synth_bin);
+                    temp = synth_bin;
+                    SetWindowTitle(FormatText("krsyn editor"));
+                }
+                break;
+            }
+            case LOAD_DIALOG:{
+                GuiFileDialog(&file_dialog_state, false);
+                if(!file_dialog_state.fileDialogActive) {
+                    if(file_dialog_state.SelectFilePressed){
+                        if(strcmp(file_dialog_state.fileNameText, "") == 0){
+                            file_dialog_state.SelectFilePressed = false;
+                            file_dialog_state.fileDialogActive = true;
+                            break;
+                        }
+
+                        const char* file_path = FormatText("%s/%s",file_dialog_state.dirPathText,file_dialog_state.fileNameText);
+
+                        unsigned file_size;
+                        unsigned char* c = LoadFileData(file_path, &file_size);
+                        if(c == NULL) {
+                            break;
+                        }
+
+                        ks_string *str = ks_string_new(file_size);
+                        ks_string_add_n(str, file_size, (char*)c);
+                        RL_FREE(c);
+
+                        ks_synth_binary load;
+                        if(!ReadWriteSynth(&load, str, &file_dialog_state, false)){
+                            ks_error("Failed to load synth");
+
+                        }else {
+                            synth_bin = temp = load;
+                            dirty = false;
+                            SetWindowTitle(FormatText("krsyn editor - %s", file_path));
+                        }
+                        ks_string_free(str);
+                    }
+                    state = EDIT;
+                }
+                break;
+            }
+            case SAVE_DIALOG:{
+                GuiFileDialog(&file_dialog_state, true);
+                if(!file_dialog_state.fileDialogActive){
+                    if(file_dialog_state.SelectFilePressed){
+                        ks_string * str = ks_string_new(1);
+                        if(ReadWriteSynth(&synth_bin, str, &file_dialog_state, true)){
+                            const char* file_path = FormatText("%s/%s", file_dialog_state.dirPathText ,file_dialog_state.fileNameText);
+                            SaveFileData(file_path, str->ptr, str->length);
+                            dirty = false;
+
+                            SetWindowTitle(FormatText("krsyn editor - %s", file_path));
+                        }
+                        ks_string_free(str);
+                        state = EDIT;
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+        }
 		EndDrawing();
 		//----------------------------------------------------------------------------------
     }
@@ -626,8 +811,7 @@ int PropertyInt(Rectangle rec, const char* innerText, int value, int min_value, 
     if ((state == GUI_STATE_NORMAL) || (state == GUI_STATE_PRESSED)) GuiDrawRectangle(progress, 0, BLANK, Fade(GetColor(GuiGetStyle(SLIDER, BASE_COLOR_PRESSED)), guiAlpha));
         else if (state == GUI_STATE_FOCUSED) GuiDrawRectangle(progress, 0, BLANK, Fade(GetColor(GuiGetStyle(SLIDER, TEXT_COLOR_FOCUSED)), guiAlpha));
 
-    GuiDrawText(innerText, rec, GUI_TEXT_ALIGN_CENTER,
-             Fade(GetColor(GuiGetStyle(SLIDER, BORDER)), guiAlpha));
+    GuiAlignedLabel(innerText, rec, GUI_TEXT_ALIGN_CENTER);
 
     return value;
 }
@@ -648,7 +832,13 @@ int PropertyIntImage(Rectangle rec, Texture2D tex, int value, int min_value, int
     Color tex_color;
     if ((state == GUI_STATE_NORMAL)|| (state == GUI_STATE_PRESSED)) tex_color = WHITE;
     else tex_color = GetColor(GuiGetStyle(DEFAULT, BASE_COLOR_FOCUSED));
-    DrawTexturePro(tex, src, (Rectangle){rec.x + rec.width/2.0f, rec.y + rec.height/2.0f, src.width, src.height}, (Vector2){src.width/2.0f, src.height/2.0f}, 0.0f, Fade(tex_color ,guiAlpha));
+
+    Rectangle dest = (Rectangle){rec.x + rec.width/2.0f, rec.y + rec.height/2.0f, src.width, src.height};
+    DrawTexturePro(tex, src, dest,
+                   (Vector2){src.width/2.0f, src.height/2.0f}, 0.0f, Fade(tex_color ,guiAlpha));
+    if(state == GUI_STATE_DISABLED){
+        DrawRectangleRec(rec, (Color){200,200,200, 128});
+    }
 
     GuiDrawRectangle(rec, GuiGetStyle(SLIDER, BORDER_WIDTH),
                      Fade(GetColor(GuiGetStyle(SLIDER, BORDER + (state*3))), guiAlpha),
@@ -658,5 +848,8 @@ int PropertyIntImage(Rectangle rec, Texture2D tex, int value, int min_value, int
 }
 
 void GuiAlignedLabel(const char* text, Rectangle rec, GuiTextAlignment align){
-    GuiDrawText(text, rec, align, GetTextColorDefault());
+    Color color;
+    if ((guiState == GUI_STATE_NORMAL)|| (guiState== GUI_STATE_PRESSED)) color = GetTextColorDefault();
+    else color = GetColor(GuiGetStyle(DEFAULT, TEXT_COLOR_DISABLED));
+    GuiDrawText(text, rec, align, color);
 }

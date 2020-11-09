@@ -71,6 +71,8 @@ typedef struct {
     char **dirFiles;
     int dirFilesCount;
 
+    char titleText[256];
+
     char filterExt[256];
 
     char dirPathTextCopy[256];
@@ -103,7 +105,7 @@ extern "C" {            // Prevents name mangling of functions
 // Module Functions Declaration
 //----------------------------------------------------------------------------------
 GuiFileDialogState InitGuiFileDialog(int width, int height, const char *initPath, bool active);
-void GuiFileDialog(GuiFileDialogState *state);
+void GuiFileDialog(GuiFileDialogState *state, bool save);
 
 #ifdef __cplusplus
 }
@@ -204,6 +206,7 @@ GuiFileDialogState InitGuiFileDialog(int width, int height, const char *initPath
 
     strcpy(state.dirPathTextCopy, state.dirPathText);
     strcpy(state.fileNameTextCopy, state.fileNameText);
+    strcpy(state.titleText, "Dialog");
 
     strcpy(state.filterExt, "all");
 
@@ -224,7 +227,7 @@ static void FD_RELOAD_DIRPATH(GuiFileDialogState *state)
 }
 
 // Update and draw file dialog
-void GuiFileDialog(GuiFileDialogState *state)
+void GuiFileDialog(GuiFileDialogState *state, bool save)
 {
     if (state->fileDialogActive)
     {
@@ -257,7 +260,7 @@ void GuiFileDialog(GuiFileDialogState *state)
         //------------------------------------------------------------------------------------
 
         DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)), 0.85f));
-        state->fileDialogActive = !GuiWindowBox((Rectangle){ state->position.x + 0, state->position.y + 0, winWidth, winHeight }, "#198#LuaJIT | Select File Dialog");
+        state->fileDialogActive = !GuiWindowBox((Rectangle){ state->position.x + 0, state->position.y + 0, winWidth, winHeight }, FormatText("#198#%s", state->titleText));
 
         if (GuiButton((Rectangle){ state->position.x + winWidth - 50, state->position.y + 35, 40, 25 }, "< .."))// || IsKeyReleased(KEY_DPAD_Y))
         {
@@ -337,7 +340,7 @@ void GuiFileDialog(GuiFileDialogState *state)
             if (*state->fileNameText)
             {
                 // Verify if a valid filename has been introduced
-                if (FileExists(TextFormat("%s/%s", state->dirPathText, state->fileNameText)))
+                if (save || FileExists(TextFormat("%s/%s", state->dirPathText, state->fileNameText)))
                 {
                     // Select filename from list view
                     for (int i = 0; i < state->dirFilesCount; i++)
@@ -359,7 +362,7 @@ void GuiFileDialog(GuiFileDialogState *state)
             state->fileNameEditMode = !state->fileNameEditMode;
         }
 
-        state->fileTypeActive = GuiComboBox((Rectangle){ state->position.x + 75, state->position.y  + winHeight - 30, winWidth - 200, 25 }, "All files", state->fileTypeActive);
+        state->fileTypeActive = GuiComboBox((Rectangle){ state->position.x + 75, state->position.y  + winHeight - 30, winWidth - 200, 25 }, "All Supported file types" , state->fileTypeActive);
         GuiLabel((Rectangle){ state->position.x + 10, state->position.y + winHeight - 30, 68, 25 }, "File filter:");
 
         state->SelectFilePressed = GuiButton((Rectangle){ state->position.x + winWidth - 120, state->position.y + winHeight - 60, 110,
@@ -479,18 +482,27 @@ static char **ReadDirectoryFiles(const char *dir, int *filesCount, char *filterE
         }
         else
         {
-            for (int j = 0; j < filterExtCount; j++)
+            if (DirectoryExists(TextFormat("%s/%s", dir, files[i]))) {
+                strncpy(validFiles[validFilesCount], files[i], MAX_DIR_PATH_LENGTH);
+                strcpy(dirFilesIcon[validFilesCount], TextFormat("#%i#%s", 1, files[i]));
+                validFilesCount++;
+            }
+            else
             {
-                // Check file type extensions supported
-                // NOTE: We just store valid files list
-                if (IsFileExtension(files[i], extensions[j]))
+                for (int j = 0; j < filterExtCount; j++)
                 {
-                    // TODO: Assign custom filetype icons depending on file extension (image, audio, text, video, models...)
+                    // Check file type extensions supported
+                    // NOTE: We just store valid files list
+                    if (IsFileExtension(files[i], extensions[j]))
+                    {
+                        strncpy(validFiles[validFilesCount], files[i], MAX_DIR_PATH_LENGTH);
+                        // TODO: Assign custom filetype icons depending on file extension (image, audio, text, video, models...)
 
-                    if (IsFileExtension(files[i], ".png")) strcpy(dirFilesIcon[validFilesCount], TextFormat("#%i#%s", 12, files[i]));
-                    else strcpy(dirFilesIcon[validFilesCount], TextFormat("#%i#%s", 10, files[i]));
+                        if (IsFileExtension(files[i], ".png")) strcpy(dirFilesIcon[validFilesCount], TextFormat("#%i#%s", 12, files[i]));
+                        else strcpy(dirFilesIcon[validFilesCount], TextFormat("#%i#%s", 10, files[i]));
 
-                    validFilesCount++;
+                        validFilesCount++;
+                    }
                 }
             }
         }

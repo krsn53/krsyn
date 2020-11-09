@@ -15,7 +15,7 @@ ks_io_end_custom_func
 
 ks_io_begin_custom_func(ks_synth_binary)
     ks_magic_number("KSYN")
-    ks_chunks2(
+    ks_fixed_props(
         ks_prop_arr_obj(phase_coarses, ks_phase_coarse_t),
         ks_prop_arr_u8(phase_fines),
         ks_prop_arr_u8(phase_dets),
@@ -69,6 +69,7 @@ void ks_synth_free(ks_synth* synth){
 
 void ks_synth_binary_set_default(ks_synth_binary* data)
 {
+    *data = (ks_synth_binary){ 0 };
     for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
     {
         data->phase_coarses[i].str.fixed_frequency = false;
