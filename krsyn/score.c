@@ -119,7 +119,7 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones,
         p = channel->bank->programs[program];
 
         ks_tones_bank* begin = tones->banks;
-        unsigned it=0;
+        uint32_t it=0;
         while(begin[it].programs[program] == NULL){
             it++;
             it %= tones->num_banks;
@@ -188,13 +188,13 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones,
 }
 
 
-void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* state, const ks_tones*tones, int16_t* buf, unsigned len){
-    unsigned i=0;
+void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* state, const ks_tones*tones, int16_t* buf, uint32_t len){
+    uint32_t i=0;
     do{
-        unsigned frame = MIN((len>>1)-i, state->current_frame);
+        uint32_t frame = MIN((len>>1)-i, state->current_frame);
         int16_t tmpbuf[frame];
 
-        for(unsigned p=0; p<ks_1(KS_MAX_POLYPHONY_BITS); p++){
+        for(uint32_t p=0; p<ks_1(KS_MAX_POLYPHONY_BITS); p++){
             if(!ks_score_note_is_enabled(&state->notes[p])) {
                 continue;
             }
@@ -208,7 +208,7 @@ void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* sta
             ks_synth_note* note = &state->notes[p].note;
             ks_synth_render(synth, note, channel->pitchbend, tmpbuf, frame);
 
-            for(unsigned b =0; b< frame; b++){
+            for(uint32_t b =0; b< frame; b++){
                 int32_t out = tmpbuf[b];
                 out *= channel->panpot_left;
                 out >>= KS_OUTPUT_BITS;
@@ -239,14 +239,14 @@ void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* sta
 
 ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[]){
     ks_score_event* ret = malloc(sizeof(ks_score_event) * num_events);
-    for(unsigned i=0; i<num_events; i++){
+    for(uint32_t i=0; i<num_events; i++){
         ret[i] = events[i];
     }
     return ret;
 }
 
 void ks_score_events_free(uint32_t num_events, const ks_score_event* events){
-    for(unsigned i=0; i<num_events; i++){
+    for(uint32_t i=0; i<num_events; i++){
         if(events[i].num_messages != 0){
             ks_score_messages_free(events[i].messages);
         }
@@ -257,7 +257,7 @@ void ks_score_events_free(uint32_t num_events, const ks_score_event* events){
 
 ks_score_message* ks_score_messages_new(uint32_t num_messages, ks_score_message messages[]){
     ks_score_message* ret = malloc(sizeof(ks_score_message) * num_messages);
-    for(unsigned i=0; i< num_messages; i++){
+    for(uint32_t i=0; i< num_messages; i++){
         ret[i] = messages[i];
     }
     return ret;
@@ -269,7 +269,7 @@ void ks_score_messages_free(ks_score_message* messages){
 
 
 void ks_score_event_run(const ks_score_event* event, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones){
-    for(unsigned i=0, e = event->num_messages; i<e; i++){
+    for(uint32_t i=0, e = event->num_messages; i<e; i++){
         const ks_score_message* msg = &event->messages[i];
         if(msg->status >= 0xf0){
             // System common message and system real time message
@@ -310,10 +310,10 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, ui
     state->current_frame = 0;
     state->frames_per_event = calc_frames_per_event(sampling_rate, state->tempo, resolution);
     state->current_tick = 0;
-    for(unsigned i=0; i<ks_1(KS_MAX_POLYPHONY_BITS); i++) {
+    for(uint32_t i=0; i<ks_1(KS_MAX_POLYPHONY_BITS); i++) {
         state->notes[i] = (ks_score_note){ 0 };
     }
-    for(unsigned i =0; i<KS_NUM_CHANNELS; i++){
+    for(uint32_t i =0; i<KS_NUM_CHANNELS; i++){
         state->channels[i] = (ks_score_channel){ 0 };
         ks_score_channel_set_panpot(&state->channels[i], 0);
         ks_score_channel_set_picthbend(&state->channels[i], 0, 0);

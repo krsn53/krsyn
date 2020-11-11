@@ -64,15 +64,14 @@ int main( void )
   }
 
   {
-      ks_tones_bank_binary bankbin ={
-          .bank_number = ks_tones_bank_number_of(0, 0),
-          .programs = {
-              [0]= &data
-          },
-      };
       ks_tones_binary tonebin ={
           .num_banks=1,
-          .banks = &bankbin,
+          .banks = (ks_tones_bank_binary[]) {{
+                                                 .bank_number = ks_tones_bank_number_of(0, 0),
+                                                 .programs = {
+                                                     [0]= (ks_synth_binary[]){ data }
+                                                 },
+                                             }},
     };
 
       ks_tones* tones = ks_tones_new_from_binary(SAMPLING_RATE, &tonebin);

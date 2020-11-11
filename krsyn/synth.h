@@ -297,7 +297,7 @@ void                        ks_synth_set                    (ks_synth* synth, ui
  * @param buf Write buffer
  * @param len Length of buffer
 */
-void                        ks_synth_render                 (const ks_synth *synth, ks_synth_note* note, uint32_t pitchbend, int16_t *buf, unsigned len);
+void                        ks_synth_render                 (const ks_synth *synth, ks_synth_note* note, uint32_t pitchbend, int16_t *buf, uint32_t len);
 
 /**
  * @fn ks_synth_note_on

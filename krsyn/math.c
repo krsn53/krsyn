@@ -635,10 +635,10 @@ static const uint16_t keyscale_curves[4][128] = {
 
 
 // liniar interpolution
-inline int16_t ks_table_value_li(const int16_t* table, uint32_t phase, unsigned mask)
+inline int16_t ks_table_value_li(const int16_t* table, uint32_t phase, uint32_t mask)
 {
-    unsigned index_m = phase >> KS_PHASE_BITS;
-    unsigned index_b = (index_m + 1);
+    uint32_t index_m = phase >> KS_PHASE_BITS;
+    uint32_t index_b = (index_m + 1);
 
     uint32_t under_fixed_b = ks_mask(phase, KS_PHASE_BITS);
     uint32_t under_fixed_m = ks_1(KS_PHASE_BITS) - under_fixed_b;

@@ -64,14 +64,14 @@ gboolean editor_open_tone(const char* file, editor_state* state)
     if((fp = fopen(file, text_format ? "r": "rb")) != NULL)
     {
 
-        ks_string *str = ks_string_new(sizeof(ks_synth_binary));
+        ks_string *str = ks_string_new();
         char c;
         while(fscanf(fp, "%c", &c) != EOF){
             ks_string_add_c(str, c);
         }
         ks_io io ={ .str =str, .seek =0};
 
-        gboolean ret = ks_io_custom_func(ks_synth_binary)(&io, text_format ? &default_io : &binary_io, &state->data, 0, false);
+        gboolean ret = ks_io_custom_func(ks_synth_binary)(&io, text_format ? &default_io : &binary_io, &state->data, 0,false);
 
         ks_string_free(str);
         fclose(fp);
@@ -97,7 +97,7 @@ gboolean editor_save_tone(const char* file, editor_state* state){
     }
 
     if((fp = fopen(file_path, text_format ? "w": "wb")) != NULL){
-        ks_string *str = ks_string_new(sizeof(ks_synth_binary));
+        ks_string *str = ks_string_new();
         ks_io io ={ .str =str, .seek =0};
 
         gboolean ret = ks_io_custom_func(ks_synth_binary)(&io, text_format ? &default_io : &binary_io, &state->data, 0, true);

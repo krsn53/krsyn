@@ -67,7 +67,7 @@ int main()
     int16_t *buf = malloc(sizeof(int16_t)*MAX_SAMPLES_PER_UPDATE* NUM_CHANNELS);
     PlayAudioStream(audiostream);
 
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn editor");
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn editor - noname");
     SetTargetFPS(60);
 
 
@@ -114,8 +114,12 @@ int main()
         //----------------------------------------------------------------------------------
         if(state == EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
             if(memcmp(&synth_bin, &temp, sizeof(ks_synth_binary)) != 0 ){
-                dirty = true;
-                temp = synth_bin;
+                if(!dirty){
+                    dirty = true;
+                    temp = synth_bin;
+                    SetWindowTitle(FormatText("krsyn editor - %s%s",  file_dialog_state.fileNameText[0] == 0 ?
+                                       "noname" : file_dialog_state.fileNameText, "*"));
+                }
             }
         }
 
@@ -155,7 +159,7 @@ int main()
                         file_dialog_state.fileDialogActive = true;
                         state = SAVE_DIALOG;
                     } else {
-                        ks_string * str = ks_string_new(0);
+                        ks_string * str = ks_string_new();
                         if(ReadWriteSynth(&synth_bin, str, &file_dialog_state, true)){
                             const char* file_path = FormatText("%s/%s", file_dialog_state.dirPathText ,file_dialog_state.fileNameText);
                             SaveFileData(file_path, str->ptr, str->length);
@@ -632,7 +636,7 @@ int main()
                     state = EDIT;
                     ks_synth_binary_set_default(&synth_bin);
                     temp = synth_bin;
-                    SetWindowTitle(FormatText("krsyn editor"));
+                    SetWindowTitle(FormatText("krsyn editor - noname"));
                 }
                 break;
             }
@@ -649,12 +653,12 @@ int main()
                         const char* file_path = FormatText("%s/%s",file_dialog_state.dirPathText,file_dialog_state.fileNameText);
 
                         unsigned file_size;
-                        unsigned char* c = LoadFileData(file_path, &file_size);
+                        unsigned char* c =  LoadFileData(file_path, &file_size);
                         if(c == NULL) {
                             break;
                         }
 
-                        ks_string *str = ks_string_new(file_size);
+                        ks_string *str = ks_string_new();
                         ks_string_add_n(str, file_size, (char*)c);
                         RL_FREE(c);
 
@@ -665,7 +669,7 @@ int main()
                         }else {
                             synth_bin = temp = load;
                             dirty = false;
-                            SetWindowTitle(FormatText("krsyn editor - %s", file_path));
+                            SetWindowTitle(FormatText("krsyn editor - %s", file_dialog_state.fileNameText));
                         }
                         ks_string_free(str);
                     }
@@ -677,13 +681,13 @@ int main()
                 GuiFileDialog(&file_dialog_state, true);
                 if(!file_dialog_state.fileDialogActive){
                     if(file_dialog_state.SelectFilePressed){
-                        ks_string * str = ks_string_new(1);
+                        ks_string * str = ks_string_new();
                         if(ReadWriteSynth(&synth_bin, str, &file_dialog_state, true)){
                             const char* file_path = FormatText("%s/%s", file_dialog_state.dirPathText ,file_dialog_state.fileNameText);
                             SaveFileData(file_path, str->ptr, str->length);
                             dirty = false;
 
-                            SetWindowTitle(FormatText("krsyn editor - %s", file_path));
+                            SetWindowTitle(FormatText("krsyn editor - %s",  file_dialog_state.fileNameText));
                         }
                         ks_string_free(str);
                         state = EDIT;

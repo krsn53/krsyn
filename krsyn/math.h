@@ -23,7 +23,7 @@
 
 
 // liniar interpolution
-int16_t ks_table_value_li(const int16_t* table, uint32_t phase, unsigned mask);
+int16_t ks_table_value_li(const int16_t* table, uint32_t phase, uint32_t mask);
 
 // sin table value
 int16_t ks_sin(uint32_t phase, bool linear_interpolution);

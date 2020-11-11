@@ -26,11 +26,11 @@ ks_tones* ks_tones_new_from_binary(uint32_t sampling_rate, const ks_tones_binary
     uint32_t num_banks = bin->num_banks;
     ks_tones_bank banks[num_banks];
 
-    for(unsigned i=0; i<num_banks; i++){
+    for(uint32_t i=0; i<num_banks; i++){
         banks[i].bank_number = bin->banks[i].bank_number;
         banks[i].emplaced = true;
 
-        for(unsigned p=0; p< KS_NUM_MAX_PROGRAMS; p++){
+        for(uint32_t p=0; p< KS_NUM_MAX_PROGRAMS; p++){
             if(bin->banks[i].programs[p] == NULL) continue;
 
             ks_synth* synth;
@@ -52,7 +52,7 @@ ks_tones* ks_tones_new(uint32_t num_banks, ks_tones_bank banks[]){
     ret->banks = ks_tones_banks_new(num_banks);
     ret->num_banks = num_banks;
 
-    for(unsigned i=0;i<num_banks; i++){
+    for(uint32_t i=0;i<num_banks; i++){
         ks_tones_set_bank(ret, &banks[i]);
     }
 
@@ -70,8 +70,8 @@ void ks_tones_free(ks_tones* tones){
 }
 
 void ks_tones_banks_free(uint32_t num_banks, ks_tones_bank* banks){
-    for(unsigned i=0; i<num_banks; i++){
-        for(unsigned p=0; p<KS_NUM_MAX_PROGRAMS; p++){
+    for(uint32_t i=0; i<num_banks; i++){
+        for(uint32_t p=0; p<KS_NUM_MAX_PROGRAMS; p++){
             if(banks[i].programs[p] != NULL) {
                 free(banks[i].programs[p]);
             }
@@ -113,7 +113,7 @@ ks_tones_bank ks_tones_bank_of(uint8_t msb, uint8_t lsb, ks_synth *programs[KS_N
     ret.emplaced = true;
     ret.bank_number = ks_tones_bank_number_of(msb,lsb);
 
-    for(unsigned i=0; i<KS_NUM_MAX_PROGRAMS; i++){
+    for(uint32_t i=0; i<KS_NUM_MAX_PROGRAMS; i++){
         ret.programs[i] = programs[i];
     }
 

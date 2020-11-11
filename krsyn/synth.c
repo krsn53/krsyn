@@ -70,7 +70,7 @@ void ks_synth_free(ks_synth* synth){
 void ks_synth_binary_set_default(ks_synth_binary* data)
 {
     *data = (ks_synth_binary){ 0 };
-    for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
+    for(uint32_t i=0; i<KS_NUM_OPERATORS; i++)
     {
         data->phase_coarses[i].str.fixed_frequency = false;
         data->phase_coarses[i].str.value = 2;
@@ -173,7 +173,7 @@ inline uint32_t ks_fms_depth(int32_t depth){
 
 static inline void synth_op_set(uint32_t sampling_rate, ks_synth* synth, const ks_synth_binary* data)
 {
-    for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
+    for(uint32_t i=0; i<KS_NUM_OPERATORS; i++)
     {
         synth->fixed_frequency[i] = calc_fixed_frequency(data->phase_coarses[i].str.fixed_frequency);
         synth->phase_coarses[i] = calc_phase_coarses(data->phase_coarses[i].str.value);
@@ -181,7 +181,7 @@ static inline void synth_op_set(uint32_t sampling_rate, ks_synth* synth, const k
         synth->phase_fines[i] = calc_phase_fines(data->phase_fines[i]);
         synth->phase_dets[i] = calc_phase_dets(data->phase_dets[i]);
 
-        for(unsigned e=0; e < KS_ENVELOPE_NUM_POINTS; e++)
+        for(uint32_t e=0; e < KS_ENVELOPE_NUM_POINTS; e++)
         {
             synth->envelope_points[e][i] = calc_envelope_points(data->envelope_points[e][i]);
             synth->envelope_samples[e][i] = calc_envelope_samples(sampling_rate, data->envelope_times[e][i]);
@@ -282,7 +282,7 @@ static inline uint32_t keyscale_li(uint32_t index_16, int curve_type)
     return ret;
 }
 
-static inline uint32_t keyscale_value(const ks_synth *synth, uint32_t table_index, uint32_t table_range, bool low_note, unsigned i)
+static inline uint32_t keyscale_value(const ks_synth *synth, uint32_t table_index, uint32_t table_range, bool low_note, uint32_t i)
 {
     uint64_t index_16 = table_index;
     index_16 <<= KS_KEYSCALE_CURVE_MAX_BITS;
@@ -294,7 +294,7 @@ static inline uint32_t keyscale_value(const ks_synth *synth, uint32_t table_inde
     return keyscale_li((uint32_t)index_16, curve_type);
 }
 
-static inline uint32_t keyscale(const ks_synth *synth, uint8_t notenum, unsigned i)
+static inline uint32_t keyscale(const ks_synth *synth, uint8_t notenum, uint32_t i)
 {
     if(notenum < synth->keyscale_mid_points[i])
     {
@@ -324,7 +324,7 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, uint32_t samp
     note->lfo_phase= synth->lfo_det;
     note->lfo_delta = phase_lfo_delta(sampling_rate, synth->lfo_freq);
 
-    for(unsigned i=0; i< KS_NUM_OPERATORS; i++)
+    for(uint32_t i=0; i< KS_NUM_OPERATORS; i++)
     {
         //phase
         note->phases[i] = synth->phase_dets[i];
@@ -352,7 +352,7 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, uint32_t samp
         uint32_t velocity;
 
         //envelope
-        for(unsigned j=0; j < KS_ENVELOPE_NUM_POINTS; j++)
+        for(uint32_t j=0; j < KS_ENVELOPE_NUM_POINTS; j++)
         {
             velocity = synth->velocity_sens[i];
             velocity *=  127-vel;
@@ -381,7 +381,7 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, uint32_t samp
         note->envelope_release_samples[i] = MAX((uint32_t)frame, 1u);
 
         note->envelope_deltas[0][i] = note->envelope_points[0][i] / (note->envelope_samples[0][i] << KS_SAMPLE_PER_FRAMES_BITS);
-        for(unsigned j=1; j < KS_ENVELOPE_NUM_POINTS; j++)
+        for(uint32_t j=1; j < KS_ENVELOPE_NUM_POINTS; j++)
         {
             note->envelope_deltas[j][i] = (note->envelope_points[j][i] - note->envelope_points[j-1][i]);
             note->envelope_deltas[j][i] /= (int32_t)note->envelope_samples[j][i] << KS_SAMPLE_PER_FRAMES_BITS;
@@ -399,7 +399,7 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, uint32_t samp
 
 void ks_synth_note_off (ks_synth_note* note)
 {
-    for(unsigned i=0; i< KS_NUM_OPERATORS; i++)
+    for(uint32_t i=0; i< KS_NUM_OPERATORS; i++)
     {
         note->envelope_states[i] = KS_ENVELOPE_RELEASED;
         note->envelope_now_times[i] = note->envelope_release_samples[i];
@@ -610,7 +610,7 @@ static inline int16_t synth_frame(const ks_synth* synth, ks_synth_note* note, ui
         out = output[0];
     }
 
-    for(unsigned i =0; i< KS_NUM_OPERATORS; i++)
+    for(uint32_t i =0; i< KS_NUM_OPERATORS; i++)
     {
         note->output_log[i] = output[i];
     }
@@ -621,7 +621,7 @@ static inline int16_t synth_frame(const ks_synth* synth, ks_synth_note* note, ui
 
 static inline void envelope_next(ks_synth_note* note)
 {
-    for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
+    for(uint32_t i=0; i<KS_NUM_OPERATORS; i++)
     {
         if(--note->envelope_now_times[i] <= 0)
         {
@@ -661,7 +661,7 @@ static inline void lfo_frame(const ks_synth* synth, ks_synth_note* note, uint32_
         depth >>= KS_OUTPUT_BITS;
         depth = ks_fms_depth(depth);
 
-        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
+        for(uint32_t j=0; j<KS_NUM_OPERATORS; j++)
         {
             int64_t d = note->phase_deltas[j];
             d *= depth;
@@ -671,7 +671,7 @@ static inline void lfo_frame(const ks_synth* synth, ks_synth_note* note, uint32_
     }
     else
     {
-        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
+        for(uint32_t j=0; j<KS_NUM_OPERATORS; j++)
         {
             delta[j] = note->phase_deltas[j];
         }
@@ -679,7 +679,7 @@ static inline void lfo_frame(const ks_synth* synth, ks_synth_note* note, uint32_
 
     if(ams)
     {
-        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
+        for(uint32_t j=0; j<KS_NUM_OPERATORS; j++)
         {
             int64_t depth = note->lfo_log;      // -1.0 ~ 1.0
             depth *= synth->lfo_ams_depths[j];
@@ -725,17 +725,17 @@ static inline void lfo_frame(const ks_synth* synth, ks_synth_note* note, uint32_
     }
 }
 
-static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len,
+static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, uint32_t len,
                                     uint8_t algorithm, uint8_t lfo_type, bool ams, bool fms)
 {
     uint32_t delta[KS_NUM_OPERATORS];
 
-    for(unsigned i=0; i<len; i++)
+    for(uint32_t i=0; i<len; i++)
     {
         buf[i] = synth_frame(synth, note, algorithm);
         lfo_frame(synth, note, delta, lfo_type, ams, fms);
 
-        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
+        for(uint32_t j=0; j<KS_NUM_OPERATORS; j++)
         {
             uint64_t d = delta[j];
             d*= pitchbend;
@@ -744,7 +744,7 @@ static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, 
             note->phases[j] = note->phases[j] + d;
         }
 
-        for(unsigned j=0; j<KS_NUM_OPERATORS; j++)
+        for(uint32_t j=0; j<KS_NUM_OPERATORS; j++)
         {
             note->envelope_now_amps[j] += note->envelope_now_deltas[j];
         }
@@ -759,16 +759,16 @@ static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, 
 #define _algorithm_list _(0) _(1) _(2) _(3) _(4) _(5) _(6) _(7) _(8) _(9) _(10)
 
 #define ks_synth_define_synth_render_aw(algorithm, wave) \
-void ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len){ \
+void ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, uint32_t len){ \
     ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, false, false); \
 } \
-void ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len) {\
+void ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, uint32_t len) {\
     ks_synth_process(synth, note,pitchbend,  buf, len, algorithm, wave, false, true); \
 } \
-void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len) {\
+void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, uint32_t len) {\
     ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, false); \
 } \
-    void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, unsigned len){ \
+    void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t* buf, uint32_t len){ \
     ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, true); \
 }
 
@@ -829,7 +829,7 @@ _algorithm_list
 #undef _
 #define _(x) case x : ks_synth_render_branch(x) break;
 
-void ks_synth_render(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t *buf, unsigned len)
+void ks_synth_render(const ks_synth* synth, ks_synth_note* note, uint32_t pitchbend, int16_t *buf, uint32_t len)
 {
     if(*(uint32_t*)note->envelope_states != 0){
         switch(synth->algorithm)

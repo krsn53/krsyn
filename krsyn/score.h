@@ -77,7 +77,7 @@ bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones
 bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t lsb);
 
 
-void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones, int16_t *buf, unsigned len);
+void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones, int16_t *buf, uint32_t len);
 
 void ks_score_event_run(const ks_score_event *event, uint32_t sampling_rate, ks_score_state* state, const ks_tones* tones);
 
