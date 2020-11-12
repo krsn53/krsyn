@@ -227,13 +227,16 @@ ks_property ks_prop_v(const char* name, ks_value value);
 #define ks_prop_arr_len_u8(name, len) ks_prop_arr_len_u8_as(#name, len, name)
 #define ks_prop_arr_len_obj(name, type, len) ks_prop_arr_len_obj_as(#name,  type, len, name)
 
-#define ks_fixed_prop(prop) ks_io_fixed_property(__KS_IO, __KS_IO_FUNCS, prop, __SERIALIZE);
+#define ks_fp(prop) ks_io_fixed_property(__KS_IO, __KS_IO_FUNCS, prop, __SERIALIZE);
+
+/*
 #define ks_fixed_props_len(len, ...)  { \
     ks_property __PROPS[len] = { \
         __VA_ARGS__ \
     }; \
     if(!ks_io_fixed_props(__KS_IO, __KS_IO_FUNCS, sizeof(__PROPS) / sizeof(ks_property), __PROPS, __SERIALIZE)) return false; \
 }
+*/
 #define ks_chunks_len(len, ...) { \
     ks_property __CHUNKS[len] = { \
         __VA_ARGS__ \
@@ -242,10 +245,14 @@ ks_property ks_prop_v(const char* name, ks_value value);
 }
 
 #ifdef __TINYC__
+/*
 #define ks_fixed_props(...) ks_io_fixed_props_args(__KS_IO, __SERIALIZE, __KS_IO_FUNCS, __VA_ARGS__ , ks_type(ks_property){NULL, { 0 }});
+*/
 #define ks_chunks(...) ks_io_chunks_args(__KS_IO, __SERIALIZE, __KS_IO_FUNCS, __VA_ARGS__, ks_type(ks_property){NULL, { 0 }});
 #else
+/*
 #define ks_fixed_props(...) ks_fixed_props_len(, __VA_ARGS__)
+*/
 #define ks_chunks(...) ks_chunks_len(, __VA_ARGS__)
 #endif
 

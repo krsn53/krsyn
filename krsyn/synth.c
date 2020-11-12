@@ -6,46 +6,44 @@
 
 
 ks_io_begin_custom_func(ks_phase_coarse_t)
-    ks_fixed_props_len( 1, ks_prop_u8(u8) )
+    ks_fp( ks_prop_u8(u8) )
 ks_io_end_custom_func
 
 ks_io_begin_custom_func(ks_keyscale_curve_t)
-    ks_fixed_props_len( 1, ks_prop_u8(u8) )
+    ks_fp( ks_prop_u8(u8) )
 ks_io_end_custom_func
 
 ks_io_begin_custom_func(ks_synth_binary)
     ks_magic_number("KSYN")
-    ks_fixed_props(
-        ks_prop_arr_obj(phase_coarses, ks_phase_coarse_t),
-        ks_prop_arr_u8(phase_fines),
-        ks_prop_arr_u8(phase_dets),
+    ks_fp( ks_prop_arr_obj(phase_coarses, ks_phase_coarse_t))
+    ks_fp(ks_prop_arr_u8(phase_fines))
+    ks_fp(ks_prop_arr_u8(phase_dets))
 
-        ks_prop_arr_u8(envelope_points[0]),
-        ks_prop_arr_u8(envelope_points[1]),
-        ks_prop_arr_u8(envelope_points[2]),
-        ks_prop_arr_u8(envelope_points[3]),
+    ks_fp(ks_prop_arr_u8(envelope_points[0]))
+    ks_fp(ks_prop_arr_u8(envelope_points[1]))
+    ks_fp(ks_prop_arr_u8(envelope_points[2]))
+    ks_fp(ks_prop_arr_u8(envelope_points[3]))
 
-        ks_prop_arr_u8(envelope_times[0]),
-        ks_prop_arr_u8(envelope_times[1]),
-        ks_prop_arr_u8(envelope_times[2]),
-        ks_prop_arr_u8(envelope_times[3]),
+    ks_fp(ks_prop_arr_u8(envelope_times[0]))
+    ks_fp(ks_prop_arr_u8(envelope_times[1]))
+    ks_fp(ks_prop_arr_u8(envelope_times[2]))
+    ks_fp(ks_prop_arr_u8(envelope_times[3]))
 
-        ks_prop_arr_u8(envelope_release_times),
-        ks_prop_arr_u8(velocity_sens),
-        ks_prop_arr_u8(ratescales),
-        ks_prop_arr_u8(keyscale_low_depths),
-        ks_prop_arr_u8(keyscale_high_depths),
-        ks_prop_arr_u8(keyscale_mid_points),
-        ks_prop_arr_obj(keyscale_curve_types, ks_keyscale_curve_t),
-        ks_prop_arr_u8(lfo_ams_depths),
+    ks_fp(ks_prop_arr_u8(envelope_release_times))
+    ks_fp(ks_prop_arr_u8(velocity_sens))
+    ks_fp(ks_prop_arr_u8(ratescales))
+    ks_fp(ks_prop_arr_u8(keyscale_low_depths))
+    ks_fp(ks_prop_arr_u8(keyscale_high_depths))
+    ks_fp(ks_prop_arr_u8(keyscale_mid_points))
+    ks_fp(ks_prop_arr_obj(keyscale_curve_types, ks_keyscale_curve_t))
+    ks_fp(ks_prop_arr_u8(lfo_ams_depths))
 
-        ks_prop_u8(algorithm),
-        ks_prop_u8(feedback_level),
-        ks_prop_u8(lfo_wave_type),
-        ks_prop_u8(lfo_freq),
-        ks_prop_u8(lfo_det),
-        ks_prop_u8(lfo_fms_depth)
-    )
+    ks_fp(ks_prop_u8(algorithm))
+    ks_fp(ks_prop_u8(feedback_level))
+    ks_fp(ks_prop_u8(lfo_wave_type))
+    ks_fp(ks_prop_u8(lfo_freq))
+    ks_fp(ks_prop_u8(lfo_det))
+    ks_fp(ks_prop_u8(lfo_fms_depth))
 ks_io_end_custom_func
 
 
