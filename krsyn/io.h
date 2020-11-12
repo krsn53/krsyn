@@ -77,6 +77,8 @@ uint32_t ks_io_prop_text(ks_io* io, const char* str, const char* delims, bool se
 
 uint32_t ks_io_fixed_text(ks_io* io, const char* str, bool serialize);
 
+bool ks_io_fixed_property(ks_io* io, const ks_io_funcs* funcs,  ks_property prop, bool serialize);
+
 bool ks_io_fixed_props_args(ks_io* io, bool serialize, const ks_io_funcs* funcs, ...);
 
 bool ks_io_fixed_props(ks_io* io,  const ks_io_funcs* funcs, uint32_t num_props, ks_property* props, bool serialize);
@@ -124,20 +126,9 @@ extern const ks_io_funcs binary_io ;
 
 
 
-#ifdef __cplusplus
-    #define ks_type(type) type
-#else
-    #define ks_type(type) (type)
-#endif
 
-#define ks_elem_access(elem) __KS_OBJECT[ __OFFSET ].  elem
 
 ks_value ks_value_ptr(void* ptr, ks_value_func func);
-
-#define ks_val(elem, func) ks_value_ptr(& ks_elem_access(elem), func)
-
-#define ks_value_u32(elem) ks_val(elem, ks_io_u32)
-#define ks_value_u8(elem) ks_val(elem, ks_io_u8)
 
 #define ks_begin_props(io, funcs, serialize, offset, type, obj) { \
     ks_io * __KS_IO = io; \
@@ -158,6 +149,14 @@ ks_value ks_value_ptr(void* ptr, ks_value_func func);
 
 ks_property ks_prop_v(const char* name, ks_value value);
 
+#ifdef __cplusplus
+    #define ks_type(type) type
+#else
+    #define ks_type(type) (type)
+#endif
+
+#define ks_elem_access(elem) __KS_OBJECT[ __OFFSET ].  elem
+#define ks_val(elem, func) ks_value_ptr(& ks_elem_access(elem), func)
 #define ks_prop_f(name, var, func) ks_prop_v(name, ks_val(var, func))
 
 #define ks_prop_arr_data_len(len, value, size, fixed) (ks_type(ks_array_data[]) { \
@@ -182,6 +181,11 @@ ks_property ks_prop_v(const char* name, ks_value value);
 
 #define ks_value_arr(var, value) ks_value_ptr(ks_prop_arr_data(var, value), ks_io_array)
 #define ks_value_arr_len(len, value, size) ks_value_ptr(ks_prop_arr_data_len(len, value, size, false), ks_io_array)
+
+#define ks_value_u64(elem) ks_val(elem, ks_io_u64)
+#define ks_value_u32(elem) ks_val(elem, ks_io_u32)
+#define ks_value_u16(elem) ks_val(elem, ks_io_u16)
+#define ks_value_u8(elem) ks_val(elem, ks_io_u8)
 
 #define ks_prop_u64_as(name, var) ks_prop_f(name, var, ks_io_u64)
 #define ks_prop_u32_as(name, var) ks_prop_f(name, var, ks_io_u32)

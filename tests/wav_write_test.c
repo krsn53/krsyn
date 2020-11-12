@@ -33,46 +33,164 @@ struct wave_header
 
 int main( void )
 {
-  ks_synth_binary   data;
 
   int32_t buf_len = OUTPUT_LENGTH;
   int32_t buf_size = sizeof(int16_t) * buf_len;
   int16_t *buf = malloc(buf_size);
 
-  // 金属質な鍵盤っぽい音
-  {
-      ks_synth_binary_set_default(&data);
-
-    data.algorithm = 4;
-
-    data.phase_coarses[0].str.value = 6;
-    data.phase_coarses[1].str.value = 2;
-    data.phase_coarses[2].str.value = 26;
-    data.phase_coarses[3].str.value = 8;
-
-    for(unsigned i=0; i<KS_NUM_OPERATORS; i++)
-    {
-      data.envelope_points[1][i] = 192 >> (i&1 ? 0 : 1);
-      data.envelope_points[2][i] = 64 >> (i&1 ? 0 : 1);
-      data.envelope_points[3][i] = 0 ;
-
-      data.envelope_times[1][i] = 127;
-      data.envelope_times[2][i] = 160;
-      data.envelope_times[3][i] = 160;
-    }
-
-  }
 
   {
       ks_tones_binary tonebin ={
-          .num_banks=1,
-          .banks = (ks_tones_bank_binary[]) {{
-                                                 .bank_number = ks_tones_bank_number_of(0, 0),
-                                                 .programs = {
-                                                     [0]= (ks_synth_binary[]){ data }
-                                                 },
-                                             }},
-    };
+          .num_tones=1,
+          .tones=(ks_tone_binary[1]){
+              {
+                  .msb=0,
+                  .lsb=0,
+                  .program=0,
+                  .note=0,
+                  .synth={
+                      // Magic number : KSYN
+                      .phase_coarses={
+                          {
+                              .u8=56,
+                          },
+                          {
+                              .u8=16,
+                          },
+                          {
+                              .u8=12,
+                          },
+                          {
+                              .u8=4,
+                          },
+                      },
+                      .phase_fines={
+                          0,
+                          0,
+                          0,
+                          0,
+                      },
+                      .phase_dets={
+                          0,
+                          0,
+                          0,
+                          0,
+                      },
+                      .envelope_points[0]={
+                          127,
+                          255,
+                          127,
+                          255,
+                      },
+                      .envelope_points[1]={
+                          255,
+                          133,
+                          255,
+                          136,
+                      },
+                      .envelope_points[2]={
+                          255,
+                          64,
+                          255,
+                          64,
+                      },
+                      .envelope_points[3]={
+                          255,
+                          0,
+                          255,
+                          0,
+                      },
+                      .envelope_times[0]={
+                          0,
+                          0,
+                          0,
+                          0,
+                      },
+                      .envelope_times[1]={
+                          255,
+                          126,
+                          255,
+                          126,
+                      },
+                      .envelope_times[2]={
+                          255,
+                          156,
+                          255,
+                          149,
+                      },
+                      .envelope_times[3]={
+                          255,
+                          202,
+                          255,
+                          209,
+                      },
+                      .envelope_release_times={
+                          128,
+                          128,
+                          128,
+                          128,
+                      },
+                      .velocity_sens={
+                          255,
+                          255,
+                          255,
+                          255,
+                      },
+                      .ratescales={
+                          34,
+                          186,
+                          32,
+                          186,
+                      },
+                      .keyscale_low_depths={
+                          0,
+                          0,
+                          0,
+                          0,
+                      },
+                      .keyscale_high_depths={
+                          0,
+                          0,
+                          0,
+                          0,
+                      },
+                      .keyscale_mid_points={
+                          69,
+                          69,
+                          69,
+                          69,
+                      },
+                      .keyscale_curve_types={
+                          {
+                              .u8=0,
+                          },
+                          {
+                              .u8=0,
+                          },
+                          {
+                              .u8=0,
+                          },
+                          {
+                              .u8=0,
+                          },
+                      },
+                      .lfo_ams_depths={
+                          0,
+                          0,
+                          0,
+                          0,
+                      },
+                      .algorithm=4,
+                      .feedback_level=0,
+                      .lfo_wave_type=0,
+                      .lfo_freq=128,
+                      .lfo_det=0,
+                      .lfo_fms_depth=0,
+                  },
+              },
+          },
+      };
+
 
       ks_tones* tones = ks_tones_new_from_binary(SAMPLING_RATE, &tonebin);
 

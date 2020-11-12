@@ -36,7 +36,11 @@ void ks_string_add_n(ks_string* str, uint32_t n, const char* ch){
     uint32_t out_len = str->length + n;
 
     if(out_len >= str->capacity) {
-        ks_string_reserve(str, out_len);
+        uint32_t cap = str->capacity;
+        do{
+            cap*=2;
+        }while(out_len > cap);
+        ks_string_reserve(str, cap);
     }
 
     memcpy(str->ptr + str->length, ch, n);
@@ -48,10 +52,9 @@ void ks_string_add(ks_string* str, const char* ch){
 }
 
 void ks_string_reserve(ks_string* str, uint32_t cap){
-    if(str->capacity < cap) {
-        str->ptr = realloc(str->ptr, cap*sizeof (char));
-        str->capacity = cap;
-    }
+    if(str->capacity >= cap) return;
+    str->ptr = realloc(str->ptr, cap*sizeof (char));
+    str->capacity = cap;
 }
 
 void ks_string_set(ks_string* str, const char* ch){
