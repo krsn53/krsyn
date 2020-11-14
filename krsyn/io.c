@@ -588,8 +588,8 @@ inline bool ks_io_object_begin_binary(ks_io* io,  const ks_io_funcs* funcs, ks_o
     return true;
 }
 inline bool ks_io_array_end_binary(ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr, bool serialize){
-    if(arr->check_enabled != NULL){
-        return ks_io_fixed_bin(io, (const char[]){0xff, 0xff, 0xff, 0xff, 0x00}, false) != 0;
+    if(serialize && arr->check_enabled != NULL){
+        return ks_io_fixed_bin(io, (const char[]){0xff, 0xff, 0xff, 0xff, 0x00}, serialize) != 0;
     }
     return true;
 }

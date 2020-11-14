@@ -1,7 +1,6 @@
 #include "../krsyn.h"
 #include <stdio.h>
 
-
 int main ( void ){
     ks_string* str = ks_string_new(100);
 
@@ -10,7 +9,6 @@ int main ( void ){
         .seek = 0,
         .indent =0,
     };
-
     ks_synth_binary bin = {
 #include "./EPiano.ksyt"
     };
