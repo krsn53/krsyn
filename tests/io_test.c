@@ -16,7 +16,7 @@ int main ( void ){
 
     {
         printf("Binary serialize test\n");
-        ks_io_custom_func_serializer(ks_synth_binary)(&io, &binary_serializer, &bin, 0);
+        ks_io_custom_func_serializer(ks_synth_binary)(&io, &binary_little_endian_serializer, &bin, 0);
 
         for(unsigned i = 0; i< str->length; i++){
             printf("%d, ", (uint8_t)str->ptr[i]);
@@ -24,7 +24,7 @@ int main ( void ){
 
         bin = (ks_synth_binary){ 0 };
         printf("\nBinary deserialize test\n");
-        ks_io_custom_func_deserializer(ks_synth_binary)(&io, &binary_deserializer, &bin, 0);
+        ks_io_custom_func_deserializer(ks_synth_binary)(&io, &binary_little_endian_deserializer, &bin, 0);
 
 
         for(unsigned i = 0; i< sizeof(ks_synth_binary); i++){

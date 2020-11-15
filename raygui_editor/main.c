@@ -35,7 +35,7 @@ bool ReadWriteSynth(ks_synth_binary* bin, ks_string* str, GuiFileDialogState* fi
     };
     const ks_io_funcs* funcs;
     if(IsFileExtension(file_dialog_state->fileNameText, ".ksyb")){
-        funcs = &binary_serializer;
+        funcs = &binary_little_endian_serializer;
     } else {
         if(!IsFileExtension(file_dialog_state->fileNameText, ".ksyt")){
             strcpy(file_dialog_state->fileNameText + strlen(file_dialog_state->fileNameText), ".ksyt");

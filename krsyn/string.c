@@ -51,6 +51,11 @@ void ks_string_add(ks_string* str, const char* ch){
     ks_string_add_n(str, strlen(ch), ch);
 }
 
+void ks_string_resize(ks_string* str, uint32_t size){
+    ks_string_reserve(str, size);
+    str->length = size;
+}
+
 void ks_string_reserve(ks_string* str, uint32_t cap){
     if(str->capacity >= cap) return;
     str->ptr = realloc(str->ptr, cap*sizeof (char));

@@ -71,7 +71,7 @@ gboolean editor_open_tone(const char* file, editor_state* state)
         }
         ks_io io ={ .str =str, .seek =0};
 
-        gboolean ret = ks_io_custom_func_deserializer(ks_synth_binary)(&io, text_format ? &clike_deserializer : &binary_deserializer, &state->data, 0);
+        gboolean ret = ks_io_custom_func_deserializer(ks_synth_binary)(&io, text_format ? &clike_deserializer : &binary_little_endian_deserializer, &state->data, 0);
 
         ks_string_free(str);
         fclose(fp);
@@ -100,7 +100,7 @@ gboolean editor_save_tone(const char* file, editor_state* state){
         ks_string *str = ks_string_new();
         ks_io io ={ .str =str, .seek =0};
 
-        gboolean ret = ks_io_custom_func_serializer(ks_synth_binary)(&io, text_format ? &clike_serializer : &binary_serializer, &state->data, 0);
+        gboolean ret = ks_io_custom_func_serializer(ks_synth_binary)(&io, text_format ? &clike_serializer : &binary_little_endian_serializer, &state->data, 0);
 
         if(ret)fwrite(str->ptr, 1, str->length, fp);
 
