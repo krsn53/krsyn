@@ -1,6 +1,11 @@
 #pragma once
 
-#include <stdint.h>
+#include "./io.h"
+
+typedef struct ks_midi_event{
+    uint32_t delta_time;
+
+}ks_midi_event;
 
 typedef struct ks_midi_file{
     // chunk type MThd
@@ -10,4 +15,5 @@ typedef struct ks_midi_file{
     uint16_t resolution;
     //chunk type MTrk
     uint32_t track_length;
+    uint8_t *data;
 }ks_midi_file;

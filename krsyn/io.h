@@ -22,6 +22,8 @@ typedef enum ks_value_type{
     KS_VALUE_U32,
     KS_VALUE_U16,
     KS_VALUE_U8,
+    KS_VALUE_OBJECT,
+    KS_VALUE_ARRAY,
 
 }ks_value_type ;
 
@@ -41,7 +43,7 @@ typedef bool (* ks_value_func)(ks_io*, const ks_io_funcs*, void*,  uint32_t, boo
 
 
 typedef struct ks_value{
-    ks_value_func func;
+    ks_value_type type;
     void * data;
 }ks_value;
 
@@ -60,7 +62,8 @@ typedef struct ks_array_data{
 
 typedef struct ks_object_data{
     const char* type;
-    ks_value value;
+    ks_value_func func;
+    void* data;
 }ks_object_data;
 
 
@@ -96,9 +99,9 @@ bool ks_io_u32(ks_io* io, const ks_io_funcs* funcs, void*data, uint32_t offset, 
 bool ks_io_u16(ks_io* io, const ks_io_funcs* funcs,  void*data,uint32_t offset,  bool serialize);
 bool ks_io_u8(ks_io* io, const ks_io_funcs* funcs,  void*data, uint32_t offset, bool serialize);
 
-bool ks_io_array(ks_io* io, const ks_io_funcs* funcs, void*data, uint32_t offset, bool serialize);
+bool ks_io_array(ks_io* io, const ks_io_funcs* funcs, ks_array_data array, bool serialize);
 
-bool ks_io_object(ks_io* io, const ks_io_funcs* funcs,  void*data, uint32_t offset, bool serialize);
+bool ks_io_object(ks_io* io, const ks_io_funcs* funcs, ks_object_data obj, uint32_t offset, bool serialize);
 
 uint32_t ks_io_key_default(ks_io* io, const ks_io_funcs* funcs, const char* name, bool fixed,   bool serialize);
 bool ks_io_array_num_default(ks_io* io, const ks_io_funcs* funcs, uint32_t* num, bool serialize);
@@ -132,7 +135,7 @@ extern const ks_io_funcs binary_io ;
 
 
 
-ks_value ks_value_ptr(void* ptr, ks_value_func func);
+ks_value ks_value_ptr(void* ptr, ks_value_type type);
 
 #define ks_begin_props(io, funcs, serialize, offset, type, obj) { \
     ks_io * __KS_IO = io; \
@@ -160,29 +163,28 @@ ks_property ks_prop_v(void *name, ks_value value);
 #endif
 
 #define ks_elem_access(elem) __KS_OBJECT[ __OFFSET ].  elem
-#define ks_val(elem, func) ks_value_ptr(& ks_elem_access(elem), func)
-#define ks_prop_f(name, var, func) ks_prop_v(name, ks_val(var, func))
+#define ks_val(elem, type) ks_value_ptr(& ks_elem_access(elem), type)
+#define ks_prop_f(name, var, type) ks_prop_v(name, ks_val(var, type))
 
 #define ks_prop_obj_data(var, type) (ks_type(ks_object_data[]){ \
     (ks_type(ks_object_data) {\
         #type , \
-        ks_val(var, ks_io_custom_func(type)), \
+        ks_io_custom_func(type), \
+        & ks_elem_access(var),\
     }) \
 })
 
-#define ks_value_obj(var, type) ks_value_ptr(ks_prop_obj_data(var, type), ks_io_object)
+#define ks_value_obj(var, type) ks_value_ptr(ks_prop_obj_data(var, type), KS_VALUE_OBJECT)
 
+#define ks_value_u64(elem) ks_val(elem, KS_VALUE_U64)
+#define ks_value_u32(elem) ks_val(elem, KS_VALUE_U32)
+#define ks_value_u16(elem) ks_val(elem, KS_VALUE_U16)
+#define ks_value_u8(elem) ks_val(elem, KS_VALUE_U8)
 
-
-#define ks_value_u64(elem) ks_val(elem, ks_io_u64)
-#define ks_value_u32(elem) ks_val(elem, ks_io_u32)
-#define ks_value_u16(elem) ks_val(elem, ks_io_u16)
-#define ks_value_u8(elem) ks_val(elem, ks_io_u8)
-
-#define ks_prop_u64_as(name, var) ks_prop_f(name, var, ks_io_u64)
-#define ks_prop_u32_as(name, var) ks_prop_f(name, var, ks_io_u32)
-#define ks_prop_u16_as(name, var) ks_prop_f(name, var, ks_io_u16)
-#define ks_prop_u8_as(name, var) ks_prop_f(name, var, ks_io_u8)
+#define ks_prop_u64_as(name, var) ks_prop_f(name, var, KS_VALUE_U64)
+#define ks_prop_u32_as(name, var) ks_prop_f(name, var, KS_VALUE_U32)
+#define ks_prop_u16_as(name, var) ks_prop_f(name, var, KS_VALUE_U16)
+#define ks_prop_u8_as(name, var) ks_prop_f(name, var, KS_VALUE_U8)
 #define ks_prop_obj_as(name, type, var) ks_prop_v(name, ks_value_obj( var, type ))
 
 #define ks_prop_u64(name) ks_prop_u64_as(#name, name)
@@ -208,7 +210,7 @@ ks_property ks_prop_v(void *name, ks_value value);
 #define ks_arr_size(var) (sizeof(ks_elem_access(var))/ sizeof(*ks_elem_access(var)))
 
 
-#define ks_value_arr_len_sparse_fixed(len, var, value, check_enabled, fixed) ks_value_ptr(ks_prop_arr_data_len(len,  var, value, check_enabled, fixed), ks_io_array)
+#define ks_value_arr_len_sparse_fixed(len, var, value, check_enabled, fixed) ks_value_ptr(ks_prop_arr_data_len(len,  var, value, check_enabled, fixed), KS_VALUE_ARRAY)
 
 #define ks_prop_arr_len_sparse_fixed_as(name, len, var, value, check_enabled, fixed) ks_prop_v(name, ks_value_arr_len_sparse_fixed( len, var, value, check_enabled, fixed) )
 
