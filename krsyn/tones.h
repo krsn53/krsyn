@@ -39,7 +39,7 @@ typedef struct ks_tones{
     ks_tones_bank        *banks;
 }ks_tones;
 
-
+ks_io_decl_custom_func(ks_tone_binary);
 ks_io_decl_custom_func(ks_tones_binary);
 
 ks_tones* ks_tones_new_from_binary(uint32_t sampling_rate, const ks_tones_binary *bin);

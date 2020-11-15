@@ -239,6 +239,10 @@ typedef  struct ks_synth_note
 }
 ks_synth_note;
 
+
+ks_io_decl_custom_func(ks_phase_coarse_t);
+ks_io_decl_custom_func(ks_keyscale_curve_t);
+
 /**
  * @brief ks_io_synth_binary
  * @param io

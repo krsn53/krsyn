@@ -7,11 +7,11 @@
 
 ks_io_begin_custom_func(ks_phase_coarse_t)
     ks_fp_u8(u8);
-ks_io_end_custom_func
+ks_io_end_custom_func(ks_phase_coarse_t)
 
 ks_io_begin_custom_func(ks_keyscale_curve_t)
     ks_fp_u8(u8);
-ks_io_end_custom_func
+ks_io_end_custom_func(ks_keyscale_curve_t)
 
 ks_io_begin_custom_func(ks_synth_binary)
     ks_magic_number("KSYN");
@@ -44,7 +44,7 @@ ks_io_begin_custom_func(ks_synth_binary)
     ks_fp_u8(lfo_freq);
     ks_fp_u8(lfo_det);
     ks_fp_u8(lfo_fms_depth);
-ks_io_end_custom_func
+ks_io_end_custom_func(ks_synth_binary)
 
 
 ks_synth* ks_synth_new(ks_synth_binary* data, uint32_t sampling_rate){

@@ -11,13 +11,13 @@ ks_io_begin_custom_func(ks_tone_binary)
     ks_fp_u8(program);
     ks_fp_u8(note);
     ks_fp_obj(synth, ks_synth_binary);
-ks_io_end_custom_func
+ks_io_end_custom_func(ks_tone_binary)
 
 ks_io_begin_custom_func(ks_tones_binary)
     ks_magic_number("KTON");
     ks_fp_u32(num_tones);
     ks_fp_arr_len_obj(tones, ks_tone_binary, ks_elem_access(num_tones));
-ks_io_end_custom_func
+ks_io_end_custom_func(ks_tones_binary)
 
 
 inline uint32_t ks_tones_bank_number_hash(ks_tones_bank_number bank_number){

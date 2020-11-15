@@ -35,14 +35,15 @@ bool ReadWriteSynth(ks_synth_binary* bin, ks_string* str, GuiFileDialogState* fi
     };
     const ks_io_funcs* funcs;
     if(IsFileExtension(file_dialog_state->fileNameText, ".ksyb")){
-        funcs = &binary_io;
+        funcs = &binary_serializer;
     } else {
         if(!IsFileExtension(file_dialog_state->fileNameText, ".ksyt")){
             strcpy(file_dialog_state->fileNameText + strlen(file_dialog_state->fileNameText), ".ksyt");
         }
-        funcs = &default_io;
+        funcs = &clike_serializer;
     }
-    return ks_io_custom_func(ks_synth_binary)(&io, funcs, bin, 0, serialize);
+    return (serialize? ks_io_custom_func_serializer(ks_synth_binary) :
+                      ks_io_custom_func_deserializer(ks_synth_binary))(&io, funcs, bin, 0);
 }
 
 //------------------------------------------------------------------------------------
