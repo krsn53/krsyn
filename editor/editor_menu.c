@@ -102,7 +102,7 @@ gboolean editor_save_tone(const char* file, editor_state* state){
 
         gboolean ret = ks_io_custom_func_serializer(ks_synth_binary)(&io, text_format ? &clike_serializer : &binary_little_endian_serializer, &state->data, 0);
 
-        if(ret)fwrite(str->ptr, 1, str->length, fp);
+        if(ret)fwrite(str->data, 1, str->length, fp);
 
         fclose(fp);
         return ret;

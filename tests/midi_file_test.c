@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
 
     ks_string_resize(str, fsize+1);
 
-    fread(str->ptr, 1, fsize, f);
+    fread(str->data, 1, fsize, f);
     fclose(f);
 
     ks_io io = {
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 
     ks_io_custom_func_serializer(ks_midi_file)(&io, &clike_serializer, &midi, 0);
 
-    printf("%s\n", str->ptr);
+    printf("%s\n", str->data);
 
     ks_string_free(str);
 

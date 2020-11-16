@@ -37,7 +37,7 @@ inline uint32_t ks_io_value_text(ks_io* io, void* v, ks_value_type type,uint32_t
         uint32_t first = ks_string_first_not_of(io->str, io->seek, "\t\n ");
 
         uint64_t p;
-        int ret = sscanf(io->str->ptr + io->seek + first,"%ld", &p);
+        int ret = sscanf(io->str->data + io->seek + first,"%ld", &p);
         uint32_t read  = ks_string_first_not_of(io->str, io->seek + first, "0123456789");
         if((ret != 1 && io->seek + first + read < io->str->length) || io->seek + first + read >= io->str->length) {
             ks_error("Failed to read value");
@@ -154,7 +154,7 @@ inline uint32_t ks_io_text(ks_io* io, const char* str, bool serialize){
     if(!serialize){
         uint32_t first = ks_string_first_not_of(io->str, io->seek, "\t\n ");
         uint32_t tex_length = strlen(str);
-        bool ret = strncmp(io->str->ptr + io->seek + first, str, strlen(str)) == 0;
+        bool ret = strncmp(io->str->data + io->seek + first, str, strlen(str)) == 0;
         if(!ret){
 
             return false;
@@ -267,7 +267,7 @@ inline bool ks_io_chunks(ks_io* io,  const ks_io_funcs* funcs, uint32_t num_prop
         while ((prop_length = funcs->key(io, funcs, "",  false)) != 0){
                begin = i;
                do{
-                   if(strncmp(props[i].name, io->str->ptr + io->seek - prop_length, strlen(props[i].name)) == 0) {
+                   if(strncmp(props[i].name, io->str->data + io->seek - prop_length, strlen(props[i].name)) == 0) {
                        if(!ks_io_value_func_call(io, funcs, props[i], 0, serialize)){
                             return false;
                         }
@@ -395,14 +395,14 @@ inline uint32_t ks_io_key_clike(ks_io* io, const ks_io_funcs* funcs, const char*
 
     if(!serialize){
         io->seek += ks_string_first_not_of(io->str, io->seek, "\t\n ");
-        if( io->seek >= io->str->length || io->str->ptr[io->seek] == '}'){
+        if( io->seek >= io->str->length || io->str->data[io->seek] == '}'){
             return 0;
         }
     }
     ks_io_fixed_text(io, ".", serialize );
     uint32_t ret =   ks_io_prop_text(io, name, "\t\n =", serialize) + ks_io_fixed_text(io, "=", serialize );
 
-    if(!serialize && fixed && strncmp(name, io->str->ptr + io->seek - ret, strlen(name)) != 0){
+    if(!serialize && fixed && strncmp(name, io->str->data + io->seek - ret, strlen(name)) != 0){
         ks_error("excepted property \"%s\"", name);
         return 0;
     }
@@ -502,7 +502,7 @@ static inline bool little_endian(){
 inline uint32_t ks_io_fixed_bin(ks_io* io, const char* str, bool swap_endian,  bool serialize){
     if(!serialize){
         uint32_t first = ks_string_first_c_of(io->str, io->seek, 0) + 1;
-        if(memcmp(io->str->ptr + io->seek, str, first) == 0){
+        if(memcmp(io->str->data + io->seek, str, first) == 0){
             io->seek += first;
             return first;
         }
@@ -521,11 +521,11 @@ inline bool ks_io_value_bin(ks_io* io, uint32_t length, char* c, bool swap_endia
             return false;
         }
         if(!swap_endian){
-            memcpy(c, io->str->ptr + io->seek, length);
+            memcpy(c, io->str->data + io->seek, length);
         }
         else {
             for(uint32_t i= 0; i < length; i++){
-                c[i] = io->str->ptr[io->seek + length - 1 - i];
+                c[i] = io->str->data[io->seek + length - 1 - i];
             }
         }
         io->seek += length;
@@ -568,9 +568,9 @@ inline bool ks_io_value_binary(ks_io* io, const ks_io_funcs* funcs, void* u, ks_
     switch (type) {
     case KS_VALUE_MAGIC_NUMBER:{
         if(!serialize){
-            if(memcmp(u, io->str->ptr + io->seek, 4) != 0){
+            if(memcmp(u, io->str->data + io->seek, 4) != 0){
                 char c[5] = { 0 };
-                memcpy(c, io->str->ptr + io->seek, 4);
+                memcpy(c, io->str->data + io->seek, 4);
                 ks_error("Excepted magic number \"%s\", detected \"%s\"", u, c);
                return false;
             }

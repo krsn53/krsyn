@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 int main ( void ){
-    ks_string* str = ks_string_new(100);
+    ks_string* str = ks_string_new();
 
     ks_io io={
         .str = str,
@@ -13,13 +13,14 @@ int main ( void ){
 #include "./EPiano.ksyt"
     };
 
+    return 0;
 
     {
         printf("Binary serialize test\n");
         ks_io_custom_func_serializer(ks_synth_binary)(&io, &binary_little_endian_serializer, &bin, 0);
 
         for(unsigned i = 0; i< str->length; i++){
-            printf("%d, ", (uint8_t)str->ptr[i]);
+            printf("%d, ", (uint8_t)str->data[i]);
         }
 
         bin = (ks_synth_binary){ 0 };
@@ -41,7 +42,7 @@ int main ( void ){
 
         ks_io_custom_func_serializer(ks_synth_binary)(&io, &clike_serializer, &bin, 0);
 
-        printf("%s\n", str->ptr);
+        printf("%s\n", str->data);
 
         bin = (ks_synth_binary){ 0 };
         printf("\nc like deserialize test\n");

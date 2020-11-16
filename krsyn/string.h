@@ -5,7 +5,7 @@
 typedef struct ks_string{
     uint32_t length;
     uint32_t capacity;
-    char* ptr;
+    char* data;
 } ks_string;
 
 ks_string *ks_string_new();

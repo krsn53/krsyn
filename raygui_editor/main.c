@@ -163,7 +163,7 @@ int main()
                         ks_string * str = ks_string_new();
                         if(ReadWriteSynth(&synth_bin, str, &file_dialog_state, true)){
                             const char* file_path = FormatText("%s/%s", file_dialog_state.dirPathText ,file_dialog_state.fileNameText);
-                            SaveFileData(file_path, str->ptr, str->length);
+                            SaveFileData(file_path, str->data, str->length);
                             dirty = false;
                         }
                         ks_string_free(str);
@@ -685,7 +685,7 @@ int main()
                         ks_string * str = ks_string_new();
                         if(ReadWriteSynth(&synth_bin, str, &file_dialog_state, true)){
                             const char* file_path = FormatText("%s/%s", file_dialog_state.dirPathText ,file_dialog_state.fileNameText);
-                            SaveFileData(file_path, str->ptr, str->length);
+                            SaveFileData(file_path, str->data, str->length);
                             dirty = false;
 
                             SetWindowTitle(FormatText("krsyn editor - %s",  file_dialog_state.fileNameText));
