@@ -13,7 +13,6 @@ int main ( void ){
 #include "./EPiano.ksyt"
     };
 
-    return 0;
 
     {
         printf("Binary serialize test\n");
