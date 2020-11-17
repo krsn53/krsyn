@@ -47,12 +47,15 @@ void ks_string_reserve(ks_string* str, uint32_t cap){
 }
 
 void ks_string_set(ks_string* str, const char* ch){
+    ks_string_set_n(str, strlen(ch), ch);
+}
+
+void ks_string_set_n(ks_string* str, uint32_t n, const char* ch){
     ks_string_clear(str);
 
-    uint32_t new_len = strlen(ch);
-    ks_string_reserve(str, new_len + 1);
-    str->length = new_len;
-    strcpy(str->data, ch);
+    ks_string_reserve(str, n+ 1);
+    str->length = n;
+    strncpy(str->data, ch,n);
     str->data[str->length] = 0;
 }
 
@@ -74,7 +77,8 @@ inline uint32_t ks_string_first_not_of(const ks_string* str, uint32_t start, con
 inline uint32_t ks_string_first_c_of(const ks_string* str, uint32_t start, char c){
     uint32_t len = str->length;
     for(uint32_t i=start; i< len; i++){
-            if(c == str->data[start + i]) return i - start;
+            char now = str->data[i];
+            if(c == now) return i - start;
     }
     return str->length-start;
 }

@@ -20,6 +20,7 @@ typedef struct ks_tone_binary{
     uint8_t lsb;
     uint8_t program;
     uint8_t note;
+    char* name;
     ks_synth_binary synth;
 }ks_tone_binary;
 

@@ -10,6 +10,7 @@ ks_io_begin_custom_func(ks_tone_binary)
     ks_fp_u8(lsb);
     ks_fp_u8(program);
     ks_fp_u8(note);
+    ks_fp_str_p(name);
     ks_fp_obj(synth, ks_synth_binary);
 ks_io_end_custom_func(ks_tone_binary)
 

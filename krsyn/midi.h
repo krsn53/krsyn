@@ -2,6 +2,12 @@
 
 #include "./io.h"
 
+typedef struct ks_midi_event{
+    uint32_t delta;
+    uint8_t status;
+    uint8_t* data;
+} ks_midi_event;
+
 typedef struct ks_midi_track{
     //chunk type MTrk
     uint32_t length;

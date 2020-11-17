@@ -10,7 +10,7 @@ inline bool ks_score_note_is_enabled(const ks_score_note* note){
     return ks_synth_note_is_enabled(&note->note);
 }
 inline bool ks_score_note_info_equals(ks_score_note_info i1, ks_score_note_info i2){
-    return (((i1.channel)<<7) + i1.note_number) == (((i2.channel)<<7) + i2.note_number);
+    return (((i1.channel)<<8) + i1.note_number) == (((i2.channel)<<8) + i2.note_number);
 }
 
 inline int16_t ks_score_note_info_hash(ks_score_note_info id){
@@ -46,6 +46,16 @@ static inline uint32_t calc_frames_per_event(uint32_t sampling_rate, uint16_t te
     return  ret;
 }
 
+ks_score_state* ks_score_state_new(uint32_t polyphony_bits){
+    ks_score_state* ret = malloc(sizeof(ks_score_state) + ks_1(polyphony_bits)* sizeof(ks_score_note));
+    ret->polyphony_bits = polyphony_bits;
+    return ret;
+}
+
+void ks_score_state_free(ks_score_state* state){
+    free(state);
+}
+
 bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8_t channel_number, ks_score_channel* channel, uint8_t note_number, uint8_t velocity){
 
      ks_synth* synth = channel->program;
@@ -56,11 +66,11 @@ bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8
 
     ks_score_note_info id =ks_score_note_info_of(note_number, channel_number);
     uint16_t id_v = ks_score_note_info_hash(id);
-    uint16_t begin = ks_mask(id_v, KS_MAX_POLYPHONY_BITS);
+    uint16_t begin = ks_mask(id_v, state->polyphony_bits);
     uint16_t index = begin;
     while(ks_score_note_is_enabled(&state->notes[index])){
         index++;
-        index = ks_mask(index, KS_MAX_POLYPHONY_BITS);
+        index = ks_mask(index, state->polyphony_bits);
         if(index == begin) {
             ks_warning("Failed to run note_on for exceeded maximum of polyphony at tick %d", channel_number, state->current_tick);
             return false;
@@ -87,11 +97,11 @@ bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_s
     }
     ks_score_note_info info =ks_score_note_info_of(note_number, channel_number);
     uint16_t hash = ks_score_note_info_hash(info);
-    uint16_t begin = ks_mask(hash, KS_MAX_POLYPHONY_BITS);
+    uint16_t begin = ks_mask(hash, state->polyphony_bits);
     uint16_t index = begin;
     while(!ks_score_note_info_equals(state->notes[index].info, info)) {
         index++;
-        index = ks_mask(index, KS_MAX_POLYPHONY_BITS);
+        index = ks_mask(index, state->polyphony_bits);
         if(index == begin) {
             ks_warning("Failed to run note_off for not found note with note number %d and channel %d at tick %d", note_number, channel_number, state->current_tick);
             return false;
@@ -194,7 +204,7 @@ void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* sta
         uint32_t frame = MIN((len>>1)-i, state->current_frame);
         int16_t tmpbuf[frame];
 
-        for(uint32_t p=0; p<ks_1(KS_MAX_POLYPHONY_BITS); p++){
+        for(uint32_t p=0; p<ks_1(state->polyphony_bits); p++){
             if(!ks_score_note_is_enabled(&state->notes[p])) {
                 continue;
             }
@@ -310,7 +320,7 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, ui
     state->current_frame = 0;
     state->frames_per_event = calc_frames_per_event(sampling_rate, state->tempo, resolution);
     state->current_tick = 0;
-    for(uint32_t i=0; i<ks_1(KS_MAX_POLYPHONY_BITS); i++) {
+    for(uint32_t i=0; i<ks_1(state->polyphony_bits); i++) {
         state->notes[i] = (ks_score_note){ 0 };
     }
     for(uint32_t i =0; i<KS_NUM_CHANNELS; i++){

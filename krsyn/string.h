@@ -16,6 +16,7 @@ void ks_string_free(ks_string* str);
 void ks_string_resize(ks_string* str, uint32_t size);
 void ks_string_reserve(ks_string* str, uint32_t cap);
 void ks_string_set(ks_string* str, const char* ch);
+void ks_string_set_n(ks_string* str, uint32_t n, const char* ch);
 void ks_string_add(ks_string* str, const char* ch);
 uint32_t ks_string_first_not_of(const ks_string* str, uint32_t start, const char *c);
 uint32_t ks_string_first_c_of(const ks_string* str, uint32_t start, char c);

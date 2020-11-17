@@ -48,6 +48,7 @@ int main( void )
                   .lsb=0,
                   .program=0,
                   .note=0,
+                  .name="EPiano",
                   .synth={
                       // Magic number : KSYN
                       .phase_coarses={
@@ -190,7 +191,6 @@ int main( void )
               },
           },
       };
-
 
       ks_tones* tones = ks_tones_new_from_binary(SAMPLING_RATE, &tonebin);
 
@@ -401,12 +401,13 @@ int main( void )
                                })
                             );
 
-      ks_score_state state;
-      ks_score_state_set_default(&state, tones, SAMPLING_RATE, song->resolution);
+      ks_score_state* state = ks_score_state_new(4);
+      ks_score_state_set_default(state, tones, SAMPLING_RATE, song->resolution);
 
-      ks_score_render(song, SAMPLING_RATE, &state, tones, buf, buf_len);
+      ks_score_render(song, SAMPLING_RATE, state, tones, buf, buf_len);
 
       ks_score_free(song);
+      ks_score_state_free(state);
   }
 
 
