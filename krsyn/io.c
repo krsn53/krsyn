@@ -511,13 +511,13 @@ inline bool ks_io_key_binary(ks_io* io, const ks_io_funcs* funcs, const char* na
 
 inline bool ks_io_string_binary(ks_io* io, const ks_io_funcs* funcs, uint32_t length, ks_string* str, bool swap_endian, bool serialize){
     if(!serialize){
-        uint32_t l = length == 0 ? ks_string_first_c_of(io->str, io->seek, 0) + 1 : length;
-        ks_string_set_n(str, l, io->str->data + io->seek);
+        uint32_t l = length == 0 ? ks_string_first_c_of(io->str, io->seek, 0)  : length;
+        ks_string_set_n(str, l-1, io->str->data + io->seek);
+        io->seek += length == 0 ? l+1 : length; // for "\0"
         return l != 0;
     }
     else {
-        ks_string_add_n(io->str + io->seek, length, str->data);
-        io->seek += length;
+        ks_string_add_n(io->str, length+1, str->data);
     }
     return true;
 

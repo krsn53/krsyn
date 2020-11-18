@@ -192,6 +192,8 @@ int main( void )
           },
       };
 
+
+
       ks_tones* tones = ks_tones_new_from_binary(SAMPLING_RATE, &tonebin);
 
       ks_score* song = ks_score_new(96, 48*9,
