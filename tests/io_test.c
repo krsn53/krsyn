@@ -1,60 +1,124 @@
 #include "../krsyn.h"
 #include <stdio.h>
 
+typedef struct Test{
+    uint8_t u8;
+    uint16_t u16;
+    uint32_t u32;
+    uint64_t u64;
+    uint8_t arr[10];
+    uint32_t len_arr;
+    uint16_t *arr_len;
+    char strarr[20];
+    char* str_p;
+    uint32_t len_str;
+    char* str_len;
+
+}Test;
+
+static Test test ={
+    .u8 = 1,
+    .u16 = 2,
+    .u32 = 3,
+    .u64 = 4,
+    .arr = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+    .len_arr = 3,
+    .arr_len = (uint16_t[]){15, 16, 17},
+    .strarr = "test18",
+    .str_p = "test19",
+    .len_str = 6,
+    .str_len = "test20",
+};
+
+bool Test_equals(const Test *t1, const Test *t2){
+    bool ret = t1->u8 == t2->u8 &&
+            t1->u16 == t2->u16 &&
+            t1->u32 == t2->u32 &&
+            t1->u64 == t2->u64 &&
+            memcmp(t1->arr, t2->arr, sizeof (t1->arr)) == 0 &&
+            t1->len_arr == t2->len_arr &&
+            memcmp(t1->arr_len, t2->arr_len, sizeof (*t1->arr_len) * t1->len_arr) == 0 &&
+            memcmp(t1->strarr, t2->strarr, sizeof (t1->strarr)) == 0 &&
+            memcmp(t1->str_p, t2->str_p, strlen(t1->str_p)) == 0 &&
+            t1->len_str == t2->len_str &&
+            memcmp(t1->str_len, t2->str_len, t1->len_str*sizeof(char)) == 0;
+    return ret;
+}
+
+ks_io_decl_custom_func(Test);
+
+ks_io_begin_custom_func(Test)
+    ks_fp_u8(u8);
+    ks_fp_u16(u16);
+    ks_fp_u32(u32);
+    ks_fp_u64(u64);
+    ks_fp_arr_u8(arr);
+    ks_fp_u32(len_arr);
+    ks_fp_arr_len_u16(arr_len, ks_elem_access(len_arr));
+    ks_fp_str(strarr);
+    ks_fp_str_p(str_p);
+    ks_fp_u32(len_str);
+    ks_fp_str_len(str_len, ks_elem_access(len_str));
+ks_io_end_custom_func(Test)
+
 int main ( void ){
-    ks_string* str = ks_string_new();
 
-    ks_io io={
-        .str = str,
-        .seek = 0,
-        .indent =0,
-    };
-    ks_synth_binary bin = {
-#include "./EPiano.ksyt"
-    };
+    ks_io *io = ks_io_new();
+    {
+        ks_io_begin_serialize(io, clike, ks_prop_root(test, Test));
+        printf("--- C like serialize test ---\n");
+        printf("test2:\n%s", io->str->data);
+
+        Test test2;
+
+        printf("--- C like deserialize test ---\n");
+        ks_io_begin_deserialize(io, clike, ks_prop_root(test2, Test));
+        printf("result: test is equals test2 = %s\n", Test_equals(&test, &test2) ? "True" : "False");
+
+        free(test2.arr_len);
+        free(test2.str_len);
+        free(test2.str_p);
+    }
+
+    {
+        ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(test, Test));
+        printf("\n--- binary little endian serialize test ---\ntest3:\n");
+        for(uint32_t i=0; i< io->str->length; i++){
+            printf("0x%02x, ", io->str->data[i]);
+        }
+        printf("\n");
+
+        Test test3;
+
+        printf("--- binary little endian deserialize test ---\n");
+        ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(test3, Test));
+        printf("result: test is equals test3 = %s\n", Test_equals(&test, &test3) ? "True" : "False");
+
+        free(test3.arr_len);
+        free(test3.str_len);
+        free(test3.str_p);
+    }
 
 
     {
-        printf("Binary serialize test\n");
-        ks_io_custom_func_serializer(ks_synth_binary)(&io, &binary_little_endian_serializer, &bin, 0);
-
-        for(unsigned i = 0; i< str->length; i++){
-            printf("%d, ", (uint8_t)str->data[i]);
+        ks_io_begin_serialize(io, binary_big_endian, ks_prop_root(test, Test));
+        printf("\n--- binary big endian serialize test ---\ntest4:\n");
+        for(uint32_t i=0; i< io->str->length; i++){
+            printf("0x%02x, ", io->str->data[i]);
         }
+        printf("\n");
 
-        bin = (ks_synth_binary){ 0 };
-        printf("\nBinary deserialize test\n");
-        ks_io_custom_func_deserializer(ks_synth_binary)(&io, &binary_little_endian_deserializer, &bin, 0);
+        Test test4;
 
+        printf("--- binary big endian deserialize test ---\n");
+        ks_io_begin_deserialize(io, binary_big_endian, ks_prop_root(test4, Test));
+        printf("result: test is equals test4 = %s\n", Test_equals(&test, &test4) ? "True" : "False");
 
-        for(unsigned i = 0; i< sizeof(ks_synth_binary); i++){
-            printf("%d, ", ((uint8_t*)&bin)[i]);
-        }
-        printf("\n\n");
+        free(test4.arr_len);
+        free(test4.str_len);
+        free(test4.str_p);
     }
-
-    io.seek = 0;
-    ks_string_clear(str);
-
-    {
-        printf("c like serialize test\n");
-
-        ks_io_custom_func_serializer(ks_synth_binary)(&io, &clike_serializer, &bin, 0);
-
-        printf("%s\n", str->data);
-
-        bin = (ks_synth_binary){ 0 };
-        printf("\nc like deserialize test\n");
-        ks_io_custom_func_deserializer(ks_synth_binary)(&io, &clike_deserializer, &bin, 0);
-
-        for(unsigned i = 0; i< sizeof(ks_synth_binary); i++){
-            printf("%d, ", ((uint8_t*)&bin)[i]);
-        }
-
-        printf("\n\n");
-    }
-
-    ks_string_free(str);
+    ks_io_free(io);
 
     return 0;
 }

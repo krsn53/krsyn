@@ -59,24 +59,22 @@ static void new_menu_activate(GtkMenuItem *item, gpointer user_data){
 
 gboolean editor_open_tone(const char* file, editor_state* state)
 {
-    FILE* fp;
     bool text_format = strcmp(file + strlen(file) - 4, "ksyt") == 0;
-    if((fp = fopen(file, text_format ? "r": "rb")) != NULL)
-    {
 
-        ks_string *str = ks_string_new();
-        char c;
-        while(fscanf(fp, "%c", &c) != EOF){
-            ks_string_add_c(str, c);
-        }
-        ks_io io ={ .str =str, .seek =0};
+    ks_io* io = ks_io_new();
 
-        gboolean ret = ks_io_custom_func_deserializer(ks_synth_binary)(&io, text_format ? &clike_deserializer : &binary_little_endian_deserializer, &state->data, 0);
+    if(!ks_io_read_file(io, file)) return FALSE;
 
-        ks_string_free(str);
-        fclose(fp);
-        return ret;
+    gboolean ret;
+    if(text_format){
+           ret = ks_io_begin_deserialize(io, clike, ks_prop_root(state->data, ks_synth_binary));
+    } else {
+           ret = ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(state->data, ks_synth_binary));
     }
+
+    ks_io_free(io);
+    return ret;
+
     return FALSE;
 }
 
@@ -86,7 +84,6 @@ gboolean editor_save_tone(const char* file, editor_state* state){
     unsigned long len;
 
     len = strlen(file);
-
     bool text_format = strcmp(file + len - 4, "ksyt") == 0;
 
     if(strcmp(file + len - 4, ".ksyb") != 0 && !text_format){
@@ -97,14 +94,18 @@ gboolean editor_save_tone(const char* file, editor_state* state){
     }
 
     if((fp = fopen(file_path, text_format ? "w": "wb")) != NULL){
-        ks_string *str = ks_string_new();
-        ks_io io ={ .str =str, .seek =0};
+        ks_io* io = ks_io_new();
 
-        gboolean ret = ks_io_custom_func_serializer(ks_synth_binary)(&io, text_format ? &clike_serializer : &binary_little_endian_serializer, &state->data, 0);
-
-        if(ret)fwrite(str->data, 1, str->length, fp);
+        gboolean ret;
+        if(text_format){
+               ret = ks_io_begin_serialize(io, clike, ks_prop_root(state->data, ks_synth_binary));
+        } else {
+                ret = ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(state->data, ks_synth_binary));
+        }
+        if(ret)fwrite(io->str->data, 1, io->str->length, fp);
 
         fclose(fp);
+        ks_io_free(io);
         return ret;
     }
     g_free(file_path);

@@ -27,23 +27,38 @@ void GuiAlignedLabel(const char* text, Rectangle rec, GuiTextAlignment align);
 int PropertyInt(Rectangle rec, const char* innerText, int value, int min_value, int max_value, int step);
 int PropertyIntImage(Rectangle rec, Texture2D tex, int value, int min_value, int max_value, int step);
 //------------------------------------------------------------------------------------
-bool ReadWriteSynth(ks_synth_binary* bin, ks_string* str, GuiFileDialogState* file_dialog_state, bool serialize){
-    ks_io io ={
-        .indent =0,
-        .seek = 0,
-        .str = str,
-    };
-    const ks_io_funcs* funcs;
+bool SaveLoadSynth(ks_synth_binary* bin, GuiFileDialogState* file_dialog_state, bool serialize){
+    ks_io * io = ks_io_new();
+    bool text_format = true;
     if(IsFileExtension(file_dialog_state->fileNameText, ".ksyb")){
-        funcs = &binary_little_endian_serializer;
+        text_format= false;
     } else {
         if(!IsFileExtension(file_dialog_state->fileNameText, ".ksyt")){
             strcpy(file_dialog_state->fileNameText + strlen(file_dialog_state->fileNameText), ".ksyt");
         }
-        funcs = &clike_serializer;
     }
-    return (serialize? ks_io_custom_func_serializer(ks_synth_binary) :
-                      ks_io_custom_func_deserializer(ks_synth_binary))(&io, funcs, bin, 0);
+
+    if(!serialize){
+        ks_io_read_file(io, FormatText("%s/%s", file_dialog_state->dirPathText, file_dialog_state->fileNameText));
+    }
+
+    bool ret;
+    if(text_format){
+        ret = serialize ? ks_io_begin_serialize(io, clike, ks_prop_root(*bin, ks_synth_binary)) :
+                          ks_io_begin_deserialize(io, clike, ks_prop_root(*bin, ks_synth_binary)) ;
+    }
+     else {
+        ret = serialize ? ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(*bin, ks_synth_binary)) :
+                          ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*bin, ks_synth_binary)) ;
+    }
+
+    if(serialize){
+        SaveFileData(FormatText("%s/%s", file_dialog_state->dirPathText, file_dialog_state->fileNameText), io->str->data, io->str->length);
+    }
+
+    ks_io_free(io);
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------------
@@ -160,13 +175,9 @@ int main()
                         file_dialog_state.fileDialogActive = true;
                         state = SAVE_DIALOG;
                     } else {
-                        ks_string * str = ks_string_new();
-                        if(ReadWriteSynth(&synth_bin, str, &file_dialog_state, true)){
-                            const char* file_path = FormatText("%s/%s", file_dialog_state.dirPathText ,file_dialog_state.fileNameText);
-                            SaveFileData(file_path, str->data, str->length);
+                        if(SaveLoadSynth(&synth_bin, &file_dialog_state, true)){
                             dirty = false;
                         }
-                        ks_string_free(str);
                     }
                 }
                 pos2.x += step_x;
@@ -651,20 +662,8 @@ int main()
                             break;
                         }
 
-                        const char* file_path = FormatText("%s/%s",file_dialog_state.dirPathText,file_dialog_state.fileNameText);
-
-                        unsigned file_size;
-                        unsigned char* c =  LoadFileData(file_path, &file_size);
-                        if(c == NULL) {
-                            break;
-                        }
-
-                        ks_string *str = ks_string_new();
-                        ks_string_add_n(str, file_size, (char*)c);
-                        RL_FREE(c);
-
                         ks_synth_binary load;
-                        if(!ReadWriteSynth(&load, str, &file_dialog_state, false)){
+                        if(!SaveLoadSynth(&load,&file_dialog_state, false)){
                             ks_error("Failed to load synth");
 
                         }else {
@@ -672,7 +671,6 @@ int main()
                             dirty = false;
                             SetWindowTitle(FormatText("krsyn editor - %s", file_dialog_state.fileNameText));
                         }
-                        ks_string_free(str);
                     }
                     state = EDIT;
                 }
@@ -682,15 +680,10 @@ int main()
                 GuiFileDialog(&file_dialog_state, true);
                 if(!file_dialog_state.fileDialogActive){
                     if(file_dialog_state.SelectFilePressed){
-                        ks_string * str = ks_string_new();
-                        if(ReadWriteSynth(&synth_bin, str, &file_dialog_state, true)){
-                            const char* file_path = FormatText("%s/%s", file_dialog_state.dirPathText ,file_dialog_state.fileNameText);
-                            SaveFileData(file_path, str->data, str->length);
+                        if(SaveLoadSynth(&synth_bin,&file_dialog_state, true)){
                             dirty = false;
-
                             SetWindowTitle(FormatText("krsyn editor - %s",  file_dialog_state.fileNameText));
                         }
-                        ks_string_free(str);
                         state = EDIT;
                     }
                 }

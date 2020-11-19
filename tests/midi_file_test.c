@@ -3,37 +3,17 @@
 #include <stdio.h>
 
 int main(int argc, char** argv) {
-    ks_string *str = ks_string_new();
 
-    FILE *f = fopen("test.mid", "rb");
-    if(!f) return -1;
+    ks_io *io = ks_io_new();
+    ks_midi_file midi;
 
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    if(!ks_io_read_file(io, "test.mid")) return -1;
 
-    ks_string_resize(str, fsize+1);
+    ks_io_begin_deserialize(io, binary_big_endian, ks_prop_root(midi, ks_midi_file));
+    ks_io_begin_serialize(io, clike, ks_prop_root(midi, ks_midi_file));
 
-    fread(str->data, 1, fsize, f);
-    fclose(f);
+    printf("%s\n", io->str->data);
 
-    ks_io io = {
-        .indent =0,
-        .seek = 0,
-        .str = str,
-    };
-
-    ks_midi_file midi = { 0 };
-
-    ks_io_custom_func_deserializer(ks_midi_file)(&io, &binary_big_endian_deserializer, &midi, 0);
-
-    ks_string_clear(str);
-
-    ks_io_custom_func_serializer(ks_midi_file)(&io, &clike_serializer, &midi, 0);
-
-    printf("%s\n", str->data);
-
-    ks_string_free(str);
-
+    ks_io_free(io);
     return 0;
 }
