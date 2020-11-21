@@ -3,12 +3,13 @@
 #include <memory.h>
 
 inline void ks_vector_init_base(void** data, uint32_t type_size){
-    *data = malloc(type_size);
+    *data = calloc(1, type_size);
 }
 
 inline void ks_vector_reserve_base(void** data, uint32_t type_size,  uint32_t *capacity, uint32_t new_cap){
     if(new_cap > *capacity){
         *data = realloc(*data, new_cap*type_size);
+        memset(*data + *capacity, 0, new_cap-*capacity);
         *capacity = new_cap;
     }
 }

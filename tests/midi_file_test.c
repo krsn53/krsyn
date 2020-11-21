@@ -12,7 +12,10 @@ int main(int argc, char** argv) {
     ks_io_begin_deserialize(io, binary_big_endian, ks_prop_root(midi, ks_midi_file));
     ks_io_begin_serialize(io, clike, ks_prop_root(midi, ks_midi_file));
 
+
     printf("%s\n", io->str->data);
+
+    ks_midi_tracks_free(midi.num_tracks, midi.tracks);
 
     ks_io_free(io);
     return 0;

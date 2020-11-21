@@ -51,19 +51,11 @@ int main( void )
                   .name="EPiano",
                   .synth={
                       // Magic number : KSYN
-                      .phase_coarses={
-                          {
-                              .u8=56,
-                          },
-                          {
-                              .u8=16,
-                          },
-                          {
-                              .u8=12,
-                          },
-                          {
-                              .u8=4,
-                          },
+                      .phase_coarses.u8={
+                          56,
+                          16,
+                          12,
+                          4,
                       },
                       .phase_fines={
                           0,
@@ -161,19 +153,11 @@ int main( void )
                           69,
                           69,
                       },
-                      .keyscale_curve_types={
-                          {
-                              .u8=0,
-                          },
-                          {
-                              .u8=0,
-                          },
-                          {
-                              .u8=0,
-                          },
-                          {
-                              .u8=0,
-                          },
+                      .keyscale_curve_types.u8={
+                          0,
+                          0,
+                          0,
+                          0,
                       },
                       .lfo_ams_depths={
                           0,

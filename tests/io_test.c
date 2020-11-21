@@ -54,11 +54,11 @@ ks_io_begin_custom_func(Test)
     ks_fp_u64(u64);
     ks_fp_arr_u8(arr);
     ks_fp_u32(len_arr);
-    ks_fp_arr_len_u16(arr_len, ks_elem_access(len_arr));
+    ks_fp_arr_u16_len(arr_len, ks_access(len_arr));
     ks_fp_str(strarr);
     ks_fp_str_p(str_p);
     ks_fp_u32(len_str);
-    ks_fp_str_len(str_len, ks_elem_access(len_str));
+    ks_fp_str_len(str_len, ks_access(len_str));
 ks_io_end_custom_func(Test)
 
 int main ( void ){

@@ -17,7 +17,7 @@ ks_io_end_custom_func(ks_tone_binary)
 ks_io_begin_custom_func(ks_tones_binary)
     ks_magic_number("KTON");
     ks_fp_u32(num_tones);
-    ks_fp_arr_len_obj(tones, ks_tone_binary, ks_elem_access(num_tones));
+    ks_fp_arr_obj_len(tones, ks_tone_binary, ks_access(num_tones));
 ks_io_end_custom_func(ks_tones_binary)
 
 
@@ -61,7 +61,7 @@ ks_tones* ks_tones_new_from_binary(uint32_t sampling_rate, const ks_tones_binary
         }
         if(bank_number.percussion){
             if(bank->programs[bin->tones[i].program] == NULL){
-                bank->programs[bin->tones[i].program] = malloc(sizeof(ks_synth)* 128);
+                bank->programs[bin->tones[i].program] = calloc(128, sizeof(ks_synth));
             }
         }
         else {
@@ -85,7 +85,7 @@ ks_tones* ks_tones_new(){
 }
 
 ks_tones_bank* ks_tones_banks_new(uint32_t num_banks){
-    ks_tones_bank* ret = malloc(sizeof(ks_tones_bank)*num_banks);
+    ks_tones_bank* ret = calloc(num_banks, sizeof(ks_tones_bank));
     return ret;
 }
 
@@ -122,7 +122,7 @@ ks_tones_bank* ks_tones_add_bank(uint32_t capacity, ks_tones_bank* banks, ks_ton
 void ks_tones_reserve(ks_tones* tones, uint32_t cap){
     if(cap <= tones->capacity) return;
 
-    ks_tones_bank* banks = malloc(sizeof(ks_tones_bank)* cap);
+    ks_tones_bank* banks = calloc(cap, sizeof(ks_tones_bank));
     memset(banks, 0, sizeof(ks_tones_bank)*cap);
     for(uint32_t i=0; i<tones->capacity; i++){
         if(!tones->banks[i].bank_number.enabled) continue;

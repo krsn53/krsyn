@@ -81,22 +81,16 @@ typedef enum ks_lfo_wave_t
 }ks_synth_lfo_wave_t;
 
 
-typedef union ks_phase_coarse_t
+typedef struct ks_phase_coarse_t
 {
-    struct {
-        uint8_t fixed_frequency: 1;
-        uint8_t value :7;
-    } str;
-    uint8_t u8;
+    uint8_t fixed_frequency: 1;
+    uint8_t value :7;
 }ks_phase_coarse_t;
 
-typedef union ks_keyscale_curve_t
+typedef struct ks_keyscale_curve_t
 {
-    struct {
-        uint8_t left : 4;
-        uint8_t right : 4;
-    } str;
-    uint8_t u8;
+    uint8_t left : 4;
+    uint8_t right : 4;
 }ks_keyscale_curve_t;
 
 /**
@@ -106,7 +100,10 @@ typedef union ks_keyscale_curve_t
 typedef struct ks_synth_binary
 {
     //! Frequency magnification of output.
-    ks_phase_coarse_t       phase_coarses           [KS_NUM_OPERATORS];
+    union {
+        ks_phase_coarse_t       b                       [KS_NUM_OPERATORS];
+        uint8_t                 u8                      [KS_NUM_OPERATORS];
+    }phase_coarses;
 
     //! Detune of frequency. Max value is half octave.
     uint8_t                     phase_fines             [KS_NUM_OPERATORS];
@@ -140,8 +137,10 @@ typedef struct ks_synth_binary
     uint8_t                     keyscale_mid_points     [KS_NUM_OPERATORS];
 
     //! Kind of keyscale curve. Upper 4 bits are value for the notes which bellow keyscale_mid_points, and lower 4 bits are value for the notes which above keyscale_mid_points.
-    ks_keyscale_curve_t         keyscale_curve_types    [KS_NUM_OPERATORS];
-    
+    union {
+         ks_keyscale_curve_t    b                       [KS_NUM_OPERATORS];
+         uint8_t                u8                      [KS_NUM_OPERATORS];
+    }keyscale_curve_types;
 
     //! Amplitude modulation sensitivity of LFO.
     uint8_t                     lfo_ams_depths          [KS_NUM_OPERATORS]; // zero : disabled
@@ -240,8 +239,6 @@ typedef  struct ks_synth_note
 ks_synth_note;
 
 
-ks_io_decl_custom_func(ks_phase_coarse_t);
-ks_io_decl_custom_func(ks_keyscale_curve_t);
 
 /**
  * @brief ks_io_synth_binary

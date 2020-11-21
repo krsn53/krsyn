@@ -11,7 +11,7 @@ ks_string *ks_string_new() {
     *ret = (ks_string){
             .capacity = cap,
             .length = 0,
-            .data = malloc(sizeof(char)*cap),
+            .data = calloc(cap, sizeof(char)),
         };
     return ret;
 }

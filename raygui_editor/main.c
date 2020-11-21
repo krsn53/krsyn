@@ -347,7 +347,7 @@ int main()
                 GuiAlignedLabel("Fixed Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    synth_bin.phase_coarses[i].str.fixed_frequency = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "", synth_bin.phase_coarses[i].str.fixed_frequency);
+                    synth_bin.phase_coarses.b[i].fixed_frequency = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "", synth_bin.phase_coarses.b[i].fixed_frequency);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -356,13 +356,13 @@ int main()
                 GuiAlignedLabel("Phase Coarse", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    if(synth_bin.phase_coarses[i].str.fixed_frequency){
-                        text = FormatText("%.1f Hz", ks_notefreq(synth_bin.phase_coarses[i].str.value) / (float)ks_1(KS_FREQUENCY_BITS));
+                    if(synth_bin.phase_coarses.b[i].fixed_frequency){
+                        text = FormatText("%.1f Hz", ks_notefreq(synth_bin.phase_coarses.b[i].value) / (float)ks_1(KS_FREQUENCY_BITS));
                     }
                     else {
-                        text = FormatText("%.1f", calc_phase_coarses(synth_bin.phase_coarses[i].str.value) / 2.0f);
+                        text = FormatText("%.1f", calc_phase_coarses(synth_bin.phase_coarses.b[i].value) / 2.0f);
                     }
-                    synth_bin.phase_coarses[i].str.value = PropertyInt(pos, text, synth_bin.phase_coarses[i].str.value, 0, 127, 1);
+                    synth_bin.phase_coarses.b[i].value = PropertyInt(pos, text, synth_bin.phase_coarses.b[i].value, 0, 127, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -465,9 +465,9 @@ int main()
                 pos2.width = (base_width - margin)/ 2.0;
                 pos2.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    synth_bin.keyscale_curve_types[i].str.left = PropertyIntImage(pos2, keyscale_left_images, synth_bin.keyscale_curve_types[i].str.left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
+                    synth_bin.keyscale_curve_types.b[i].left = PropertyIntImage(pos2, keyscale_left_images, synth_bin.keyscale_curve_types.b[i].left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
                     pos2.x += pos2.width  +margin;
-                    synth_bin.keyscale_curve_types[i].str.right = PropertyIntImage(pos2, keyscale_right_images, synth_bin.keyscale_curve_types[i].str.right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
+                    synth_bin.keyscale_curve_types.b[i].right = PropertyIntImage(pos2, keyscale_right_images, synth_bin.keyscale_curve_types.b[i].right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
                     pos2.x +=  pos2.width +margin;
                 }
                 pos.x = x_pos.x; pos.y += (pos2.height + margin);
