@@ -20,7 +20,7 @@ typedef struct ks_midi_event{
             uint8_t* data;
         }meta;
 
-    }data;
+    }message;
 } ks_midi_event;
 
 typedef struct ks_midi_track{

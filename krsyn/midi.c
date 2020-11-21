@@ -57,22 +57,22 @@ ks_io_begin_custom_func(ks_midi_event)
         //SysEx
         case 0xf0:
         case 0xf7:
-            ks_func_prop(ks_io_variable_length_number, ks_prop_u32(data.sys_ex.length));
-            ks_fp_arr_u8_len(data.sys_ex.data, ks_access(data.sys_ex.length));
+            ks_func_prop(ks_io_variable_length_number, ks_prop_u32(message.sys_ex.length));
+            ks_fp_arr_u8_len(message.sys_ex.data, ks_access(message.sys_ex.length));
             break;
        //meta
         case 0xff:
-            ks_fp_u8(data.meta.type);
-            ks_func_prop(ks_io_variable_length_number, ks_prop_u32(data.meta.length));
-            if(ks_access(data.meta.type) > 0x00 && ks_access(data.meta.type) < 0x08){
-                ks_fp_str_len(data.meta.data, ks_access(data.meta.length));
+            ks_fp_u8(message.meta.type);
+            ks_func_prop(ks_io_variable_length_number, ks_prop_u32(message.meta.length));
+            if(ks_access(message.meta.type) > 0x00 && ks_access(message.meta.type) < 0x08){
+                ks_fp_str_len(message.meta.data, ks_access(message.meta.length));
             } else {
-                 ks_fp_arr_u8_len(data.meta.data, ks_access(data.meta.length));
+                 ks_fp_arr_u8_len(message.meta.data, ks_access(message.meta.length));
             }
             break;
        //midi event
         default:
-            ks_fp_arr_u8(data.data);
+            ks_fp_arr_u8(message.data);
             break;
     }
 ks_io_end_custom_func(ks_midi_event)
@@ -93,7 +93,7 @@ ks_io_begin_custom_func(ks_midi_track)
         for(;;){
             __FUNCS->array_elem(__IO, __FUNCS, &arr, ks_access(num_events));
             if(ks_access(events)[ks_access(num_events)].status == 0xff &&
-                ks_access(events)[ks_access(num_events)].data.meta.type == 0x2f){
+                ks_access(events)[ks_access(num_events)].message.meta.type == 0x2f){
                 ks_access(num_events) ++;
                 break;
             }
@@ -138,13 +138,13 @@ void ks_midi_events_free(uint32_t num_events, ks_midi_event* events){
         switch (events[e].status) {
         case 0xf0:
         case 0xf7:
-            if(events[e].data.sys_ex.data != NULL && events[e].data.sys_ex.length > 0){
-                free(events[e].data.sys_ex.data);
+            if(events[e].message.sys_ex.data != NULL && events[e].message.sys_ex.length > 0){
+                free(events[e].message.sys_ex.data);
             }
             break;
         case 0xff:
-            if(events[e].data.meta.data != NULL && events[e].data.meta.length > 0){
-                free(events[e].data.meta.data);
+            if(events[e].message.meta.data != NULL && events[e].message.meta.length > 0){
+                free(events[e].message.meta.data);
             }
             break;
         default:
