@@ -10,7 +10,11 @@ int main(int argc, char** argv) {
     if(!ks_io_read_file(io, "test.mid")) return -1;
 
     ks_io_begin_deserialize(io, binary_big_endian, ks_prop_root(midi, ks_midi_file));
-    // ks_midi_file_conbine_tracks(&midi);
+    ks_io_begin_serialize(io, clike, ks_prop_root(midi, ks_midi_file));
+
+    printf("%s", io->str->data);
+
+    ks_midi_file_conbine_tracks(&midi);
 
     ks_io_begin_serialize(io, binary_big_endian, ks_prop_root(midi, ks_midi_file));
 
