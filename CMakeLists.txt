@@ -6,7 +6,6 @@ set(BUILD_RAYGUI_EXAMPLES OFF)
 set(BUILD_EXAMPLES OFF)
 
 
-
 file(GLOB krsyn_src *.c *.h krsyn/*.c krsyn/*.h)
 add_library(krsyn ${krsyn_src})
 
@@ -21,11 +20,6 @@ target_link_libraries(midi_file_test krsyn)
 add_executable(io_test tests/io_test.c)
 target_link_libraries(io_test krsyn)
 
-
-
-add_subdirectory(raygui_editor)
-
-
 function(target_link as lib proj)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(${as} REQUIRED ${lib})
@@ -36,7 +30,7 @@ function(target_link as lib proj)
 endfunction()
 
 if(NOT ${CMAKE_C_COMPILER_ID} STREQUAL TinyCC)
-
+    add_subdirectory(raygui_editor)
 
     file(GLOB krsyn_editor_src editor/*.h editor/*.c)
     add_executable(krsyn_editor ${krsyn_editor_src})

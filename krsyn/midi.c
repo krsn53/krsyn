@@ -52,6 +52,10 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
 
 ks_io_begin_custom_func(ks_midi_event)
     ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
+
+    if(!__SERIALIZE){
+        ks_access(time) = __INDEX == 0 ? 0 : ks_access_before(time, 1) + ks_access(delta);
+    }
     ks_fp_u8(status);
     switch (ks_access(status)) {
         //SysEx
@@ -71,9 +75,28 @@ ks_io_begin_custom_func(ks_midi_event)
             }
             break;
        //midi event
-        default:
+        case 0xf1:
+        case 0xf3:
+            ks_fp_u8(message.data[0]);
+            break;
+        case 0xf6:
+        case 0xf8:
+        case 0xfa:
+        case 0xfb:
+        case 0xfc:
+        case 0xfe:
             ks_fp_arr_u8(message.data);
             break;
+        default:
+            switch (ks_access(status) >> 4) {
+            case 0xc:
+            case 0xd:
+                ks_fp_u8(message.data[0]);
+                break;
+            default:
+                 ks_fp_arr_u8(message.data);
+                break;
+            }
     }
 ks_io_end_custom_func(ks_midi_event)
 
@@ -125,6 +148,56 @@ void ks_midi_file_free(ks_midi_file* file){
     ks_midi_tracks_free(file->num_tracks, file->tracks);
     free(file);
 }
+
+int compare_midi_event_time (const void *a, const void *b){
+    const ks_midi_event* a1 = a, *b1 =b;
+    return a1->time - b1->time;
+}
+
+void ks_midi_file_conbine_tracks(ks_midi_file* file){
+    ks_midi_file ret;
+
+    ret.format = 0;
+    ret.length = file->length;
+    ret.num_tracks = 1;
+    ret.resolution = file->resolution;
+    ret.tracks = ks_midi_tracks_new(1);
+
+    uint32_t num_events = 0;
+    uint32_t length =0;
+    for(uint32_t i=0; i<file->num_tracks; i++){
+        length += file->tracks[i].length;
+        num_events += file->tracks[i].num_events;
+    }
+
+    ret.tracks[0].length = length;
+    ret.tracks[0].num_events = num_events;
+    ret.tracks[0].events = ks_midi_events_new(num_events);
+
+    uint32_t e=0;
+    for(uint32_t i=0; i<file->num_tracks; i++){
+        memcpy(ret.tracks[0].events + e, file->tracks[i].events, file->tracks[i].num_events * sizeof(ks_midi_event));
+        e +=  file->tracks[i].num_events;
+    }
+
+    qsort(ret.tracks->events, num_events, sizeof(ks_midi_event), compare_midi_event_time);
+
+    for(uint32_t i=0; i<file->num_tracks; i++){
+        free(file->tracks[i].events);
+    }
+    free(file->tracks);
+
+    *file = ret;
+}
+
+ks_midi_track* ks_midi_tracks_new(uint32_t num_tracks){
+    return calloc(num_tracks, sizeof(ks_midi_track));
+}
+
+ks_midi_event* ks_midi_events_new(uint32_t num_events){
+    return calloc(num_events, sizeof(ks_midi_event));
+}
+
 
 void ks_midi_tracks_free(uint32_t num_tracks, ks_midi_track* tracks){
     for(uint32_t t=0; t < num_tracks; t++){

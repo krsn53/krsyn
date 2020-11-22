@@ -1,5 +1,6 @@
 project(krsyn_raygui_editor)
 
+option(BUILD_RAYGUI_EXAMPLES "Build the examples." OFF)
 
 add_subdirectory(raylib)
 add_subdirectory(raygui/projects/CMake)
