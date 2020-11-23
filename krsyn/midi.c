@@ -9,7 +9,7 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
 
     if(serialize){
         uint8_t out[4] = { 0 };
-        uint32_t in = *(uint32_t*)prop.value.data;
+        uint32_t in = *prop.value.ptr.u32;
 
         ks_property p = prop;
         p.value.type = KS_VALUE_U8;
@@ -26,8 +26,8 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
             in >>= 7;
         }
         for(; i>=0; i--){
-            p.value.data =  &out[i];
-            if(!ks_io_value(io, funcs, p, 0, serialize)) return false;
+            p.value.ptr.u8 =  &out[i];
+            if(!ks_io_value(io, funcs, p.value, 0, serialize)) return false;
         }
 
         return true;
@@ -36,16 +36,16 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
 
         ks_property p = prop;
         p.value.type = KS_VALUE_U8;
-        p.value.data = & in;
+        p.value.ptr.u8 = & in;
         uint32_t out=0;
 
         do{
-            if(!ks_io_value(io, funcs, p, 0, serialize)) return false;
+            if(!ks_io_value(io, funcs, p.value, 0, serialize)) return false;
             out <<= 7;
             out |= in & 0x7f;
         }while(in >= 0x80);
 
-        *(uint32_t*)prop.value.data = out;
+        *prop.value.ptr.u32 = out;
 
         return true;
     }
@@ -110,7 +110,7 @@ ks_io_begin_custom_func(ks_midi_track)
     } else {
         ks_access(num_events) = 0;
 
-        ks_array_data arr = ks_prop_arr_data_len(ks_access(length) / 4, events, ks_value_obj(events, ks_midi_event), false);
+        ks_array_data arr = ks_prop_arr_data_len(ks_access(length) / 4, events, ks_val_obj(events, ks_midi_event), false);
 
         if(!ks_io_array_begin(__IO, __FUNCS, &arr, 0, __SERIALIZE)) return false;
 

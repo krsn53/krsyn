@@ -23,18 +23,18 @@ void ks_io_reset(ks_io* io){
     io->seek =0;
 }
 
-inline bool ks_io_value(ks_io* io, const ks_io_funcs* funcs, ks_property prop, uint32_t index, bool serialize){
+inline bool ks_io_value(ks_io* io, const ks_io_funcs* funcs, ks_value value, uint32_t index, bool serialize){
     bool ret = false;
 
-    switch (prop.value.type) {
+    switch (value.type) {
     case KS_VALUE_U8:
     case KS_VALUE_U16:
     case KS_VALUE_U32:
     case KS_VALUE_U64:
-        ret = funcs->value(io, funcs, prop.value.data, prop.value.type, index);
+        ret = funcs->value(io, funcs, value, index);
         break;
     case KS_VALUE_ARRAY:{
-        ks_array_data* array = prop.value.data;
+        ks_array_data* array = value.ptr.arr;
         if(array->value.type == KS_VALUE_STRING_ELEM) {
             ret = ks_io_string(io, funcs, *array, index, serialize);
         }
@@ -44,7 +44,7 @@ inline bool ks_io_value(ks_io* io, const ks_io_funcs* funcs, ks_property prop, u
         break;
     }
     case KS_VALUE_OBJECT:
-        ret = ks_io_object(io, funcs, *(ks_object_data*)prop.value.data, index, serialize);
+        ret = ks_io_object(io, funcs, *(ks_object_data*)value.ptr.obj, index, serialize);
         break;
     default:
         break;
@@ -56,11 +56,11 @@ bool ks_io_begin(ks_io* io, const ks_io_funcs* funcs, bool serialize, ks_propert
     // Redundancy for inline
     if(serialize){
         ks_string_clear(io->str);
-        return ks_io_value(io, funcs, prop, 0, true);
+        return ks_io_value(io, funcs, prop.value, 0, true);
     }
     else {
         io->seek = 0;
-        return ks_io_value(io, funcs, prop, 0, false);
+        return ks_io_value(io, funcs, prop.value, 0, false);
     }
 }
 
@@ -87,8 +87,8 @@ void ks_io_read_string(ks_io* io, const char* data){
     ks_string_set_n(io->str, strlen(data), data);
 }
 
-inline ks_value ks_value_ptr(void* ptr, ks_value_type type) {
-    return (ks_value){ type, ptr };
+inline ks_value ks_val_ptr(void* ptr, ks_value_type type) {
+    return (ks_value){ type, {.data=ptr} };
 }
 
 inline ks_property ks_prop_v(void* name, ks_value value) {
@@ -116,7 +116,7 @@ inline char* ks_char_array_fill(char v, uint32_t length, char c[]){
     return c;
 }
 
-inline uint32_t ks_io_value_text(ks_io* io, void* v, ks_value_type type, uint32_t offset,  bool serialize){
+inline uint32_t ks_io_value_text(ks_io* io, ks_value_ptr v, ks_value_type type, uint32_t offset,  bool serialize){
     if(!serialize){
         uint32_t first = ks_string_first_not_of(io->str, io->seek, "\t\n ");
 
@@ -133,28 +133,28 @@ inline uint32_t ks_io_value_text(ks_io* io, void* v, ks_value_type type, uint32_
         switch (type) {
         case KS_VALUE_U64:
         {
-            uint64_t *u = v;
+            uint64_t *u = v.u64;
             u+= offset;
             *u=p;
             break;
         }
         case KS_VALUE_U32:
         {
-            uint32_t *u = v;
+            uint32_t *u = v.u32;
             u+= offset;
             *u=p;
             break;
         }
         case KS_VALUE_U16:
         {
-            uint16_t *u = v;
+            uint16_t *u = v.u16;
             u+= offset;
             *u=p;
             break;
         }
         case KS_VALUE_U8:
         {
-            uint8_t* u = v;
+            uint8_t* u = v.u8;
             u+= offset;
             *u = p;
             break;
@@ -174,7 +174,7 @@ inline uint32_t ks_io_value_text(ks_io* io, void* v, ks_value_type type, uint32_
         switch (type) {
         case KS_VALUE_U64:
         {
-            uint64_t *u = v;
+            uint64_t *u = v.u64;
             u+= offset;
             p = *u;
             break;
@@ -182,21 +182,21 @@ inline uint32_t ks_io_value_text(ks_io* io, void* v, ks_value_type type, uint32_
         case KS_VALUE_MAGIC_NUMBER:
         case KS_VALUE_U32:
         {
-            uint32_t *u = v;
+            uint32_t *u = v.u32;
             u+= offset;
             p = *u;
             break;
         }
         case KS_VALUE_U16:
         {
-            uint16_t *u = v;
+            uint16_t *u = v.u16;
             u+= offset;
             p = *u;
             break;
         }
         case KS_VALUE_U8:
         {
-            uint8_t* u = v;
+            uint8_t* u = v.u8;
             u+= offset;
             p = *u;
             break;
@@ -270,7 +270,7 @@ inline bool ks_io_fixed_property(ks_io* io, const ks_io_funcs* funcs,  ks_proper
         ks_error("Property \"%s\" not found", prop.name);
         return false;
     }
-    if(!ks_io_value(io, funcs, prop, 0, serialize)) return false;
+    if(!ks_io_value(io, funcs, prop.value, 0, serialize)) return false;
     return true;
 }
 
@@ -293,14 +293,15 @@ inline bool ks_io_fixed_props_args(ks_io* io, bool serialize, const ks_io_funcs*
 }
 
 
-inline bool ks_io_magic_number(ks_io* io, const ks_io_funcs* funcs, void*data){
-    return funcs->value(io, funcs, data, KS_VALUE_MAGIC_NUMBER, 0);
+inline bool ks_io_magic_number(ks_io* io, const ks_io_funcs* funcs, const char* data){
+    ks_value  val={.ptr={.str = data}, .type = KS_VALUE_MAGIC_NUMBER};
+    return funcs->value(io, funcs, val, 0);
 }
 
 inline bool ks_io_array_begin(ks_io* io, const ks_io_funcs* funcs, ks_array_data* array, uint32_t offset, bool serialize){
 
     if(!serialize && !array->fixed_length){
-        void* ptr = array->value.data;
+        void* ptr = array->value.ptr.data;
         if(array->value.type == KS_VALUE_OBJECT){
             ks_object_data *obj = ptr;
             ks_object_data* object = malloc(sizeof(ks_object_data));
@@ -308,27 +309,27 @@ inline bool ks_io_array_begin(ks_io* io, const ks_io_funcs* funcs, ks_array_data
             ptr += sizeof(void*)*offset;
             *object = *obj;
             object->data = *(void**)ptr = array->length == 0 ? NULL : calloc(array->length, array->elem_size);
-            array->value.data = object;
+            array->value.ptr.obj = object;
 
         } else if(array->value.type == KS_VALUE_ARRAY){
             // TODO
         } else {
-            array->value.data = *(void**)(ptr +  sizeof(void*)*offset) = array->length == 0 ? NULL : calloc(array->length, array->elem_size);
+            array->value.ptr.data = *(void**)(ptr +  sizeof(void*)*offset) = array->length == 0 ? NULL : calloc(array->length, array->elem_size);
         }
     }
 
     if(serialize && !array->fixed_length){
-        void* ptr = array->value.data;
+        void* ptr = array->value.ptr.data;
         if(array->value.type == KS_VALUE_OBJECT){
             ks_object_data *obj = ptr;
             ks_object_data* object = malloc(sizeof(ks_object_data));
             *object = *obj;
-            object->data = *(void**)obj->data +  sizeof(void*)*offset;
-            array->value.data = object;
+            object->data = *(void**)obj->data +  offset;
+            array->value.ptr.obj = object;
         } else if(array->value.type == KS_VALUE_ARRAY){
             // TODO
         } else {
-            array->value.data = *(void**)(array->value.data +  sizeof(void*) * offset);
+            array->value.ptr.data = *(array->value.ptr.vpp +  offset);
         }
     }
 
@@ -343,24 +344,24 @@ inline bool ks_io_string(ks_io* io, const ks_io_funcs* funcs, ks_array_data arra
     ks_string * str = ks_string_new();
     if(serialize){
         if(array.length == KS_STRING_UNKNOWN_LENGTH){
-            void * ptr =!array.fixed_length  ? *(void**)array.value.data: array.value.data;
+            void * ptr =!array.fixed_length  ? *array.value.ptr.vpp: array.value.ptr.data;
             if(ptr != NULL ){
                 array.length = strlen(ptr) + 1;
             }
         }
-        ks_string_set_n(str, array.length, !array.fixed_length  ? *(void**)array.value.data: array.value.data);
+        ks_string_set_n(str, array.length, !array.fixed_length  ? *array.value.ptr.vpp: array.value.ptr.data);
     }
     if(!funcs->string(io, funcs, array.length,  str)) return false;
 
     if(!serialize){
         if(!array.fixed_length){
-            array.value.data = *(void**)(array.value.data +  sizeof(void*)*offset) = str->length == 0 ? NULL : calloc(str->length, array.elem_size);
+            array.value.ptr.data = *(array.value.ptr.vpp + offset) = str->length == 0 ? NULL : calloc(str->length, array.elem_size);
         }
         else {
-            memset(array.value.data, 0, array.length*array.elem_size);
+            memset(array.value.ptr.data, 0, array.length*array.elem_size);
         }
 
-        memcpy(array.value.data, str->data, str->length);
+        memcpy(array.value.ptr.data, str->data, str->length);
     }
     ks_string_free(str);
 
@@ -382,7 +383,7 @@ bool ks_io_array_end(ks_io* io, const ks_io_funcs* funcs, ks_array_data* array, 
     if(((!serialize && !array->fixed_length) ||
         (serialize && !array->fixed_length)) &&
             array->value.type == KS_VALUE_OBJECT){
-        free(array->value.data);
+        free(array->value.ptr.obj);
     }
 
     io->indent--;
@@ -422,24 +423,16 @@ inline bool ks_io_key_clike(ks_io* io, const ks_io_funcs* funcs, const char* nam
     return ret != 0;
 }
 
-
-inline bool ks_io_array_num_clike(ks_io* io, const ks_io_funcs* funcs, uint32_t* num, bool serialize){
-    return ks_io_print_indent(io,'\t', serialize) && ks_io_text(io, "[", serialize) &&
-            ks_io_value_text(io, num, KS_VALUE_U32, 0, serialize) &&
-            ks_io_fixed_text(io, "]", serialize) &&
-            ks_io_fixed_text(io, "=", serialize);
-}
-
-inline bool ks_io_value_clike(ks_io* io, const ks_io_funcs* funcs, void* u, ks_value_type type, uint32_t offset,  bool serialize){
-    switch(type){
+inline bool ks_io_value_clike(ks_io* io, const ks_io_funcs* funcs, ks_value value, uint32_t offset,  bool serialize){
+    switch(value.type){
     case KS_VALUE_MAGIC_NUMBER:
         ks_io_print_indent(io,'\t', serialize);
         ks_io_fixed_text(io, "// Magic number : ", serialize);
-        return ks_io_fixed_text(io, u, serialize) && ks_io_print_endl(io, serialize);
+        return ks_io_fixed_text(io, value.ptr.str, serialize) && ks_io_print_endl(io, serialize);
     default:
         break;
     }
-    uint32_t ret = ks_io_value_text(io, u, type, offset, serialize);
+    uint32_t ret = ks_io_value_text(io, value.ptr, value.type, offset, serialize);
     if(ret == 0) return false;
     ret += ks_io_fixed_text(io, ",", serialize);
     ks_io_print_endl(io, serialize);
@@ -482,7 +475,7 @@ inline bool ks_io_array_begin_clike(ks_io* io, const ks_io_funcs* funcs,  ks_arr
             ks_io_fixed_text(io, "uint64_t", serialize);
             break;
         case KS_VALUE_OBJECT:{
-            ks_object_data *data = arr->value.data;
+            ks_object_data *data = arr->value.ptr.obj;
             ks_io_fixed_text(io, data->type , serialize);
             break;
         }
@@ -491,7 +484,7 @@ inline bool ks_io_array_begin_clike(ks_io* io, const ks_io_funcs* funcs,  ks_arr
             break;
         }
         ks_io_fixed_text(io, "[", serialize);
-        ks_io_value_text(io,&arr->length, KS_VALUE_U32, 0, serialize);
+        ks_io_value_text(io, (ks_value_ptr)&arr->length, KS_VALUE_U32, 0, serialize);
         ks_io_fixed_text(io, "]", serialize);
         ks_io_fixed_text(io, ")", serialize);
     }
@@ -500,7 +493,7 @@ inline bool ks_io_array_begin_clike(ks_io* io, const ks_io_funcs* funcs,  ks_arr
 
 inline bool ks_io_array_elem_clike(ks_io* io,  const ks_io_funcs* funcs, ks_array_data* arr, uint32_t index, bool serialize){
      ks_io_print_indent(io,'\t', serialize);
-    if(!ks_io_value(io, funcs, ks_prop_v((void*)index, arr->value), index, serialize)) return false;
+    if(!ks_io_value(io, funcs, arr->value, index, serialize)) return false;
 
     return true;
 }
@@ -613,19 +606,19 @@ inline bool ks_io_string_binary(ks_io* io, const ks_io_funcs* funcs, uint32_t le
 }
 
 
-inline bool ks_io_value_binary(ks_io* io, const ks_io_funcs* funcs, void* u, ks_value_type type,  uint32_t offset, bool swap_endian, bool serialize){
-    switch (type) {
+inline bool ks_io_value_binary(ks_io* io, const ks_io_funcs* funcs, ks_value value,  uint32_t offset, bool swap_endian, bool serialize){
+    switch (value.type) {
     case KS_VALUE_MAGIC_NUMBER:{
         if(!serialize){
-            if(memcmp(u, io->str->data + io->seek, 4) != 0){
+            if(memcmp(value.ptr.str, io->str->data + io->seek, 4) != 0){
                 char c[5] = { 0 };
                 memcpy(c, io->str->data + io->seek, 4);
-                ks_error("Excepted magic number \"%s\", detected \"%s\"", u, c);
+                ks_error("Excepted magic number \"%s\", detected \"%s\"", value.ptr.str, c);
                return false;
             }
             io->seek += 4;
         } else {
-            ks_string_add_n(io->str, 4, u);
+            ks_string_add_n(io->str, 4, value.ptr.str);
         }
 
         break;
@@ -634,28 +627,28 @@ inline bool ks_io_value_binary(ks_io* io, const ks_io_funcs* funcs, void* u, ks_
         union {
             uint64_t* u;
             char(* c)[sizeof(uint64_t)];
-        } v = {.u = (uint64_t*)u + offset};
+        } v = {.u = value.ptr.u64 + offset};
         return ks_io_value_bin(io, sizeof(*v.c), *v.c, swap_endian, serialize);
     }
     case KS_VALUE_U32:{
         union {
             uint32_t* u;
             char(* c)[sizeof(uint32_t)];
-        } v = {.u = (uint32_t*)u + offset};
+        } v = {.u = value.ptr.u32 + offset};
         return ks_io_value_bin(io, sizeof(*v.c), *v.c, swap_endian, serialize);
     }
     case KS_VALUE_U16:{
         union {
             uint16_t* u;
             char(* c)[sizeof(uint16_t)];
-        } v = {.u = (uint16_t*)u + offset};
+        } v = {.u = value.ptr.u16 + offset};
         return ks_io_value_bin(io, sizeof(*v.c), *v.c, swap_endian, serialize);
     }
     case KS_VALUE_U8:{
         union {
             uint8_t* u;
             char(* c)[sizeof(uint8_t)];
-        } v = {.u = (uint8_t*)u + offset};
+        } v = {.u = value.ptr.u8 + offset};
         return ks_io_value_bin(io, sizeof(*v.c), *v.c, swap_endian, serialize);
     }
     default:
@@ -669,7 +662,7 @@ inline bool ks_io_array_begin_binary(ks_io* io, const ks_io_funcs* funcs,  ks_ar
 }
 
 inline bool ks_io_array_elem_binary(ks_io* io,  const ks_io_funcs* funcs, ks_array_data* arr, uint32_t index, bool swap_endian, bool serialize){
-    if(!ks_io_value(io, funcs, ks_prop_v((void*)index, arr->value), index, serialize)) return false;
+    if(!ks_io_value(io, funcs, arr->value, index, serialize)) return false;
     return true;
 }
 inline bool ks_io_object_begin_binary(ks_io* io,  const ks_io_funcs* funcs, ks_object_data* obj, bool swap_endian, bool serialize){
@@ -686,8 +679,8 @@ inline bool ks_io_object_end_binary(ks_io* io, const ks_io_funcs* funcs,  ks_obj
 inline bool ks_io_key_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, const char* name, bool fixed, bool serialize){
     return ks_io_key_binary(io, funcs, name, fixed, !little_endian(), serialize);
 }
-inline bool ks_io_value_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, void* u, ks_value_type type, uint32_t offset,  bool serialize){
-    return ks_io_value_binary(io, funcs, u, type, offset, !little_endian(), serialize);
+inline bool ks_io_value_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, ks_value value, uint32_t offset,  bool serialize){
+    return ks_io_value_binary(io, funcs, value, offset, !little_endian(), serialize);
 }
 inline bool ks_io_string_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, uint32_t length, ks_string* str, bool serialize){
     return ks_io_string_binary(io, funcs, length, str, !little_endian(), serialize);
@@ -711,8 +704,8 @@ inline bool ks_io_object_end_binary_little_endian(ks_io* io, const ks_io_funcs* 
 inline bool ks_io_key_binary_big_endian(ks_io* io, const ks_io_funcs* funcs, const char* name, bool fixed, bool serialize){
     return ks_io_key_binary(io, funcs, name, fixed, little_endian(), serialize);
 }
-inline bool ks_io_value_binary_big_endian(ks_io* io, const ks_io_funcs* funcs, void* u, ks_value_type type, uint32_t offset,  bool serialize){
-    return ks_io_value_binary(io, funcs, u, type, offset, little_endian(), serialize);
+inline bool ks_io_value_binary_big_endian(ks_io* io, const ks_io_funcs* funcs, ks_value value, uint32_t offset,  bool serialize){
+    return ks_io_value_binary(io, funcs, value, offset, little_endian(), serialize);
 }
 inline bool ks_io_string_binary_big_endian(ks_io* io, const ks_io_funcs* funcs, uint32_t length, ks_string*  str, bool serialize){
     return ks_io_string_binary(io, funcs, length, str, little_endian(), serialize);
