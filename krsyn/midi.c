@@ -110,7 +110,7 @@ ks_io_begin_custom_func(ks_midi_track)
     } else {
         ks_access(num_events) = 0;
 
-        ks_array_data arr = ks_prop_arr_data_len(ks_access(length) / 4, events, ks_value_obj(events, ks_midi_event), NULL, false);
+        ks_array_data arr = ks_prop_arr_data_len(ks_access(length) / 4, events, ks_value_obj(events, ks_midi_event), false);
 
         if(!ks_io_array_begin(__IO, __FUNCS, &arr, 0, __SERIALIZE)) return false;
 

@@ -33,7 +33,6 @@ typedef struct ks_io_funcs {
     bool (* key)(ks_io*, const ks_io_funcs*, const char*, bool);
     bool (* value)(ks_io*, const ks_io_funcs*,  void*, ks_value_type , uint32_t);
     bool (* string)(ks_io*, const ks_io_funcs*, uint32_t , ks_string* );
-    bool (* array_num)(ks_io*, const ks_io_funcs*, uint32_t*);
     bool (* array_begin)(ks_io*, const ks_io_funcs*, ks_array_data*);
     bool (* array_elem)(ks_io*,const ks_io_funcs*,  ks_array_data*, uint32_t );
     bool (* array_end)(ks_io*, const ks_io_funcs*, ks_array_data*);
@@ -59,7 +58,6 @@ typedef struct ks_array_data{
     uint32_t length;
     uint32_t elem_size;
     ks_value value;
-    bool (*check_enabled)(const void*);
     bool fixed_length;
 }ks_array_data;
 
@@ -112,7 +110,6 @@ bool ks_io_array(ks_io* io, const ks_io_funcs* funcs, ks_array_data array, uint3
 bool ks_io_object(ks_io* io, const ks_io_funcs* funcs, ks_object_data obj, uint32_t offset, bool serialize);
 
 bool ks_io_key_clike(ks_io* io, const ks_io_funcs* funcs, const char* name, bool fixed, bool serialize);
-bool ks_io_array_num_clike(ks_io* io, const ks_io_funcs* funcs, uint32_t* num, bool serialize);
 bool ks_io_string_clike(ks_io* io, const ks_io_funcs* funcs, uint32_t length, ks_string* str, bool serialize);
 bool ks_io_value_clike(ks_io* io, const ks_io_funcs* funcs, void* u, ks_value_type type, uint32_t offset,  bool serialize);
 bool ks_io_array_begin_clike(ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr,  bool serialize);
@@ -128,7 +125,6 @@ bool ks_io_value_bin(ks_io* io, uint32_t length, char* c, bool swap_endian, bool
 bool ks_io_key_binary(ks_io* io, const ks_io_funcs* funcs, const char* name, bool fixed, bool swap_endian, bool serialize);
 bool ks_io_value_binary(ks_io* io, const ks_io_funcs* funcs, void* u, ks_value_type type, uint32_t offset,  bool swap_endian, bool serialize);
 bool ks_io_string_binary(ks_io* io, const ks_io_funcs* funcs, uint32_t length, ks_string* str, bool swap_endian, bool serialize);
-bool ks_io_array_num_binary(ks_io* io, const ks_io_funcs* funcs, uint32_t* num, bool swap_endian, bool serialize);
 bool ks_io_array_begin_binary(ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr, bool swap_endian,  bool serialize);
 bool ks_io_array_elem_binary(ks_io* io,  const ks_io_funcs* funcs, ks_array_data* arr, uint32_t index, bool swap_endian, bool serialize);
 bool ks_io_array_end_binary(ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr, bool swap_endian, bool serialize);
@@ -138,7 +134,6 @@ bool ks_io_object_end_binary(ks_io* io, const ks_io_funcs* funcs,  ks_object_dat
 bool ks_io_key_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, const char* name, bool fixed, bool serialize);
 bool ks_io_value_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, void* u, ks_value_type type, uint32_t offset,  bool serialize);
 bool ks_io_string_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, uint32_t length, ks_string* str, bool serialize);
-bool ks_io_array_num_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, uint32_t* num, bool serialize);
 bool ks_io_array_begin_binary_little_endian(ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr, bool serialize);
 bool ks_io_array_elem_binary_little_endian(ks_io* io,  const ks_io_funcs* funcs, ks_array_data* arr, uint32_t index, bool serialize);
 bool ks_io_array_end_binary_little_endian(ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr, bool serialize);
@@ -148,7 +143,6 @@ bool ks_io_object_end_binary_little_endian(ks_io* io, const ks_io_funcs* funcs, 
 bool ks_io_key_binary_big_endian(ks_io* io, const ks_io_funcs* funcs, const char* name, bool fixed, bool serialize);
 bool ks_io_value_binary_big_endian(ks_io* io, const ks_io_funcs* funcs, void* u, ks_value_type type, uint32_t offset,  bool serialize);
 bool ks_io_string_binary_big_endian(ks_io* io, const ks_io_funcs* funcs, uint32_t length, ks_string* str, bool serialize);
-bool ks_io_array_num_binary_big_endian(ks_io* io, const ks_io_funcs* funcs, uint32_t* num,bool serialize);
 bool ks_io_array_begin_binary_big_endian(ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr,  bool serialize);
 bool ks_io_array_elem_binary_big_endian(ks_io* io,  const ks_io_funcs* funcs, ks_array_data* arr, uint32_t index, bool serialize);
 bool ks_io_array_end_binary_big_endian(ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr,bool serialize);
@@ -164,7 +158,6 @@ bool ks_io_object_end_binary_big_endian(ks_io* io, const ks_io_funcs* funcs,  ks
         ks_io_funcs_func(key , name ## with), \
         ks_io_funcs_func(value , name ## with), \
         ks_io_funcs_func(string , name ## with), \
-        ks_io_funcs_func(array_num , name ## with), \
         ks_io_funcs_func(array_begin , name ## with), \
         ks_io_funcs_func(array_elem , name ## with), \
         ks_io_funcs_func(array_end , name ## with), \
@@ -184,9 +177,6 @@ bool ks_io_object_end_binary_big_endian(ks_io* io, const ks_io_funcs* funcs,  ks
     } \
     bool ks_io_funcs_func(string , name ## with) (ks_io* io, const ks_io_funcs* funcs, uint32_t length, ks_string* str) { \
         return ks_io_funcs_func(string, name) (io, funcs, length, str, add );\
-    } \
-    bool ks_io_funcs_func(array_num , name ## with) (ks_io* io, const ks_io_funcs* funcs, uint32_t* num) { \
-        return ks_io_funcs_func(array_num, name) (io, funcs, num, add );\
     } \
     bool ks_io_funcs_func(array_begin , name ## with) (ks_io* io, const ks_io_funcs* funcs,  ks_array_data* arr) { \
         return ks_io_funcs_func(array_begin, name ) (io, funcs, arr, add); \
@@ -299,12 +289,11 @@ ks_property ks_prop_v(void *name, ks_value value);
 #define ks_prop_root(obj, type) ks_prop_v("", ks_value_ptr(ks_arr_type(ks_object_data, ks_prop_obj_ptr_data(obj, type)), KS_VALUE_OBJECT))
 
 
-#define ks_prop_arr_data_size_len(len,  size, value, check_enabled, fixed) \
+#define ks_prop_arr_data_size_len(len,  size, value, fixed) \
     (ks_type(ks_array_data) { \
         len, \
         size, \
         value, \
-        check_enabled, \
         fixed, \
     })
 
@@ -312,16 +301,16 @@ ks_property ks_prop_v(void *name, ks_value value);
 
 #define ks_elem_size(var) (sizeof(*ks_access(var)))
 
-#define ks_prop_arr_data_len(len, var, value, check_enabled, fixed) ks_prop_arr_data_size_len(len, ks_elem_size(var), value, check_enabled, fixed)
+#define ks_prop_arr_data_len(len, var, value, fixed) ks_prop_arr_data_size_len(len, ks_elem_size(var), value, fixed)
 
 #define ks_arr_size(var) (sizeof(ks_access(var))/ sizeof(*ks_access(var)))
 
 
-#define ks_value_arr_len_sparse_fixed(len, var, value, check_enabled, fixed) ks_value_ptr(ks_arr_type(ks_array_data, ks_prop_arr_data_len(len,  var, value, check_enabled, fixed)), KS_VALUE_ARRAY)
+#define ks_value_arr_len_fixed(len, var, value, fixed) ks_value_ptr(ks_arr_type(ks_array_data, ks_prop_arr_data_len(len,  var, value, fixed)), KS_VALUE_ARRAY)
 
-#define ks_prop_arr_len_sparse_fixed_as(name, len, var, value, check_enabled, fixed) ks_prop_v(name, ks_value_arr_len_sparse_fixed( len, var, value, check_enabled, fixed) )
+#define ks_prop_arr_len_fixed_as(name, len, var, value, fixed) ks_prop_v(name, ks_value_arr_len_sparse_fixed( len, var, value, fixed) )
 
-#define ks_prop_arr_as(name, var, value) ks_prop_v(name, ks_value_arr_len_sparse_fixed( ks_arr_size(var), var, value, NULL, true) )
+#define ks_prop_arr_as(name, var, value) ks_prop_v(name, ks_value_arr_len_fixed( ks_arr_size(var), var, value, true) )
 #define ks_prop_arr(name, value)  ks_prop_arr_as(#name, name, value)
 #define ks_prop_arr_u64(name) ks_prop_arr(name, ks_value_u64(name))
 #define ks_prop_arr_u32(name) ks_prop_arr(name, ks_value_u32(name))
@@ -330,7 +319,7 @@ ks_property ks_prop_v(void *name, ks_value value);
 #define ks_prop_arr_obj(name, type) ks_prop_arr(name, ks_value_obj(name, type))
 #define ks_prop_str(name) ks_prop_arr(name, ks_value_str_elem(name))
 
-#define ks_prop_arr_len(name, len, value) ks_prop_v(#name, ks_value_arr_len_sparse_fixed( len, name, value, NULL, false) )
+#define ks_prop_arr_len(name, len, value) ks_prop_v(#name, ks_value_arr_len_fixed( len, name, value, false) )
 #define ks_prop_arr_u64_len(name, len) ks_prop_arr_len(name, len, ks_value_u64(name))
 #define ks_prop_arr_u32_len(name, len) ks_prop_arr_len(name, len, ks_value_u32(name))
 #define ks_prop_arr_u16_len(name, len) ks_prop_arr_len(name, len, ks_value_u16(name))
@@ -338,19 +327,6 @@ ks_property ks_prop_v(void *name, ks_value value);
 #define ks_prop_arr_obj_len(name, type, len) ks_prop_arr_len(name, len, ks_value_obj(name, type))
 #define ks_prop_str_len(name, len) ks_prop_arr_len(name, len, ks_value_str_elem(name))
 
-#define ks_prop_arr_sparse(name, value, check_enabled) ks_prop_v(#name, ks_value_arr_len_sparse_fixed( ks_arr_size(name), name, value, check_enabled, true) )
-#define ks_prop_arr_u64_sparse(name, check_enabled) ks_prop_arr_sparse(name, ks_value_u64(name), check_enabled)
-#define ks_prop_arr_u32_sparse(name, check_enabled) ks_prop_arr_sparse(name, ks_value_u32(name), check_enabled)
-#define ks_prop_arr_u16_sparse(name, check_enabled) ks_prop_arr_sparse(name, ks_value_u16(name), check_enabled)
-#define ks_prop_arr_u8_sparse(name, check_enabled) ks_prop_arr_sparse(name, ks_value_u8(name), check_enabled)
-#define ks_prop_arr_obj_sparse(name, type, check_enabled) ks_prop_arr_sparse(name, ks_value_obj(name, type), check_enabled)
-
-#define ks_prop_arr_len_sparse(name, len, value, check_enabled) ks_prop_v(#name, ks_value_arr_len_sparse_fixed( len, name, value, check_enabled, false) )
-#define ks_prop_arr_u64_len_sparse(name, len, check_enabled) ks_prop_arr_len(name, len, ks_value_u64(name), check_enabled)
-#define ks_prop_arr_u32_len_sparse(name, len, check_enabled) ks_prop_arr_len(name, len, ks_value_u32(name), check_enabled)
-#define ks_prop_arr_u16_len_sparse(name, len, check_enabled) ks_prop_arr_len(name, len, ks_value_u16(name), check_enabled)
-#define ks_prop_u8_arr_len_sparse(name, len, check_enabled) ks_prop_arr_len(name, len, ks_value_u8(name), check_enabled)
-#define ks_prop_obj_arr_len_sparse(name, type, len, check_enabled) ks_prop_arr_len(name, len, ks_value_obj(name, type), check_enabled)
 
 #define ks_fp(prop) if(!ks_io_fixed_property(__IO, __FUNCS, prop, __SERIALIZE)) return false
 
@@ -374,18 +350,6 @@ ks_property ks_prop_v(void *name, ks_value value);
 #define ks_fp_arr_obj_len(name, type, len) ks_fp(ks_prop_arr_obj_len(name, type, len))
 #define ks_fp_str_p(name) ks_fp(ks_prop_str_len(name, KS_STRING_UNKNOWN_LENGTH))
 #define ks_fp_str_len(name, len) ks_fp(ks_prop_str_len(name, len))
-
-#define ks_fp_arr_u64_sparse(name, check_enabled) ks_fp(ks_prop_arr_u64_sparse(name, check_enabled))
-#define ks_fp_arr_u32_sparse(name, check_enabled) ks_fp(ks_prop_arr_u32_sparse(name, check_enabled))
-#define ks_fp_arr_u16_sparse(name, check_enabled) ks_fp(ks_prop_arr_u16_sparse(name, check_enabled))
-#define ks_fp_arr_u8_sparse(name, check_enabled) ks_fp(ks_prop_arr_u8_sparse(name, check_enabled))
-#define ks_fp_arr_obj_sparse(name, type, check_enabled) ks_fp(ks_prop_arr_obj_sparse(name, type, check_enabled))
-
-#define ks_fp_arr_u64_len_sparse(name, len, check_enabled) ks_fp(ks_prop_arr_u64_len_sparse(name, len, check_enabled))
-#define ks_fp_arr_u32_len_sparse(name, len, check_enabled) ks_fp(ks_prop_arr_u32_len_sparse(name, len, check_enabled))
-#define ks_fp_arr_u16_len_sparse(name, len, check_enabled) ks_fp( ks_prop_arr_u16_len_sparse(name, len, check_enabled))
-#define ks_fp_arr_u8_len_sparse(name, len, check_enabled) ks_fp(ks_prop_arr_u8_len_sparse(name, len, check_enabled))
-#define ks_fp_arr_obj_len_sparse(name, type, len, check_enabled) ks_fp(ks_prop_arr_obj_len_sparse(name, type, len, check_enabled))
 
 
 #define ks_magic_number(num) ks_io_magic_number(__IO, __FUNCS, num)
