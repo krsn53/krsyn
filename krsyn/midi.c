@@ -1,5 +1,6 @@
 #include "midi.h"
 #include "math.h"
+#include "score.h"
 #include <string.h>
 
 bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_property prop,  bool serialize){
@@ -54,9 +55,6 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
 ks_io_begin_custom_func(ks_midi_event)
     ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
 
-    if(!__SERIALIZE){
-        ks_access(time) = (__INDEX == 0 ? 0 : ks_access_before(time, 1)) + ks_access(delta);
-    }
     ks_fp_u8(status);
     switch (ks_access(status)) {
         //SysEx
@@ -137,8 +135,29 @@ ks_io_begin_custom_func(ks_midi_file)
     ks_fp_u16(num_tracks);
     ks_fp_u16(resolution);
     ks_fp_arr_obj_len(tracks, ks_midi_track, ks_access(num_tracks));
+
+    ks_midi_file_calc_time(__OBJECT);
 ks_io_end_custom_func(ks_midi_file)
 
+static void copy_midi_event(ks_midi_event* dest, const ks_midi_event* src){
+    *dest = *src;
+
+    switch (src->status) {
+    case 0xf0:
+    case 0xf7:
+        if(src->message.sys_ex.length == 0) break;
+        dest->message.sys_ex.data = malloc(src->message.sys_ex.length*sizeof(char));
+        memcpy(dest->message.sys_ex.data, src->message.sys_ex.data, src->message.sys_ex.length);
+        break;
+    case 0xff:
+        if(src->message.meta.length == 0) break;
+        dest->message.meta.data = malloc(src->message.meta.length * sizeof(char));
+        memcpy(dest->message.meta.data, src->message.meta.data, src->message.meta.length);
+        break;
+    default:
+        break;
+    }
+}
 
 ks_midi_file* ks_midi_file_new(){
     ks_midi_file* midi = calloc(1, sizeof(ks_midi_file));
@@ -150,19 +169,39 @@ void ks_midi_file_free(ks_midi_file* file){
     free(file);
 }
 
-int compare_midi_event_time (const void *a, const void *b){
+static int compare_midi_event_time (const void *a, const void *b){
     const ks_midi_event* a1 = a, *b1 =b;
     return (int64_t)a1->time - (int64_t)b1->time;
 }
 
-void ks_midi_file_conbine_tracks(ks_midi_file* file){
-    ks_midi_file ret;
+static uint32_t calc_delta_bits(uint32_t val){
+    uint32_t ret = 0;
+    do{
+        ret++;
+        val>>= 7;
+    }while(val != 0);
+    return ret;
+}
 
-    ret.format = 0;
-    ret.length = file->length;
-    ret.num_tracks = 1;
-    ret.resolution = file->resolution;
-    ret.tracks = ks_midi_tracks_new(1);
+void ks_midi_file_calc_time(ks_midi_file* file){
+    for(uint32_t t =0; t< file->num_tracks; t++){
+        file->tracks[t].events[0].time = file->tracks[t].events[0].delta;
+        for(uint32_t e=1; e<file->tracks[t].num_events; e++){
+            file->tracks[t].events[e].time = file->tracks[t].events[e-1].time + file->tracks[t].events[e].delta;
+        }
+    }
+}
+
+ks_midi_file* ks_midi_file_conbine_tracks(ks_midi_file* file){
+    ks_midi_file_calc_time(file);
+
+    ks_midi_file *ret = malloc(sizeof(ks_midi_file));
+
+    ret->format = 0;
+    ret->length = file->length;
+    ret->num_tracks = 1;
+    ret->resolution = file->resolution;
+    ret->tracks = ks_midi_tracks_new(1);
 
     uint32_t num_events = 0;
     uint32_t length =0;
@@ -173,9 +212,9 @@ void ks_midi_file_conbine_tracks(ks_midi_file* file){
     // end of track * (num_tracks-1)
     num_events -= file->num_tracks -1;
 
-    ret.tracks[0].length = length;
-    ret.tracks[0].num_events = num_events;
-    ret.tracks[0].events = ks_midi_events_new(num_events);
+    ret->tracks[0].length = length;
+    ret->tracks[0].num_events = num_events;
+    ret->tracks[0].events = ks_midi_events_new(num_events);
 
     uint32_t e=0;
     uint32_t end_time=0;
@@ -186,72 +225,48 @@ void ks_midi_file_conbine_tracks(ks_midi_file* file){
             file->tracks[i].events[j].message.meta.type == 0x2f){
                 end_time = MAX(end_time, file->tracks[i].events[j].time);
                 uint32_t delta = file->tracks[i].events[j].delta;
-                int32_t delta_bits=0;
-                do{
-                    delta_bits++;
-                    delta >>= 7;
-                }while(delta != 0);
-                ret.tracks[0].length -= 3 + delta_bits;
+                int32_t delta_bits=calc_delta_bits(delta);
+                ret->tracks[0].length -= 3 + delta_bits;
                 continue;
             }
-            ret.tracks[0].events[e] = file->tracks[i].events[j];
+            copy_midi_event(&ret->tracks[0].events[e],  &file->tracks[i].events[j]);
             e++;
         }
     }
-    ret.tracks[0].events[e] = (ks_midi_event){
+    ret->tracks[0].events[e] = (ks_midi_event){
         .status = 0xff,
         .message.meta.type = 0x2f,
         .message.meta.length = 0,
         .time = end_time,
         .delta = 0,
     };
-    ret.tracks[0].length += 1 + 3; // 1 delta bit + 3 event bits
+    ret->tracks[0].length += 1 + 3; // 1 delta bit + 3 event bits
 
-    qsort(ret.tracks->events, num_events, sizeof(ks_midi_event), compare_midi_event_time);
+    qsort(ret->tracks->events, num_events, sizeof(ks_midi_event), compare_midi_event_time);
 
     {
-        uint32_t old = ret.tracks[0].events[0].delta;
-        int32_t old_bits = 0;
-        uint32_t new = ret.tracks[0].events[0].time;
-        int32_t new_bits = 0;
+        uint32_t old = ret->tracks[0].events[0].delta;
+        int32_t old_bits = calc_delta_bits(old);
+        uint32_t new = ret->tracks[0].events[0].time;
+        int32_t new_bits = calc_delta_bits(new);
 
-        do{
-            old_bits++;
-            old >>= 7;
-        }while(old != 0);
-        do{
-            new_bits++;
-            new >>= 7;
-        }while(new != 0);
-
-        ret.tracks[0].length -= old_bits - new_bits;
+        ret->tracks[0].length -= old_bits - new_bits;
     }
 
-    for(uint32_t i=1; i<ret.tracks[0].num_events; i++){
-        uint32_t old = ret.tracks[0].events[i].delta;
+    for(uint32_t i=1; i<ret->tracks[0].num_events; i++){
+        uint32_t old = ret->tracks[0].events[i].delta;
         uint32_t new;
-        int32_t old_bits = 0;
-        int32_t new_bits = 0;
+        int32_t old_bits = calc_delta_bits(old);
+        ret->tracks[0].events[i].delta = new = ret->tracks[0].events[i].time - ret->tracks[0].events[i-1].time;
+        int32_t new_bits = calc_delta_bits(new);
 
-        ret.tracks[0].events[i].delta = new = ret.tracks[0].events[i].time - ret.tracks[0].events[i-1].time;
-        do{
-            old_bits++;
-            old >>= 7;
-        }while(old != 0);
-        do{
-            new_bits++;
-            new >>= 7;
-        }while(new != 0);
-        ret.tracks[0].length -= old_bits - new_bits;
+        ret->tracks[0].length -= old_bits - new_bits;
     }
 
-    for(uint32_t i=0; i<file->num_tracks; i++){
-        free(file->tracks[i].events);
-    }
-    free(file->tracks);
-
-    *file = ret;
+    return ret;
 }
+
+
 
 ks_midi_track* ks_midi_tracks_new(uint32_t num_tracks){
     return calloc(num_tracks, sizeof(ks_midi_track));
@@ -288,4 +303,46 @@ void ks_midi_events_free(uint32_t num_events, ks_midi_event* events){
         }
     }
     free(events);
+}
+
+
+ks_score* ks_score_from_midi(ks_midi_file* file){
+    const ks_midi_file* conbined = file->format == 0 ? file : ks_midi_file_conbine_tracks(file);
+
+    ks_score* ret = ks_score_new(file->resolution, 0, NULL);
+    ks_score_event* events = calloc(file->tracks[0].num_events, sizeof(ks_score_event));
+
+
+    uint64_t time=0;
+    for(uint32_t i=0; i< file->tracks[0].num_events; i++){
+        ks_midi_event* msg = &file->tracks[0].events[i];
+        switch (msg->status) {
+        case 0xff:
+            if(msg->message.meta.type == 0x2f){
+                events[ret->num_events].status = 0xff;
+                events[ret->num_events].datas[0] = 0x2f;
+                events[ret->num_events].datas[1] = 0x00;
+                ret->num_events++;
+                events[ret->num_events].delta = msg->time - time;
+                time = msg->time;
+            }
+            break;
+        default:
+            if(msg->status >= 0x80 &&
+                    msg->status < 0xe0){
+                events[ret->num_events].status = msg->status;
+                events[ret->num_events].datas[0] = msg->message.datas[0];
+                events[ret->num_events].datas[1] = msg->message.datas[1];
+                ret->num_events++;
+                events[ret->num_events].delta = msg->time - time;
+                time = msg->time;
+            }
+            break;
+        }
+    }
+    if(file->format != 0) ks_midi_file_free((ks_midi_file*)conbined);
+
+    ret->events = events;
+
+    return ret;
 }

@@ -1,5 +1,4 @@
 #include "../krsyn/midi.h"
-
 #include <stdio.h>
 
 int main(int argc, char** argv) {
@@ -14,15 +13,16 @@ int main(int argc, char** argv) {
 
     printf("%s", io->str->data);
 
-    ks_midi_file_conbine_tracks(&midi);
+    ks_midi_file* midi2 = ks_midi_file_conbine_tracks(&midi);
 
-    ks_io_begin_serialize(io, binary_big_endian, ks_prop_root(midi, ks_midi_file));
+    ks_io_begin_serialize(io, binary_big_endian, ks_prop_root(*midi2, ks_midi_file));
 
     FILE* fp = fopen("test0.mid", "wb");
     fwrite(io->str->data, 1, io->str->length, fp);
     fclose(fp);
 
     ks_midi_tracks_free(midi.num_tracks, midi.tracks);
+    ks_midi_file_free(midi2);
 
     ks_io_free(io);
     return 0;
