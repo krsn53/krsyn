@@ -35,7 +35,7 @@ ks_score* ks_score_new(uint32_t resolution, uint32_t num_events, const ks_score_
 }
 
 void ks_score_free(ks_score* song){
-    ks_score_events_free(song->num_events, song->events);
+    ks_score_events_free(song->events);
     free(song);
 }
 
@@ -49,6 +49,7 @@ static inline uint32_t calc_frames_per_event(uint32_t sampling_rate, uint16_t te
 ks_score_state* ks_score_state_new(uint32_t polyphony_bits){
     ks_score_state* ret = malloc(sizeof(ks_score_state) + ks_1(polyphony_bits)* sizeof(ks_score_note));
     ret->polyphony_bits = polyphony_bits;
+
     return ret;
 }
 
@@ -198,7 +199,7 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones,
 }
 
 
-void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* state, const ks_tones*tones, int16_t* buf, uint32_t len){
+void ks_score_render(ks_score* score, uint32_t sampling_rate, ks_score_state* state, const ks_tones*tones, int16_t* buf, uint32_t len){
     uint32_t i=0;
     do{
         uint32_t frame = MIN((len>>1)-i, state->current_frame);
@@ -235,11 +236,14 @@ void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state* sta
 
         if(state->current_frame == 0){
             state->current_frame += state->frames_per_event;
-            ks_score_event_run(&song->events[state->current_tick], sampling_rate, state, tones);
-            state->current_tick ++;
 
-            if(state->current_tick == song->num_events){
-                state->current_frame = -1;
+            if(state->current_tick == score->events[state->current_event].delta){
+                state->current_tick = 0;
+                if(ks_score_event_run(score, sampling_rate, state, tones)){
+                    state->current_tick = -1;
+                }
+            } else {
+                state->current_tick ++;
             }
         }
 
@@ -255,36 +259,23 @@ ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[]
     return ret;
 }
 
-void ks_score_events_free(uint32_t num_events, const ks_score_event* events){
-    for(uint32_t i=0; i<num_events; i++){
-        if(events[i].num_messages != 0){
-            ks_score_messages_free(events[i].messages);
-        }
-    }
+void ks_score_events_free(const ks_score_event* events){
     free((ks_score_event*)events);
 }
 
 
-ks_score_message* ks_score_messages_new(uint32_t num_messages, ks_score_message messages[]){
-    ks_score_message* ret = malloc(sizeof(ks_score_message) * num_messages);
-    for(uint32_t i=0; i< num_messages; i++){
-        ret[i] = messages[i];
-    }
-    return ret;
-}
 
-void ks_score_messages_free(ks_score_message* messages){
-    free(messages);
-}
+bool ks_score_event_run(const ks_score* score, uint32_t sampling_rate, ks_score_state *state,  const ks_tones *tones){
+    do{
+        const ks_score_event* msg = &score->events[state->current_event];
+        switch (msg->status) {
+        case 0xff:
+            //end
+            if(msg->datas[0] == 0x2f){
+                return true;
+            }
 
-
-void ks_score_event_run(const ks_score_event* event, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones){
-    for(uint32_t i=0, e = event->num_messages; i<e; i++){
-        const ks_score_message* msg = &event->messages[i];
-        if(msg->status >= 0xf0){
-            // System common message and system real time message
-        }
-        else {
+        default:{
             // channel message
             uint8_t channel_num = msg->status & 0x0f;
             ks_score_channel* channel = &state->channels[channel_num];
@@ -311,13 +302,18 @@ void ks_score_event_run(const ks_score_event* event, uint32_t sampling_rate, ks_
                 break;
             }
         }
-    }
+        }
+        state->current_event++;
+    }while(score->events[state->current_event].delta == 0);
+
+    return false;
 }
 
 
 void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, uint32_t sampling_rate, uint32_t resolution){
     state->tempo = 120;
     state->current_frame = 0;
+    state->current_event = 0;
     state->frames_per_event = calc_frames_per_event(sampling_rate, state->tempo, resolution);
     state->current_tick = 0;
     for(uint32_t i=0; i<ks_1(state->polyphony_bits); i++) {

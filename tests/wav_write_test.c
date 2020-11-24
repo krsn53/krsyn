@@ -180,209 +180,180 @@ int main( void )
 
       ks_tones* tones = ks_tones_new_from_binary(SAMPLING_RATE, &tonebin);
 
-      ks_score* song = ks_score_new(96, 48*9,
-            ks_score_events_new(48*9,(ks_score_event[]){
-                                   [0]={
-                                       .num_messages=2,
-                                       .messages = ks_score_messages_new(2,
-                                       (ks_score_message[]){
-                                           [0] ={
-                                               .status=0x90,
-                                               .datas ={
-                                                   [0]=60,
-                                                   [1]=100,
-                                               },
+      ks_score* song = ks_score_new(96, 48*10,
+            ks_score_events_new(23,(ks_score_event[]){
+                                       {
+                                           .delta = 0,
+                                           .status=0x90,
+                                           .datas ={
+                                               [0]=60,
+                                               [1]=100,
                                            },
-                                          [1] ={
-                                              .status=0x90,
-                                              .datas ={
-                                                  [0]=52,
-                                                  [1]=100,
-                                              },
+                                       },
+                                      {
+                                          .delta = 0,
+                                          .status=0x90,
+                                          .datas ={
+                                              [0]=52,
+                                              [1]=100,
                                           },
-                                       }
-                                       )
-                                   },
-                                   [96*1/2]={
-                                       .num_messages=2,
-                                       .messages = ks_score_messages_new(2,
-                                       (ks_score_message[]){
-                                           [0] ={
-                                               .status=0x90,
-                                               .datas ={
-                                                   [0]=62,
-                                                   [1]=100,
-                                               },
+                                      },
+                                      {
+                                           .delta = 48,
+                                           .status=0x90,
+                                           .datas ={
+                                               [0]=62,
+                                               [1]=100,
                                            },
-                                          [1] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=60,
-                                              },
+                                       },
+                                      {
+                                          .delta = 0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=60,
                                           },
-                                       }
-                                       )
-                                   },
-                                   [96*2/2]={
-                                       .num_messages=4,
-                                       .messages = ks_score_messages_new(4,
-                                       (ks_score_message[]){
-                                           [0] ={
-                                               .status=0x90,
-                                               .datas ={
-                                                   [0]=64,
-                                                   [1]=100,
-                                               },
+                                      },
+                                       {
+                                           .delta = 48,
+                                           .status=0x90,
+                                           .datas ={
+                                               [0]=64,
+                                               [1]=100,
                                            },
-                                          [1] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=62,
-                                              },
+                                       },
+                                      {
+                                          .delta =0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=62,
                                           },
-                                          [2] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=52,
-                                              },
+                                      },
+                                      {
+                                          .delta = 0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=52,
                                           },
-                                          [3] ={
-                                              .status=0x90,
-                                              .datas ={
-                                                  [0]=50,
-                                                  [1]=100,
-                                              },
+                                      },
+                                      {
+                                          .delta = 0,
+                                          .status=0x90,
+                                          .datas ={
+                                              [0]=50,
+                                              [1]=100,
                                           },
-                                       }
-                                       )
-                                   },
-                                   [96*3/2]={
-                                       .num_messages=2,
-                                       .messages = ks_score_messages_new(2,
-                                       (ks_score_message[]){
-                                           [0] ={
-                                               .status=0x90,
-                                               .datas ={
-                                                   [0]=65,
-                                                   [1]=100,
-                                               },
+                                      },
+                                       {
+                                           .delta = 48,
+                                           .status=0x90,
+                                           .datas ={
+                                               [0]=65,
+                                               [1]=100,
                                            },
-                                          [1] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=64,
-                                              },
+                                       },
+                                      {
+                                          .delta =0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=64,
                                           },
-                                       }
-                                       )
-                                   },
-                                   [96*4/2]={
-                                       .num_messages=4,
-                                       .messages = ks_score_messages_new(4,
-                                       (ks_score_message[]){
-                                           [0] ={
-                                               .status=0x90,
-                                               .datas ={
-                                                   [0]=64,
-                                                   [1]=100,
-                                               },
+                                      },
+                                      {
+                                           .delta = 48,
+                                           .status=0x90,
+                                           .datas ={
+                                               [0]=64,
+                                               [1]=100,
                                            },
-                                          [1] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=65,
-                                              },
+                                       },
+                                      {
+                                            .delta =0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=65,
                                           },
-                                          [2] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=50,
-                                              },
+                                      },
+                                      {
+                                          .delta =0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=50,
                                           },
-                                          [3] ={
-                                              .status=0x90,
-                                              .datas ={
-                                                  [0]=55,
-                                                  [1]=100,
-                                              },
+                                      },
+                                     {
+                                          .delta =0,
+                                          .status=0x90,
+                                          .datas ={
+                                              [0]=55,
+                                              [1]=100,
                                           },
-                                       }
-                                       )
-                                   },
-                                   [96*5/2]={
-                                       .num_messages=2,
-                                       .messages = ks_score_messages_new(2,
-                                       (ks_score_message[]){
-                                           [0] ={
-                                               .status=0x90,
-                                               .datas ={
-                                                   [0]=62,
-                                                   [1]=100,
-                                               },
+                                      },
+                                      {
+                                           .delta = 48,
+                                           .status=0x90,
+                                           .datas ={
+                                               [0]=62,
+                                               [1]=100,
                                            },
-                                          [1] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=55,
-                                              },
+                                       },
+                                      {
+                                          .delta =0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=55,
                                           },
-                                       }
-                                       )
-                                   },
-                                   [96*6/2]={
-                                       .num_messages=4,
-                                       .messages = ks_score_messages_new(4,
-                                       (ks_score_message[]){
-                                           [0] ={
-                                               .status=0x90,
-                                               .datas ={
-                                                   [0]=60,
-                                                   [1]=100,
-                                               },
+                                      },
+                                      {
+                                           .delta = 48,
+                                           .status=0x90,
+                                           .datas ={
+                                               [0]=60,
+                                               [1]=100,
                                            },
-                                          [1] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=62,
-                                              },
+                                       },
+                                      {
+                                          .delta =0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=62,
                                           },
-                                          [2] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=62,
-                                              },
+                                      },
+                                      {
+                                          .delta =0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=62,
                                           },
-                                          [3] ={
-                                              .status=0x90,
-                                              .datas ={
-                                                  [0]=48,
-                                                  [1]=100,
-                                              },
+                                      },
+                                     {
+                                          .delta =0,
+                                          .status=0x90,
+                                          .datas ={
+                                              [0]=48,
+                                              [1]=100,
                                           },
-                                       }
-                                       )
-                                   },
-                                  [96*8/2]={
-                                      .num_messages=2,
-                                      .messages = ks_score_messages_new(2,
-                                      (ks_score_message[]){
-                                         [0] ={
+                                      },
+                                      {
+                                            .delta = 96,
                                              .status=0x80,
                                              .datas ={
                                                  [0]=60,
                                              },
                                          },
-                                        [1] ={
-                                              .status=0x80,
-                                              .datas ={
-                                                  [0]=48,
-                                              },
+                                    {
+                                        .delta =0,
+                                          .status=0x80,
+                                          .datas ={
+                                              [0]=48,
                                           },
-                                      }
-                                      )
-                                  },
-                                   [48*9-1]={
-                                       .num_messages=0,
+                                      },
+                                   {
+                                        .delta =48,
+                                          .status=0xff,
+                                          .datas ={
+                                              [0]=0x2f,
+                                              [1]=0,
+                                          },
                                    },
                                })
                             );
@@ -392,6 +363,7 @@ int main( void )
 
       ks_score_render(song, SAMPLING_RATE, state, tones, buf, buf_len);
 
+      ks_tones_free(tones);
       ks_score_free(song);
       ks_score_state_free(state);
   }

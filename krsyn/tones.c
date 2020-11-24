@@ -75,8 +75,7 @@ ks_tones* ks_tones_new_from_binary(uint32_t sampling_rate, const ks_tones_binary
 
 ks_tones* ks_tones_new(){
     ks_tones* ret = malloc(sizeof(ks_tones));
-    ret->banks = malloc(sizeof(ks_tones_bank));
-    memset(ret->banks, 0, sizeof(ks_tones_bank));
+    ret->banks = calloc(1, sizeof(ks_tones_bank));
 
     ret->num_banks = 0;
     ret->capacity = 1;

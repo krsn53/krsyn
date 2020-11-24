@@ -37,23 +37,23 @@ typedef struct ks_score_note{
 }ks_score_note;
 
 typedef struct ks_score_state{
+    uint16_t            tempo;
     uint16_t            frames_per_event;
     uint16_t            current_frame;
+    uint16_t            polyphony_bits;
+
+    uint32_t            current_event;
     uint32_t            current_tick;
-    uint32_t            tempo;
+
     ks_score_channel    channels        [KS_NUM_CHANNELS];
-    uint32_t            polyphony_bits;
     ks_score_note       notes           [];
 }ks_score_state;
 
-typedef struct ks_score_message{
-    uint8_t             status;
-    uint8_t             datas           [3];
-}ks_score_message;
 
 typedef struct ks_score_event{
-    uint32_t            num_messages;
-    ks_score_message      *messages;
+    uint32_t            delta;
+    uint8_t             status;
+    uint8_t             datas           [3];
 }ks_score_event;
 
 typedef struct ks_score{
@@ -80,19 +80,14 @@ bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones
 bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t lsb);
 
 
-void ks_score_render(ks_score* song, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones, int16_t *buf, uint32_t len);
+void ks_score_render(ks_score* score, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones, int16_t *buf, uint32_t len);
 
-void ks_score_event_run(const ks_score_event *event, uint32_t sampling_rate, ks_score_state* state, const ks_tones* tones);
+bool ks_score_event_run(const ks_score* score, uint32_t sampling_rate, ks_score_state* state,  const ks_tones* tones);
 
 void ks_score_state_set_default(ks_score_state *state, const ks_tones *tones, uint32_t sampling_rate, uint32_t resolution);
 
 ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[]);
-void ks_score_events_free(uint32_t num_events, const ks_score_event *events);
-
-ks_score_message* ks_score_messages_new(uint32_t num_messages, ks_score_message messages[]);
-void ks_score_messages_free(ks_score_message* messages);
-
-
+void ks_score_events_free(const ks_score_event *events);
 
 bool ks_score_note_is_enabled(const ks_score_note* note);
 

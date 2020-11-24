@@ -274,25 +274,6 @@ inline bool ks_io_fixed_property(ks_io* io, const ks_io_funcs* funcs,  ks_proper
     return true;
 }
 
-inline bool ks_io_fixed_props_args(ks_io* io, bool serialize, const ks_io_funcs* funcs,  ...) {
-    va_list va;
-    va_start( va,  funcs );
-
-    ks_property prop;
-
-    for(prop = va_arg(va, ks_property); prop.name != NULL ;prop = va_arg(va, ks_property)){
-        if(!ks_io_fixed_property(io, funcs, prop, serialize)){
-            va_end(va);
-            return false;
-        }
-    }
-
-    va_end(va);
-
-    return true;
-}
-
-
 inline bool ks_io_magic_number(ks_io* io, const ks_io_funcs* funcs, const char* data){
     ks_value  val={.ptr={.str = data}, .type = KS_VALUE_MAGIC_NUMBER};
     return funcs->value(io, funcs, val, 0);
@@ -372,7 +353,7 @@ inline bool ks_io_array(ks_io* io, const ks_io_funcs* funcs, ks_array_data array
 
     if(!ks_io_array_begin(io, funcs, &array, offset, serialize)) return false;
 
-    for(uint32_t i=0; i< array.length; i++){
+    for(uint32_t i=0, e=array.length; i< e; i++){
         if(! funcs->array_elem(io, funcs, &array, i)) return false;
     }
 
