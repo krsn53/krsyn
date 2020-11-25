@@ -33,7 +33,7 @@
 
 #define KS_SAMPLE_PER_FRAMES_BITS       5u
 
-#define KS_DATA_SIZE                     sizeof(ks_synth_binary)
+#define KS_DATA_SIZE                     sizeof(ks_synth_data)
 
 
 /**
@@ -94,10 +94,10 @@ typedef struct ks_keyscale_curve_t
 }ks_keyscale_curve_t;
 
 /**
- * @struct ks_synth_binary
+ * @struct ks_synth_data
  * @brief Binary data of the synthesizer.
 */
-typedef struct ks_synth_binary
+typedef struct ks_synth_data
 {
     //! Frequency magnification of output.
     union {
@@ -166,11 +166,11 @@ typedef struct ks_synth_binary
     uint8_t                     lfo_fms_depth;                                 // zero : disabled
 
 }
-ks_synth_binary;
+ks_synth_data;
 
 
 /**
- * @struct ks_synth_binary
+ * @struct ks_synth_data
  * @brief Synthesizer data read for ease of calculation.
 */
 typedef struct ks_synth
@@ -208,7 +208,7 @@ typedef struct ks_synth
 ks_synth;
 
 /**
- * @struct ks_synth_binary
+ * @struct ks_synth_data
  * @brief Note state.
 */
 typedef  struct ks_synth_note
@@ -241,7 +241,7 @@ ks_synth_note;
 
 
 /**
- * @brief ks_io_synth_binary
+ * @brief ks_io_synth_data
  * @param io
  * @param funcs
  * @param data
@@ -249,24 +249,24 @@ ks_synth_note;
  * @param serialize
  * @return If success, true otherwise false
  */
-ks_io_decl_custom_func(ks_synth_binary);
+ks_io_decl_custom_func(ks_synth_data);
 
 /**
- * @brief ks_synth_new Allocate synth data from binary
+ * @brief ks_synth_new Allocate synth data from data
  * @param data
  * @param sampling_rate Sampling rate
  * @return Allocated synth data
  */
-ks_synth*                    ks_synth_new                     (ks_synth_binary* data, uint32_t sampling_rate);
+ks_synth*                    ks_synth_new                     (ks_synth_data* data, uint32_t sampling_rate);
 
 /**
- * @brief ks_synth_array_new Allocate synth data array from binary array
+ * @brief ks_synth_array_new Allocate synth data array from data array
  * @param length Length of data
  * @param data Binary data of array
  * @param sampling_rate Sampling rate
  * @return Allocated synth data array
  */
-ks_synth*                    ks_synth_array_new               (uint32_t length, ks_synth_binary data[], uint32_t sampling_rate);
+ks_synth*                    ks_synth_array_new               (uint32_t length, ks_synth_data data[], uint32_t sampling_rate);
 
 /**
  * @brief ks_synth_free
@@ -275,20 +275,20 @@ ks_synth*                    ks_synth_array_new               (uint32_t length, 
 void                        ks_synth_free                    (ks_synth* synth);
 
 /**
- * @fn ks_synth_binary_set_default
+ * @fn ks_synth_data_set_default
  * @brief Data initialize to default
  * @param data Initializing data
 */
-void                        ks_synth_binary_set_default      (ks_synth_binary* data);
+void                        ks_synth_data_set_default      (ks_synth_data* data);
 
 /**
  * @fn ks_synth_set
- * @brief Read data from binary.
+ * @brief Read data from data.
  * @param synth Dist data
  * @param sampling_rate Sampling rate
  * @param data Source data
 */
-void                        ks_synth_set                    (ks_synth* synth, uint32_t sampling_rate, const ks_synth_binary* data);
+void                        ks_synth_set                    (ks_synth* synth, uint32_t sampling_rate, const ks_synth_data* data);
 
 /**
  * @fn ks_synth_render

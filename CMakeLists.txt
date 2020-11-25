@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(krsyn LANGUAGES C)
 
-set(BUILD_RAYGUI_EXAMPLES OFF)
-set(BUILD_EXAMPLES OFF)
+
 
 
 file(GLOB krsyn_src *.c *.h krsyn/*.c krsyn/*.h)

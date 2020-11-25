@@ -51,7 +51,7 @@ static void new_menu_activate(GtkMenuItem *item, gpointer user_data){
     editor_state* state;
 
     state = user_data;
-    ks_synth_binary_set_default(&state->data);
+    ks_synth_data_set_default(&state->data);
     emit_update_params_signal(state->param_editor);
     set_title(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(state->param_editor))), "");
     memset(state->save_file, 0, sizeof(state->save_file));
@@ -67,9 +67,9 @@ gboolean editor_open_tone(const char* file, editor_state* state)
 
     gboolean ret;
     if(text_format){
-           ret = ks_io_begin_deserialize(io, clike, ks_prop_root(state->data, ks_synth_binary));
+           ret = ks_io_begin_deserialize(io, clike, ks_prop_root(state->data, ks_synth_data));
     } else {
-           ret = ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(state->data, ks_synth_binary));
+           ret = ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(state->data, ks_synth_data));
     }
 
     ks_io_free(io);
@@ -98,9 +98,9 @@ gboolean editor_save_tone(const char* file, editor_state* state){
 
         gboolean ret;
         if(text_format){
-               ret = ks_io_begin_serialize(io, clike, ks_prop_root(state->data, ks_synth_binary));
+               ret = ks_io_begin_serialize(io, clike, ks_prop_root(state->data, ks_synth_data));
         } else {
-                ret = ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(state->data, ks_synth_binary));
+                ret = ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(state->data, ks_synth_data));
         }
         if(ret)fwrite(io->str->data, 1, io->str->length, fp);
 

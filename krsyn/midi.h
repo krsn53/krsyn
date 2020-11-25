@@ -2,7 +2,6 @@
 
 #include "./io.h"
 
-typedef struct ks_score ks_score;
 
 typedef struct ks_midi_event{
     uint64_t time;
@@ -54,7 +53,6 @@ void ks_midi_file_free(ks_midi_file* file);
 void ks_midi_file_calc_time(ks_midi_file* file);
 
 ks_midi_file *ks_midi_file_conbine_tracks(ks_midi_file *file);
-ks_score* ks_score_from_midi(ks_midi_file *file);
 
 ks_midi_track* ks_midi_tracks_new(uint32_t num_tracks);
 void ks_midi_tracks_free(uint32_t num_tracks, ks_midi_track* tracks);

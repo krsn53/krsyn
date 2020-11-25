@@ -313,7 +313,7 @@ static gboolean audio_stream_update(gpointer ptr)
 audio_state* audio_state_new()
 {
     audio_state *ret = malloc(sizeof(audio_state));
-    ks_synth_binary data;
+    ks_synth_data data;
 
     memset(ret, 0, sizeof(audio_state));
 
@@ -329,7 +329,7 @@ audio_state* audio_state_new()
     ret->noteon = -1;
     ret->sampling_rate = SAMPLE_RATE;
 
-    ks_synth_binary_set_default(&data);
+    ks_synth_data_set_default(&data);
     ks_synth_set(&ret->fm, ret->sampling_rate, &data);
 
     memset(&ret->note, 0, sizeof(ret->note));

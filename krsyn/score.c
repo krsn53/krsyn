@@ -2,9 +2,31 @@
 #include "score.h"
 #include "tones.h"
 #include "math.h"
+#include "midi.h"
 
 #include <stdlib.h>
 
+ks_io_begin_custom_func(ks_score_event)
+    ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
+    ks_fp_u8(status);
+    switch (ks_access(status) >> 4) {
+    case 0xc:
+    case 0xd:
+        ks_fp_u8(datas[0]);
+        break;
+    default:
+        ks_fp_u8(datas[0]);
+        ks_fp_u8(datas[1]);
+        break;
+    }
+ks_io_end_custom_func(ks_score_event)
+
+ks_io_begin_custom_func(ks_score_data)
+    ks_magic_number("KSCR");
+    ks_fp_u16(resolution);
+    ks_fp_u32(num_events);
+    ks_fp_arr_obj_len(events, ks_score_event, ks_access(num_events));
+ks_io_end_custom_func(ks_score_data)
 
 inline bool ks_score_note_is_enabled(const ks_score_note* note){
     return ks_synth_note_is_enabled(&note->note);
@@ -25,8 +47,8 @@ inline ks_score_note_info ks_score_note_info_of(uint8_t note_number, uint8_t cha
 }
 
 
-ks_score* ks_score_new(uint32_t resolution, uint32_t num_events, const ks_score_event* events){
-    ks_score* ret = malloc(sizeof(ks_score));
+ks_score_data* ks_score_data_new(uint32_t resolution, uint32_t num_events, const ks_score_event* events){
+    ks_score_data* ret = malloc(sizeof(ks_score_data));
     ret->events = events;
     ret->num_events = num_events;
     ret->resolution = resolution; // 96 is resolution which can be expressed to 128th note (to 256th triplet note).
@@ -34,7 +56,7 @@ ks_score* ks_score_new(uint32_t resolution, uint32_t num_events, const ks_score_
     return ret;
 }
 
-void ks_score_free(ks_score* song){
+void ks_score_data_free(ks_score_data* song){
     ks_score_events_free(song->events);
     free(song);
 }
@@ -199,7 +221,7 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones,
 }
 
 
-void ks_score_render(ks_score* score, uint32_t sampling_rate, ks_score_state* state, const ks_tones*tones, int16_t* buf, uint32_t len){
+void ks_score_data_render(const ks_score_data *score, uint32_t sampling_rate, ks_score_state* state, const ks_tones*tones, int16_t* buf, uint32_t len){
     uint32_t i=0;
     do{
         uint32_t frame = MIN((len>>1)-i, state->current_frame);
@@ -239,7 +261,7 @@ void ks_score_render(ks_score* score, uint32_t sampling_rate, ks_score_state* st
 
             if(state->current_tick == score->events[state->current_event].delta){
                 state->current_tick = 0;
-                if(ks_score_event_run(score, sampling_rate, state, tones)){
+                if(ks_score_data_event_run(score, sampling_rate, state, tones)){
                     state->current_tick = -1;
                 }
             } else {
@@ -265,7 +287,7 @@ void ks_score_events_free(const ks_score_event* events){
 
 
 
-bool ks_score_event_run(const ks_score* score, uint32_t sampling_rate, ks_score_state *state,  const ks_tones *tones){
+bool ks_score_data_event_run(const ks_score_data* score, uint32_t sampling_rate, ks_score_state *state,  const ks_tones *tones){
     do{
         const ks_score_event* msg = &score->events[state->current_event];
         switch (msg->status) {
@@ -325,4 +347,45 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, ui
         ks_score_channel_set_picthbend(&state->channels[i], 0, 0);
         ks_score_state_bank_select(state, tones, &state->channels[i], 0, 0);
     }
+}
+
+ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
+    const ks_midi_file* conbined = file->format == 0 ? file : ks_midi_file_conbine_tracks(file);
+
+    ks_score_data* ret = ks_score_data_new(file->resolution, 0, NULL);
+    ks_score_event* events = calloc(file->tracks[0].num_events, sizeof(ks_score_event));
+
+
+    uint64_t time=0;
+    for(uint32_t i=0; i< file->tracks[0].num_events; i++){
+        ks_midi_event* msg = &file->tracks[0].events[i];
+        switch (msg->status) {
+        case 0xff:
+            if(msg->message.meta.type == 0x2f){
+                events[ret->num_events].status = 0xff;
+                events[ret->num_events].datas[0] = 0x2f;
+                events[ret->num_events].datas[1] = 0x00;
+                ret->num_events++;
+                events[ret->num_events].delta = msg->time - time;
+                time = msg->time;
+            }
+            break;
+        default:
+            if(msg->status >= 0x80 &&
+                    msg->status < 0xe0){
+                events[ret->num_events].status = msg->status;
+                events[ret->num_events].datas[0] = msg->message.datas[0];
+                events[ret->num_events].datas[1] = msg->message.datas[1];
+                ret->num_events++;
+                events[ret->num_events].delta = msg->time - time;
+                time = msg->time;
+            }
+            break;
+        }
+    }
+    if(file->format != 0) ks_midi_file_free((ks_midi_file*)conbined);
+
+    ret->events = events;
+
+    return ret;
 }

@@ -4,7 +4,8 @@
 #include <string.h>
 
 bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_property prop,  bool serialize){
-    if(funcs != &binary_big_endian_serializer && funcs != & binary_big_endian_deserializer) {
+    if(funcs != &binary_big_endian_serializer && funcs != & binary_big_endian_deserializer &&
+            funcs != &binary_little_endian_serializer && funcs != &binary_little_endian_deserializer) {
         return ks_io_fixed_property(io, funcs, prop, serialize);
     }
 
@@ -306,43 +307,3 @@ void ks_midi_events_free(uint32_t num_events, ks_midi_event* events){
 }
 
 
-ks_score* ks_score_from_midi(ks_midi_file* file){
-    const ks_midi_file* conbined = file->format == 0 ? file : ks_midi_file_conbine_tracks(file);
-
-    ks_score* ret = ks_score_new(file->resolution, 0, NULL);
-    ks_score_event* events = calloc(file->tracks[0].num_events, sizeof(ks_score_event));
-
-
-    uint64_t time=0;
-    for(uint32_t i=0; i< file->tracks[0].num_events; i++){
-        ks_midi_event* msg = &file->tracks[0].events[i];
-        switch (msg->status) {
-        case 0xff:
-            if(msg->message.meta.type == 0x2f){
-                events[ret->num_events].status = 0xff;
-                events[ret->num_events].datas[0] = 0x2f;
-                events[ret->num_events].datas[1] = 0x00;
-                ret->num_events++;
-                events[ret->num_events].delta = msg->time - time;
-                time = msg->time;
-            }
-            break;
-        default:
-            if(msg->status >= 0x80 &&
-                    msg->status < 0xe0){
-                events[ret->num_events].status = msg->status;
-                events[ret->num_events].datas[0] = msg->message.datas[0];
-                events[ret->num_events].datas[1] = msg->message.datas[1];
-                ret->num_events++;
-                events[ret->num_events].delta = msg->time - time;
-                time = msg->time;
-            }
-            break;
-        }
-    }
-    if(file->format != 0) ks_midi_file_free((ks_midi_file*)conbined);
-
-    ret->events = events;
-
-    return ret;
-}

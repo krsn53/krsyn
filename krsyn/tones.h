@@ -15,19 +15,19 @@ typedef struct ks_tones_bank_number{
     uint16_t enabled : 1;
 } ks_tones_bank_number;
 
-typedef struct ks_tone_binary{
+typedef struct ks_tone_data{
     uint8_t msb;
     uint8_t lsb;
     uint8_t program;
     uint8_t note;
     char* name;
-    ks_synth_binary synth;
-}ks_tone_binary;
+    ks_synth_data synth;
+}ks_tone_data;
 
-typedef struct ks_tones_binary{
+typedef struct ks_tones_data{
     uint32_t           num_tones;
-    ks_tone_binary      *tones;
-}ks_tones_binary;
+    ks_tone_data      *tones;
+}ks_tones_data;
 
 typedef struct ks_tones_bank{
     ks_tones_bank_number bank_number;
@@ -40,10 +40,10 @@ typedef struct ks_tones{
     ks_tones_bank        *banks;
 }ks_tones;
 
-ks_io_decl_custom_func(ks_tone_binary);
-ks_io_decl_custom_func(ks_tones_binary);
+ks_io_decl_custom_func(ks_tone_data);
+ks_io_decl_custom_func(ks_tones_data);
 
-ks_tones* ks_tones_new_from_binary(uint32_t sampling_rate, const ks_tones_binary *bin);
+ks_tones* ks_tones_new_from_data(uint32_t sampling_rate, const ks_tones_data *bin);
 ks_tones* ks_tones_new();
 void ks_tones_free(ks_tones* tones);
 void ks_tones_reserve(ks_tones* tones, uint32_t capacity);

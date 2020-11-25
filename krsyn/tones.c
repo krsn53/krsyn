@@ -5,20 +5,20 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-ks_io_begin_custom_func(ks_tone_binary)
+ks_io_begin_custom_func(ks_tone_data)
     ks_fp_u8(msb);
     ks_fp_u8(lsb);
     ks_fp_u8(program);
     ks_fp_u8(note);
     ks_fp_str_p(name);
-    ks_fp_obj(synth, ks_synth_binary);
-ks_io_end_custom_func(ks_tone_binary)
+    ks_fp_obj(synth, ks_synth_data);
+ks_io_end_custom_func(ks_tone_data)
 
-ks_io_begin_custom_func(ks_tones_binary)
+ks_io_begin_custom_func(ks_tones_data)
     ks_magic_number("KTON");
     ks_fp_u32(num_tones);
-    ks_fp_arr_obj_len(tones, ks_tone_binary, ks_access(num_tones));
-ks_io_end_custom_func(ks_tones_binary)
+    ks_fp_arr_obj_len(tones, ks_tone_data, ks_access(num_tones));
+ks_io_end_custom_func(ks_tones_data)
 
 
 inline uint32_t ks_tones_bank_number_hash(ks_tones_bank_number bank_number){
@@ -44,7 +44,7 @@ inline ks_tones_bank_number ks_tones_bank_number_of(uint8_t msb, uint8_t lsb){
     };
 }
 
-ks_tones* ks_tones_new_from_binary(uint32_t sampling_rate, const ks_tones_binary* bin){
+ks_tones* ks_tones_new_from_data(uint32_t sampling_rate, const ks_tones_data* bin){
     ks_tones* ret= ks_tones_new();
 
     uint32_t num_tones = bin->num_tones;

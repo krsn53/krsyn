@@ -27,7 +27,7 @@ void GuiAlignedLabel(const char* text, Rectangle rec, GuiTextAlignment align);
 int PropertyInt(Rectangle rec, const char* innerText, int value, int min_value, int max_value, int step);
 int PropertyIntImage(Rectangle rec, Texture2D tex, int value, int min_value, int max_value, int step);
 //------------------------------------------------------------------------------------
-bool SaveLoadSynth(ks_synth_binary* bin, GuiFileDialogState* file_dialog_state, bool serialize){
+bool SaveLoadSynth(ks_synth_data* bin, GuiFileDialogState* file_dialog_state, bool serialize){
     ks_io * io = ks_io_new();
     bool text_format = true;
     if(IsFileExtension(file_dialog_state->fileNameText, ".ksyb")){
@@ -44,12 +44,12 @@ bool SaveLoadSynth(ks_synth_binary* bin, GuiFileDialogState* file_dialog_state, 
 
     bool ret;
     if(text_format){
-        ret = serialize ? ks_io_begin_serialize(io, clike, ks_prop_root(*bin, ks_synth_binary)) :
-                          ks_io_begin_deserialize(io, clike, ks_prop_root(*bin, ks_synth_binary)) ;
+        ret = serialize ? ks_io_begin_serialize(io, clike, ks_prop_root(*bin, ks_synth_data)) :
+                          ks_io_begin_deserialize(io, clike, ks_prop_root(*bin, ks_synth_data)) ;
     }
      else {
-        ret = serialize ? ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(*bin, ks_synth_binary)) :
-                          ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*bin, ks_synth_binary)) ;
+        ret = serialize ? ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(*bin, ks_synth_data)) :
+                          ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*bin, ks_synth_data)) ;
     }
 
     if(serialize){
@@ -66,16 +66,16 @@ bool SaveLoadSynth(ks_synth_binary* bin, GuiFileDialogState* file_dialog_state, 
 //------------------------------------------------------------------------------------
 int main()
 {
-    ks_synth_binary temp;
-    ks_synth_binary synth_bin;
+    ks_synth_data temp;
+    ks_synth_data synth_bin;
     ks_synth synth;
     ks_synth_note note = { 0 };
     int8_t noteon_number = -1;
     bool dirty = false;
     GuiFileDialogState file_dialog_state;
 
-    ks_synth_binary_set_default(&synth_bin);
-    ks_synth_binary_set_default(&temp);
+    ks_synth_data_set_default(&synth_bin);
+    ks_synth_data_set_default(&temp);
 
     InitAudioDevice();
 
@@ -129,7 +129,7 @@ int main()
         // Update
         //----------------------------------------------------------------------------------
         if(state == EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
-            if(memcmp(&synth_bin, &temp, sizeof(ks_synth_binary)) != 0 ){
+            if(memcmp(&synth_bin, &temp, sizeof(ks_synth_data)) != 0 ){
                 if(!dirty){
                     dirty = true;
                     temp = synth_bin;
@@ -646,7 +646,7 @@ int main()
                 if(run_new){
                     dirty = false;
                     state = EDIT;
-                    ks_synth_binary_set_default(&synth_bin);
+                    ks_synth_data_set_default(&synth_bin);
                     temp = synth_bin;
                     SetWindowTitle(FormatText("krsyn editor - noname"));
                 }
@@ -662,7 +662,7 @@ int main()
                             break;
                         }
 
-                        ks_synth_binary load;
+                        ks_synth_data load;
                         if(!SaveLoadSynth(&load,&file_dialog_state, false)){
                             ks_error("Failed to load synth");
 

@@ -22,7 +22,7 @@ static void activate (GtkApplication *app,  gpointer user_data)
     state = (editor_state*)user_data;
     state->state = audio_state_new();
 
-    ks_synth_binary_set_default(&state->data);
+    ks_synth_data_set_default(&state->data);
 
     window = gtk_application_window_new (app);
     gtk_window_set_title (GTK_WINDOW (window), "Krsyn Tone Editor");

@@ -6,7 +6,7 @@
 
 
 
-ks_io_begin_custom_func(ks_synth_binary)
+ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
     ks_fp_arr_u8(phase_coarses.u8);
     ks_fp_arr_u8(phase_fines);
@@ -37,16 +37,16 @@ ks_io_begin_custom_func(ks_synth_binary)
     ks_fp_u8(lfo_freq);
     ks_fp_u8(lfo_det);
     ks_fp_u8(lfo_fms_depth);
-ks_io_end_custom_func(ks_synth_binary)
+ks_io_end_custom_func(ks_synth_data)
 
 
-ks_synth* ks_synth_new(ks_synth_binary* data, uint32_t sampling_rate){
+ks_synth* ks_synth_new(ks_synth_data* data, uint32_t sampling_rate){
     ks_synth* ret = malloc(sizeof(ks_synth));
     ks_synth_set(ret, sampling_rate, data);
     return ret;
 }
 
-ks_synth* ks_synth_array_new(uint32_t length, ks_synth_binary data[], uint32_t sampling_rate){
+ks_synth* ks_synth_array_new(uint32_t length, ks_synth_data data[], uint32_t sampling_rate){
     ks_synth* ret = calloc(length, sizeof(ks_synth));
     for(uint32_t i=0; i<length; i++){
         ks_synth_set(ret+i, sampling_rate, data+i);
@@ -58,9 +58,9 @@ void ks_synth_free(ks_synth* synth){
     free(synth);
 }
 
-void ks_synth_binary_set_default(ks_synth_binary* data)
+void ks_synth_data_set_default(ks_synth_data* data)
 {
-    *data = (ks_synth_binary){ 0 };
+    *data = (ks_synth_data){ 0 };
     for(uint32_t i=0; i<KS_NUM_OPERATORS; i++)
     {
         data->phase_coarses.b[i].fixed_frequency = false;
@@ -162,7 +162,7 @@ inline uint32_t ks_fms_depth(int32_t depth){
     return ret;
 }
 
-static inline void synth_op_set(uint32_t sampling_rate, ks_synth* synth, const ks_synth_binary* data)
+static inline void synth_op_set(uint32_t sampling_rate, ks_synth* synth, const ks_synth_data* data)
 {
     for(uint32_t i=0; i<KS_NUM_OPERATORS; i++)
     {
@@ -196,7 +196,7 @@ static inline void synth_op_set(uint32_t sampling_rate, ks_synth* synth, const k
 
 }
 
-static inline void synth_common_set(ks_synth* synth, const ks_synth_binary* data)
+static inline void synth_common_set(ks_synth* synth, const ks_synth_data* data)
 {
     synth->algorithm = calc_algorithm(data->algorithm);
     synth->feedback_level = calc_feedback_level(data->feedback_level);
@@ -209,7 +209,7 @@ static inline void synth_common_set(ks_synth* synth, const ks_synth_binary* data
 }
 
 
-void ks_synth_set(ks_synth* synth, uint32_t sampling_rate, const ks_synth_binary* data)
+void ks_synth_set(ks_synth* synth, uint32_t sampling_rate, const ks_synth_data* data)
 {
     synth_op_set(sampling_rate, synth, data);
     synth_common_set(synth, data);

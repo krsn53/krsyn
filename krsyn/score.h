@@ -14,6 +14,7 @@
 
 typedef struct ks_tones ks_tones;
 typedef struct ks_tones_bank ks_tones_bank;
+typedef struct ks_midi_file ks_midi_file;
 
 typedef struct ks_score_channel{
     ks_tones_bank        *bank;
@@ -56,15 +57,17 @@ typedef struct ks_score_event{
     uint8_t             datas           [3];
 }ks_score_event;
 
-typedef struct ks_score{
+typedef struct ks_score_data{
     uint16_t            resolution;
     uint32_t            num_events;
     const ks_score_event  *events;
-}ks_score;
+}ks_score_data;
 
+ks_io_decl_custom_func(ks_score_event);
+ks_io_decl_custom_func(ks_score_data);
 
-ks_score* ks_score_new(uint32_t resolution, uint32_t num_events, const ks_score_event *events);
-void ks_score_free(ks_score* song);
+ks_score_data* ks_score_data_new(uint32_t resolution, uint32_t num_events, const ks_score_event *events);
+void ks_score_data_free(ks_score_data* song);
 
 ks_score_state* ks_score_state_new(uint32_t polyphony_bits);
 void ks_score_state_free(ks_score_state* state);
@@ -80,9 +83,9 @@ bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones
 bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t lsb);
 
 
-void ks_score_render(ks_score* score, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones, int16_t *buf, uint32_t len);
+void ks_score_data_render(const ks_score_data* score, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones, int16_t *buf, uint32_t len);
 
-bool ks_score_event_run(const ks_score* score, uint32_t sampling_rate, ks_score_state* state,  const ks_tones* tones);
+bool ks_score_data_event_run(const ks_score_data* score, uint32_t sampling_rate, ks_score_state* state,  const ks_tones* tones);
 
 void ks_score_state_set_default(ks_score_state *state, const ks_tones *tones, uint32_t sampling_rate, uint32_t resolution);
 
@@ -94,3 +97,6 @@ bool ks_score_note_is_enabled(const ks_score_note* note);
 bool ks_score_note_info_equals(ks_score_note_info i1, ks_score_note_info i2);
 int16_t ks_score_note_info_hash(ks_score_note_info id);
 ks_score_note_info ks_score_note_info_of(uint8_t note_number, uint8_t channel);
+
+
+ks_score_data* ks_score_data_from_midi(ks_midi_file *file);
