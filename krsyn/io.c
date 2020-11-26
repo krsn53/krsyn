@@ -576,8 +576,8 @@ inline bool ks_io_string_binary(ks_io* io, const ks_io_funcs* funcs, uint32_t le
     if(!serialize){
         uint32_t l = length == KS_STRING_UNKNOWN_LENGTH ? ks_string_first_c_of(io->str, io->seek, 0)  : length;
         ks_string_set_n(str, l, io->str->data + io->seek);
-        l = length == KS_STRING_UNKNOWN_LENGTH ? l+1 : length;
-        io->seek += l; // for "\0"
+        l = length == KS_STRING_UNKNOWN_LENGTH ? l+1 : length;// for "\0"
+        io->seek += l;
     }
     else {
         ks_string_add_n(io->str, length, str->data);
