@@ -20,7 +20,7 @@ typedef struct ks_tone_data{
     uint8_t lsb;
     uint8_t program;
     uint8_t note;
-    char* name;
+    char    name[64];
     ks_synth_data synth;
 }ks_tone_data;
 
