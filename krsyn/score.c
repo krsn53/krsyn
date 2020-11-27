@@ -210,9 +210,7 @@ bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones
 }
 
 bool ks_score_channel_set_panpot(ks_score_channel* channel, uint8_t value){
-    channel->panpot_left =  ks_sin(ks_v(value + ks_1(KS_PANPOT_BITS - 1), KS_PHASE_MAX_BITS - KS_PANPOT_BITS - 2 ), false);
-    channel->panpot_right = ks_sin(ks_v(value + ks_v(3, KS_PANPOT_BITS - 1), KS_PHASE_MAX_BITS - KS_PANPOT_BITS - 2 ), false);
-
+    ks_calc_panpot(&channel->panpot_left, &channel->panpot_right, value);
     return true;
 }
 
@@ -245,7 +243,7 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones,
 void ks_score_data_render(const ks_score_data *score, uint32_t sampling_rate, ks_score_state* state, const ks_tones*tones, int16_t* buf, uint32_t len){
     uint32_t i=0;
     do{
-        uint32_t frame = MIN((len>>1)-i, state->current_frame);
+        uint32_t frame = MIN(len-i, state->current_frame*2);
         int16_t tmpbuf[frame];
 
         for(uint32_t p=0; p<ks_1(state->polyphony_bits); p++){
@@ -262,20 +260,13 @@ void ks_score_data_render(const ks_score_data *score, uint32_t sampling_rate, ks
             ks_synth_note* note = &state->notes[p].note;
             ks_synth_render(synth, note, channel->pitchbend, tmpbuf, frame);
 
-            for(uint32_t b =0; b< frame; b++){
-                int32_t out = tmpbuf[b];
-                out *= channel->panpot_left;
-                out >>= KS_OUTPUT_BITS;
-                buf[2*(i + b)] += out;
-
-                out = tmpbuf[b];
-                out *= channel->panpot_right;
-                out >>= KS_OUTPUT_BITS;
-                buf[2*(i + b) + 1] += out;
+            for(uint32_t b =0; b< frame; b+=2){
+                buf[(i + b)] += ks_apply_panpot(tmpbuf[b], channel->panpot_left);
+                buf[(i + b) + 1] += ks_apply_panpot(tmpbuf[b+1], channel->panpot_right);
             }
         }
 
-        state->current_frame -=frame;
+        state->current_frame -= frame >> 1;
 
         if(state->current_frame == 0){
 
@@ -292,7 +283,7 @@ void ks_score_data_render(const ks_score_data *score, uint32_t sampling_rate, ks
         }
 
         i+= frame;
-    }while(2*i<len);
+    }while(i<len);
 }
 
 ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[]){
@@ -370,7 +361,7 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, ui
     }
     for(uint32_t i =0; i<KS_NUM_CHANNELS; i++){
         state->channels[i] = (ks_score_channel){ 0 };
-        ks_score_channel_set_panpot(&state->channels[i], 0);
+        ks_score_channel_set_panpot(&state->channels[i], 64);
         ks_score_channel_set_picthbend(&state->channels[i], 0, 0);
         ks_score_state_bank_select(state, tones, &state->channels[i], 0, 0);
     }

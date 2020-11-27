@@ -167,6 +167,7 @@ int main( void )
                       },
                       .algorithm=4,
                       .feedback_level=0,
+                      .panpot=64,
                       .lfo_wave_type=0,
                       .lfo_freq=128,
                       .lfo_det=0,

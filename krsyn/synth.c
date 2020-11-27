@@ -33,6 +33,7 @@ ks_io_begin_custom_func(ks_synth_data)
 
     ks_fp_u8(algorithm);
     ks_fp_u8(feedback_level);
+    ks_fp_u8(panpot);
     ks_fp_u8(lfo_wave_type);
     ks_fp_u8(lfo_freq);
     ks_fp_u8(lfo_det);
@@ -94,6 +95,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
 
     data->algorithm = 0;
     data->feedback_level = 0;
+    data->panpot = 64;
 
     data->lfo_wave_type = KS_LFO_WAVE_TRIANGLE;
     data->lfo_fms_depth = 0;
@@ -162,6 +164,18 @@ inline uint32_t ks_fms_depth(int32_t depth){
     return ret;
 }
 
+inline void ks_calc_panpot(int16_t* left, int16_t * right, uint8_t val){
+    *left =  ks_sin(ks_v(val + ks_v(2, KS_PANPOT_BITS - 1), KS_PHASE_MAX_BITS - KS_PANPOT_BITS - 2 ), false);
+    *right = ks_sin(ks_v(val + ks_v(0, KS_PANPOT_BITS - 1), KS_PHASE_MAX_BITS - KS_PANPOT_BITS - 2 ), false);
+}
+
+inline int16_t ks_apply_panpot(int16_t in, int16_t pan){
+    int32_t out = in;
+    out *= pan;
+    out >>= KS_OUTPUT_BITS;
+    return out;
+}
+
 static inline void synth_op_set(uint32_t sampling_rate, ks_synth* synth, const ks_synth_data* data)
 {
     for(uint32_t i=0; i<KS_NUM_OPERATORS; i++)
@@ -200,6 +214,7 @@ static inline void synth_common_set(ks_synth* synth, const ks_synth_data* data)
 {
     synth->algorithm = calc_algorithm(data->algorithm);
     synth->feedback_level = calc_feedback_level(data->feedback_level);
+    ks_calc_panpot(&synth->panpot_left, &synth->panpot_right, data->panpot);
 
     synth->lfo_wave_type = calc_lfo_wave_type(data->lfo_wave_type);
     synth->lfo_fms_depth = calc_lfo_fms_depth(data->lfo_fms_depth);
@@ -721,9 +736,11 @@ static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, 
 {
     uint32_t delta[KS_NUM_OPERATORS];
 
-    for(uint32_t i=0; i<len; i++)
+    for(uint32_t i=0; i<len; i+=2)
     {
-        buf[i] = synth_frame(synth, note, algorithm);
+        buf[i] = buf[i+1] = synth_frame(synth, note, algorithm);
+        buf[i]= ks_apply_panpot(buf[i], synth->panpot_left);
+        buf[i+1]= ks_apply_panpot(buf[i+1], synth->panpot_right);
         lfo_frame(synth, note, delta, lfo_type, ams, fms);
 
         for(uint32_t j=0; j<KS_NUM_OPERATORS; j++)

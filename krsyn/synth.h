@@ -33,7 +33,7 @@
 
 #define KS_SAMPLE_PER_FRAMES_BITS       5u
 
-#define KS_DATA_SIZE                     sizeof(ks_synth_data)
+#define KS_PANPOT_BITS          7u
 
 
 /**
@@ -152,6 +152,8 @@ typedef struct ks_synth_data
     //! FM feed back degree.
     uint8_t                     feedback_level;
 
+    //! instrumental panpot
+    uint8_t                     panpot;
 
     //! Wave type of LFO.
     uint8_t                     lfo_wave_type;
@@ -194,6 +196,8 @@ typedef struct ks_synth
 
     uint8_t     algorithm;
     uint32_t    feedback_level;
+
+    int16_t     panpot_left,            panpot_right;
 
     uint32_t    lfo_det;
     uint32_t    lfo_freq;
@@ -336,6 +340,8 @@ int64_t ks_linear(uint8_t val, int32_t MIN, int32_t MAX);
 int64_t ks_linear2(uint8_t val, int32_t MIN, int32_t MAX);
 uint32_t ks_fms_depth(int32_t depth);
 
+void ks_calc_panpot(int16_t* left, int16_t* right, uint8_t val);
+int16_t ks_apply_panpot(int16_t in, int16_t pan);
 
 #define ks_linear_i (int32_t)ks_linear
 #define ks_linear_u (uint32_t)ks_linear
@@ -359,6 +365,7 @@ uint32_t ks_fms_depth(int32_t depth);
 #define calc_lfo_ams_depths(value)                      ks_linear2_u(value, 0, 1 << KS_LFO_DEPTH_BITS)
 #define calc_algorithm(value)                           (value)
 #define calc_feedback_level(value)                      ks_linear_u(value, 0, 2<<KS_FEEDBACK_LEVEL_BITS)
+#define calc_panpot(value)                              (value)
 #define calc_lfo_wave_type(value)                      (value)
 #define calc_lfo_fms_depth(value)                       ks_exp_u(value, 1 << (KS_LFO_DEPTH_BITS-12), 4)
 #define calc_lfo_freq(value)                            ks_exp_u(value, 1<<(KS_FREQUENCY_BITS-5), 4)
