@@ -172,7 +172,11 @@ void ks_midi_file_free(ks_midi_file* file){
 
 static int compare_midi_event_time (const void *a, const void *b){
     const ks_midi_event* a1 = a, *b1 =b;
-    return (int64_t)a1->time - (int64_t)b1->time;
+    int64_t ret = (int64_t)a1->time - (int64_t)b1->time;
+    if(ret != 0) return ret;
+    ret = a1->status - b1->status;
+    if(ret != 0) return ret;
+    return a1->message.datas[0] - b1->message.datas[1];
 }
 
 static uint32_t calc_delta_bits(uint32_t val){

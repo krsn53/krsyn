@@ -182,9 +182,16 @@ int main( void )
 
       ks_score_data song = {
           // Magic number : KSCR
-          .resolution=96,
-          .num_events=23,
-          .events=(ks_score_event[23]){
+          .resolution=48,
+          .num_events=25,
+          .events=(ks_score_event[25]){
+              {
+                  .delta=0,
+                  .status=255,
+                  .datas[0]=81,
+                  .datas[1]=128,
+                  .datas[2]=0,
+              },
               {
                   .delta=0,
                   .status=144,
@@ -198,7 +205,7 @@ int main( void )
                   .datas[1]=100,
               },
               {
-                  .delta=48,
+                  .delta=24,
                   .status=144,
                   .datas[0]=62,
                   .datas[1]=100,
@@ -210,7 +217,7 @@ int main( void )
                   .datas[1]=0,
               },
               {
-                  .delta=48,
+                  .delta=24,
                   .status=144,
                   .datas[0]=64,
                   .datas[1]=100,
@@ -234,7 +241,7 @@ int main( void )
                   .datas[1]=100,
               },
               {
-                  .delta=48,
+                  .delta=24,
                   .status=144,
                   .datas[0]=65,
                   .datas[1]=100,
@@ -246,7 +253,7 @@ int main( void )
                   .datas[1]=0,
               },
               {
-                  .delta=48,
+                  .delta=24,
                   .status=144,
                   .datas[0]=64,
                   .datas[1]=100,
@@ -270,7 +277,7 @@ int main( void )
                   .datas[1]=100,
               },
               {
-                  .delta=48,
+                  .delta=24,
                   .status=144,
                   .datas[0]=62,
                   .datas[1]=100,
@@ -282,10 +289,16 @@ int main( void )
                   .datas[1]=0,
               },
               {
-                  .delta=48,
+                  .delta=24,
                   .status=144,
                   .datas[0]=60,
                   .datas[1]=100,
+              },
+              {
+                  .delta=0,
+                  .status=128,
+                  .datas[0]=64,
+                  .datas[1]=0,
               },
               {
                   .delta=0,
@@ -306,7 +319,7 @@ int main( void )
                   .datas[1]=100,
               },
               {
-                  .delta=96,
+                  .delta=48,
                   .status=128,
                   .datas[0]=60,
                   .datas[1]=0,
@@ -318,7 +331,7 @@ int main( void )
                   .datas[1]=0,
               },
               {
-                  .delta=48,
+                  .delta=24,
                   .status=255,
                   .datas[0]=47,
                   .datas[1]=0,

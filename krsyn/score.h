@@ -12,6 +12,8 @@
 #define KS_PANPOT_BITS          7u
 #define KS_PITCH_BEND_BITS      14u
 
+#define KS_QUARTER_TIME_BITS    8u
+
 typedef struct ks_tones ks_tones;
 typedef struct ks_tones_bank ks_tones_bank;
 typedef struct ks_midi_file ks_midi_file;
@@ -38,7 +40,7 @@ typedef struct ks_score_note{
 }ks_score_note;
 
 typedef struct ks_score_state{
-    uint16_t            tempo;
+    uint16_t            quater_time;
     uint16_t            frames_per_event;
     uint16_t            current_frame;
     uint16_t            polyphony_bits;
@@ -58,6 +60,9 @@ typedef struct ks_score_event{
 }ks_score_event;
 
 typedef struct ks_score_data{
+    char                title           [64];
+    char                author          [64];
+    char                license         [64];
     uint16_t            resolution;
     uint32_t            num_events;
     const ks_score_event  *events;
@@ -75,6 +80,7 @@ void ks_score_state_free(ks_score_state* state);
 bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8_t channel_number, ks_score_channel* channel, uint8_t note_number, uint8_t velocity);
 bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_score_channel* channel, uint8_t note_number);
 bool ks_score_state_program_change(ks_score_state* state, const ks_tones*tones, ks_score_channel* channel, uint8_t program);
+bool ks_score_state_tempo_change(ks_score_state* state, uint32_t sampling_rate, const ks_score_data* score, const uint8_t* datas);
 bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t type, uint8_t value);
 bool ks_score_channel_set_panpot(ks_score_channel* ch, uint8_t value);
 bool ks_score_channel_set_picthbend(ks_score_channel* ch, uint8_t msb, uint8_t lsb);
