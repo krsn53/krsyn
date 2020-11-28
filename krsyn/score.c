@@ -47,11 +47,11 @@ inline bool ks_score_note_info_equals(ks_score_note_info i1, ks_score_note_info 
     return (((i1.channel)<<8) + i1.note_number) == (((i2.channel)<<8) + i2.note_number);
 }
 
-inline int16_t ks_score_note_info_hash(ks_score_note_info id){
+inline i16 ks_score_note_info_hash(ks_score_note_info id){
     return id.note_number +  id.channel;
 }
 
-inline ks_score_note_info ks_score_note_info_of(uint8_t note_number, uint8_t channel){
+inline ks_score_note_info ks_score_note_info_of(u8 note_number, u8 channel){
     return (ks_score_note_info){
                 .note_number = note_number,
                 .channel = channel,
@@ -59,7 +59,7 @@ inline ks_score_note_info ks_score_note_info_of(uint8_t note_number, uint8_t cha
 }
 
 
-ks_score_data* ks_score_data_new(uint32_t resolution, uint32_t num_events, const ks_score_event* events){
+ks_score_data* ks_score_data_new(u32 resolution, u32 num_events, const ks_score_event* events){
     ks_score_data* ret = malloc(sizeof(ks_score_data));
     ret->events = events;
     ret->num_events = num_events;
@@ -74,15 +74,15 @@ void ks_score_data_free(ks_score_data* song){
 }
 
 
-static inline uint32_t calc_frames_per_event(uint32_t sampling_rate, uint16_t quater_time, uint16_t resolution){
-    uint64_t ret = sampling_rate;
+static inline u32 calc_frames_per_event(u32 sampling_rate, u16 quater_time, u16 resolution){
+    u64 ret = sampling_rate;
     ret *= quater_time;
     ret /= resolution;
     ret >>= KS_QUARTER_TIME_BITS;
-    return (uint32_t)ret;
+    return (u32)ret;
 }
 
-ks_score_state* ks_score_state_new(uint32_t polyphony_bits){
+ks_score_state* ks_score_state_new(u32 polyphony_bits){
     ks_score_state* ret = malloc(sizeof(ks_score_state) + ks_1(polyphony_bits)* sizeof(ks_score_note));
     ret->polyphony_bits = polyphony_bits;
 
@@ -93,7 +93,7 @@ void ks_score_state_free(ks_score_state* state){
     free(state);
 }
 
-bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8_t channel_number, ks_score_channel* channel, uint8_t note_number, uint8_t velocity){
+bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel_number, ks_score_channel* channel, u8 note_number, u8 velocity){
 
      ks_synth* synth = channel->program;
      if(synth == NULL) {
@@ -102,9 +102,9 @@ bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8
      }
 
     ks_score_note_info id =ks_score_note_info_of(note_number, channel_number);
-    uint16_t id_v = ks_score_note_info_hash(id);
-    uint16_t begin = ks_mask(id_v, state->polyphony_bits);
-    uint16_t index = begin;
+    u16 id_v = ks_score_note_info_hash(id);
+    u16 begin = ks_mask(id_v, state->polyphony_bits);
+    u16 index = begin;
     while(ks_score_note_is_enabled(&state->notes[index])){
         index++;
         index = ks_mask(index, state->polyphony_bits);
@@ -121,7 +121,7 @@ bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8
     return true;
 }
 
-bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_score_channel* channel, uint8_t note_number){
+bool ks_score_state_note_off(ks_score_state* state, u8 channel_number, ks_score_channel* channel, u8 note_number){
     ks_tones_bank* bank = channel->bank;
     if(bank == NULL) {
         ks_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
@@ -133,9 +133,9 @@ bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_s
         return false;
     }
     ks_score_note_info info =ks_score_note_info_of(note_number, channel_number);
-    uint16_t hash = ks_score_note_info_hash(info);
-    uint16_t begin = ks_mask(hash, state->polyphony_bits);
-    uint16_t index = begin;
+    u16 hash = ks_score_note_info_hash(info);
+    u16 begin = ks_mask(hash, state->polyphony_bits);
+    u16 index = begin;
     while(!ks_score_note_info_equals(state->notes[index].info, info)) {
         index++;
         index = ks_mask(index, state->polyphony_bits);
@@ -150,7 +150,7 @@ bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_s
     return true;
 }
 
-bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t program){
+bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 program){
 
     if(channel->bank == NULL) {
         ks_error("Failed to run program_change of channel %d for not set bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
@@ -161,15 +161,15 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones,
     if(p == NULL){
         ks_tones_bank* bank = ks_tones_find_bank(tones, ks_tones_bank_number_of(0,0));
         if(bank == NULL){
-            bank = tones->banks;
+            bank = tones->data;
         }
         p = channel->bank->programs[program];
 
-        ks_tones_bank* begin = tones->banks;
-        uint32_t it=0;
+        ks_tones_bank* begin = tones->data;
+        u32 it=0;
         while(begin[it].programs[program] == NULL){
             it++;
-            it %= tones->num_banks;
+            it %= tones->length;
             if(it == 0){
                 ks_error("Failed to run program_change of channel %d for not found program %d at tick %d",(channel - state->channels) / sizeof(ks_score_channel), program,state->current_tick);
                 return  false;
@@ -181,7 +181,7 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones,
     return true;
 }
 
-bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t msb, uint8_t lsb){
+bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 msb, u8 lsb){
     ks_tones_bank *bank = ks_tones_find_bank(tones, ks_tones_bank_number_of(msb, lsb));
     if(bank == NULL) {
         ks_error("Failed to run bank_select of channel %d for not found bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
@@ -193,41 +193,41 @@ bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones, ks
     return ks_score_state_program_change(state, tones, channel, channel->program_number);
 }
 
-bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t msb){
-    uint8_t lsb = 0;
+bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 msb){
+    u8 lsb = 0;
     if(channel->bank != NULL){
         lsb = channel->bank->bank_number.lsb;
     }
     return ks_score_state_bank_select(state, tones, channel, msb, lsb);
 }
 
-bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t lsb){
-    uint8_t msb = 0;
+bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 lsb){
+    u8 msb = 0;
     if(channel->bank != NULL){
         msb = channel->bank->bank_number.msb;
     }
     return ks_score_state_bank_select(state, tones, channel, msb, lsb);
 }
 
-bool ks_score_channel_set_panpot(ks_score_channel* channel, uint8_t value){
+bool ks_score_channel_set_panpot(ks_score_channel* channel, u8 value){
     ks_calc_panpot(&channel->panpot_left, &channel->panpot_right, value);
     return true;
 }
 
-bool ks_score_channel_set_picthbend(ks_score_channel* channel, uint8_t msb, uint8_t lsb){
+bool ks_score_channel_set_picthbend(ks_score_channel* channel, u8 msb, u8 lsb){
     channel->pitchbend = ks_v(msb, 7) + lsb;
     channel->pitchbend = ks_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_BITS));
     return true;
 }
 
-bool ks_score_state_tempo_change(ks_score_state* state, uint32_t sampling_rate, const ks_score_data* score, const uint8_t* datas){
-    const uint32_t quarter = datas[1] + ks_v(datas[2], KS_QUARTER_TIME_BITS);
+bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* datas){
+    const u32 quarter = datas[1] + ks_v(datas[2], KS_QUARTER_TIME_BITS);
     state->quater_time = quarter;
     state->frames_per_event= calc_frames_per_event(sampling_rate, state->quater_time, score->resolution);
     return true;
 }
 
-bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t type, uint8_t value){
+bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 type, u8 value){
     switch (type) {
     case 0x00:
         return ks_score_state_bank_select_msb(state, tones, channel, value);
@@ -240,13 +240,13 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones,
 }
 
 
-void ks_score_data_render(const ks_score_data *score, uint32_t sampling_rate, ks_score_state* state, const ks_tones*tones, int16_t* buf, uint32_t len){
-    uint32_t i=0;
+void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_score_state* state, const ks_tones*tones, i16* buf, u32 len){
+    u32 i=0;
     do{
-        uint32_t frame = MIN(len-i, state->current_frame*2);
-        int16_t tmpbuf[frame];
+        u32 frame = MIN(len-i, state->current_frame*2);
+        i16 tmpbuf[frame];
 
-        for(uint32_t p=0; p<ks_1(state->polyphony_bits); p++){
+        for(u32 p=0; p<ks_1(state->polyphony_bits); p++){
             if(!ks_score_note_is_enabled(&state->notes[p])) {
                 continue;
             }
@@ -260,7 +260,7 @@ void ks_score_data_render(const ks_score_data *score, uint32_t sampling_rate, ks
             ks_synth_note* note = &state->notes[p].note;
             ks_synth_render(synth, note, channel->pitchbend, tmpbuf, frame);
 
-            for(uint32_t b =0; b< frame; b+=2){
+            for(u32 b =0; b< frame; b+=2){
                 buf[(i + b)] += ks_apply_panpot(tmpbuf[b], channel->panpot_left);
                 buf[(i + b) + 1] += ks_apply_panpot(tmpbuf[b+1], channel->panpot_right);
             }
@@ -286,9 +286,9 @@ void ks_score_data_render(const ks_score_data *score, uint32_t sampling_rate, ks
     }while(i<len);
 }
 
-ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[]){
+ks_score_event* ks_score_events_new(u32 num_events, ks_score_event events[]){
     ks_score_event* ret = malloc(sizeof(ks_score_event) * num_events);
-    for(uint32_t i=0; i<num_events; i++){
+    for(u32 i=0; i<num_events; i++){
         ret[i] = events[i];
     }
     return ret;
@@ -300,7 +300,7 @@ void ks_score_events_free(const ks_score_event* events){
 
 
 
-bool ks_score_data_event_run(const ks_score_data* score, uint32_t sampling_rate, ks_score_state *state,  const ks_tones *tones){
+bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_score_state *state,  const ks_tones *tones){
     do{
         const ks_score_event* msg = &score->events[state->current_event];
         switch (msg->status) {
@@ -317,7 +317,7 @@ bool ks_score_data_event_run(const ks_score_data* score, uint32_t sampling_rate,
 
         default:{
             // channel message
-            uint8_t channel_num = msg->status & 0x0f;
+            u8 channel_num = msg->status & 0x0f;
             ks_score_channel* channel = &state->channels[channel_num];
             switch (msg->status >> 4) {
             // note off
@@ -350,16 +350,16 @@ bool ks_score_data_event_run(const ks_score_data* score, uint32_t sampling_rate,
 }
 
 
-void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, uint32_t sampling_rate, uint32_t resolution){
+void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, u32 sampling_rate, u32 resolution){
     state->quater_time = ks_1(KS_QUARTER_TIME_BITS - 1); // 0.5
     state->current_frame = 0;
     state->current_event = 0;
     state->frames_per_event = calc_frames_per_event(sampling_rate, state->quater_time, resolution);
     state->current_tick = 0;
-    for(uint32_t i=0; i<ks_1(state->polyphony_bits); i++) {
+    for(u32 i=0; i<ks_1(state->polyphony_bits); i++) {
         state->notes[i] = (ks_score_note){ 0 };
     }
-    for(uint32_t i =0; i<KS_NUM_CHANNELS; i++){
+    for(u32 i =0; i<KS_NUM_CHANNELS; i++){
         state->channels[i] = (ks_score_channel){ 0 };
         ks_score_channel_set_panpot(&state->channels[i], 64);
         ks_score_channel_set_picthbend(&state->channels[i], 0, 0);
@@ -374,8 +374,8 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
     ks_score_event* events = calloc(file->tracks[0].num_events, sizeof(ks_score_event));
 
 
-    uint64_t time=0;
-    for(uint32_t i=0; i< file->tracks[0].num_events; i++){
+    u64 time=0;
+    for(u32 i=0; i< file->tracks[0].num_events; i++){
         ks_midi_event* msg = &file->tracks[0].events[i];
         switch (msg->status) {
         case 0xff:
@@ -384,12 +384,12 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
                 events[ret->num_events].status = 0xff;
                 events[ret->num_events].datas[0] = 0x51;
                 //msg->message.meta.length == 0x03;
-                const uint32_t quarter_micro = ks_v((uint32_t)msg->message.meta.data[0], 16) +
-                        ks_v((uint32_t)msg->message.meta.data[1], 8) +
-                       (uint32_t)msg->message.meta.data[2];
-                const uint32_t quarter_mili = quarter_micro / 1000;
-                const uint32_t quarter_mili_fp8 = quarter_mili * ks_1(KS_QUARTER_TIME_BITS);
-                const uint32_t quarter_fp8 = quarter_mili_fp8 / 1000;
+                const u32 quarter_micro = ks_v((u32)msg->message.meta.data[0], 16) +
+                        ks_v((u32)msg->message.meta.data[1], 8) +
+                       (u32)msg->message.meta.data[2];
+                const u32 quarter_mili = quarter_micro / 1000;
+                const u32 quarter_mili_fp8 = quarter_mili * ks_1(KS_QUARTER_TIME_BITS);
+                const u32 quarter_fp8 = quarter_mili_fp8 / 1000;
                 // little endian
                 events[ret->num_events].datas[1] = ks_mask(quarter_fp8, KS_QUARTER_TIME_BITS);
                 events[ret->num_events].datas[2] = quarter_fp8 >> KS_QUARTER_TIME_BITS;

@@ -3,39 +3,39 @@
 
 void uint8_range_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_range_set_value(GTK_RANGE(widget), *(uint8_t*)param);
+    gtk_range_set_value(GTK_RANGE(widget), *(u8*)param);
 }
 
 void uint8_combo_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), *(uint8_t*)param);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), *(u8*)param);
 }
 
 void uint8_spin_widget_set(GtkWidget* widget, void*param)
 {
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), *(uint8_t*)param);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), *(u8*)param);
 }
 
 void uint8_value_changed(GtkRange* range, gpointer user)
 {
-    uint8_t* data = (uint8_t*) user;
+    u8* data = (u8*) user;
     *data = gtk_range_get_value(range);
 }
 
 void uint8_spin_value_changed(GtkSpinButton* spin, gpointer user)
 {
-    uint8_t* data = (uint8_t*)user;
+    u8* data = (u8*)user;
     *data = gtk_spin_button_get_value(spin);
 }
 
-void uint8_toggled(GtkToggleButton* tog, gpointer user)
+void u8oggled(GtkToggleButton* tog, gpointer user)
 {
-    uint8_t*data= (uint8_t*) tog;
-    *data = (uint8_t)gtk_toggle_button_get_active(tog);
+    u8*data= (u8*) tog;
+    *data = (u8)gtk_toggle_button_get_active(tog);
 }
 
 
-GtkWidget* check_param_new(uint8_t* param_ptr,
+GtkWidget* check_param_new(u8* param_ptr,
                            void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkToggleButton*, gpointer))
 {
     GtkWidget* check = gtk_check_button_new();
@@ -45,7 +45,7 @@ GtkWidget* check_param_new(uint8_t* param_ptr,
     return check;
 }
 
-GtkWidget* spin_param_new(uint8_t* param_ptr,
+GtkWidget* spin_param_new(u8* param_ptr,
                           void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkSpinButton*, gpointer),
                           int min, int max)
 {
@@ -56,7 +56,7 @@ GtkWidget* spin_param_new(uint8_t* param_ptr,
     return spin;
 }
 
-GtkWidget* param_new(uint8_t* param_ptr, gchar*(* format)(GtkScale*, gdouble, gpointer),
+GtkWidget* param_new(u8* param_ptr, gchar*(* format)(GtkScale*, gdouble, gpointer),
                             void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkRange*, gpointer),
                             int min, int max)
 {
@@ -75,13 +75,13 @@ GtkWidget* param_new(uint8_t* param_ptr, gchar*(* format)(GtkScale*, gdouble, gp
 
 void toggle_button_checked(GtkToggleButton *togglebutton, gpointer user)
 {
-    uint8_t* data = (uint8_t*) user;
-    *data = (uint8_t)gtk_toggle_button_get_active(togglebutton);
+    u8* data = (u8*) user;
+    *data = (u8)gtk_toggle_button_get_active(togglebutton);
 }
 
 
 
-GtkWidget* enum_param_new(uint8_t* param_ptr,
+GtkWidget* enum_param_new(u8* param_ptr,
                                  void(*widget_set)(GtkWidget*,void*), void(*setter)(GtkComboBox*, gpointer),
                                  GtkCellRenderer *colmun,
                                  GType list_type,
@@ -122,7 +122,7 @@ GtkWidget* box_with_label(const char* str)
     return box;
 }
 
-GtkWidget* param_new_with_label(uint8_t* param_ptr, const char* str, gchar*(* format)(GtkScale*, gdouble, gpointer),
+GtkWidget* param_new_with_label(u8* param_ptr, const char* str, gchar*(* format)(GtkScale*, gdouble, gpointer),
                                 void(*widget_set)(GtkWidget *, void *), void(*setter)(GtkRange*, gpointer),
                                 int min, int max)
 {
@@ -137,7 +137,7 @@ GtkWidget* param_new_with_label(uint8_t* param_ptr, const char* str, gchar*(* fo
 }
 
 
-GtkWidget* spin_param_new_with_label(uint8_t* param_ptr, const char* str,
+GtkWidget* spin_param_new_with_label(u8* param_ptr, const char* str,
                                      void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkSpinButton *, gpointer),
                                      int min, int max)
 {
@@ -151,7 +151,7 @@ GtkWidget* spin_param_new_with_label(uint8_t* param_ptr, const char* str,
     return box;
 }
 
-GtkWidget* enum_param_new_with_label(uint8_t* param_ptr, const char* str,
+GtkWidget* enum_param_new_with_label(u8* param_ptr, const char* str,
                                      void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkComboBox*, gpointer),
                                      GtkCellRenderer *colmun, GType list_type,
                                      void*enum_data[], int list_num)

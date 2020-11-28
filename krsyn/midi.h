@@ -4,21 +4,21 @@
 
 
 typedef struct ks_midi_event{
-    uint64_t time;
-    uint32_t delta;
-    uint8_t status;
+    u64 time;
+    u32 delta;
+    u8 status;
     union{
-        uint8_t datas[2];
+        u8 datas[2];
 
         struct{
-            uint32_t length;
-            uint8_t* data;
+            u32 length;
+            u8* data;
         }sys_ex;
 
         struct{
-            uint8_t type;
-            uint32_t length;
-            uint8_t* data;
+            u8 type;
+            u32 length;
+            u8* data;
         }meta;
 
     }message;
@@ -26,18 +26,18 @@ typedef struct ks_midi_event{
 
 typedef struct ks_midi_track{
     //chunk type MTrk
-    uint32_t length;
-    //uint8_t *data;
-    uint32_t num_events;
+    u32 length;
+    //u8 *data;
+    u32 num_events;
     ks_midi_event* events;
 } ks_midi_track;
 
 typedef struct ks_midi_file{
     // chunk type MThd
-    uint32_t length;
-    uint16_t format;
-    uint16_t num_tracks;
-    uint16_t resolution;
+    u32 length;
+    u16 format;
+    u16 num_tracks;
+    u16 resolution;
     ks_midi_track* tracks;
 }ks_midi_file;
 
@@ -54,8 +54,8 @@ void ks_midi_file_calc_time(ks_midi_file* file);
 
 ks_midi_file *ks_midi_file_conbine_tracks(ks_midi_file *file);
 
-ks_midi_track* ks_midi_tracks_new(uint32_t num_tracks);
-void ks_midi_tracks_free(uint32_t num_tracks, ks_midi_track* tracks);
-ks_midi_event* ks_midi_events_new(uint32_t num_events);
-void ks_midi_events_free(uint32_t num_events, ks_midi_event* events);
+ks_midi_track* ks_midi_tracks_new(u32 num_tracks);
+void ks_midi_tracks_free(u32 num_tracks, ks_midi_track* tracks);
+ks_midi_event* ks_midi_events_new(u32 num_events);
+void ks_midi_events_free(u32 num_events, ks_midi_event* events);
 

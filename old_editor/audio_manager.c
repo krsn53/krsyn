@@ -177,9 +177,9 @@ static gboolean keyboard_draw (GtkWidget *widget, cairo_t *cr, gpointer user_dat
 
 static gboolean keyboard_key_pressed(GdkEvent* event, editor_state* state,
                                      double x, double y,double width, double height,
-                                     uint8_t notenum)
+                                     u8 notenum)
 {
-    uint8_t velocity;
+    u8 velocity;
     if(event->button.button == GDK_BUTTON_PRIMARY &&
         event->button.x > x && event->button.y > 0 &&
         event->button.x < x+width && event->button.y < height)

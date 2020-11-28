@@ -2,16 +2,16 @@
 #include <stdio.h>
 
 typedef struct Test{
-    uint8_t u8;
-    uint16_t u16;
-    uint32_t u32;
-    uint64_t u64;
-    uint8_t arr[10];
-    uint32_t len_arr;
-    uint16_t *arr_len;
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    u64 u64;
+    u8 arr[10];
+    u32 len_arr;
+    u16 *arr_len;
     char strarr[20];
     char* str_p;
-    uint32_t len_str;
+    u32 len_str;
     char* str_len;
 
 }Test;
@@ -23,7 +23,7 @@ static Test test ={
     .u64 = 4,
     .arr = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
     .len_arr = 3,
-    .arr_len = (uint16_t[]){15, 16, 17},
+    .arr_len = (u16[]){15, 16, 17},
     .strarr = "test18",
     .str_p = "test19",
     .len_str = 6,
@@ -83,7 +83,7 @@ int main ( void ){
     {
         ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(test, Test));
         printf("\n--- binary little endian serialize test ---\ntest3:\n");
-        for(uint32_t i=0; i< io->str->length; i++){
+        for(u32 i=0; i< io->str->length; i++){
             printf("0x%02x, ", io->str->data[i]);
         }
         printf("\n");
@@ -103,7 +103,7 @@ int main ( void ){
     {
         ks_io_begin_serialize(io, binary_big_endian, ks_prop_root(test, Test));
         printf("\n--- binary big endian serialize test ---\ntest4:\n");
-        for(uint32_t i=0; i< io->str->length; i++){
+        for(u32 i=0; i< io->str->length; i++){
             printf("0x%02x, ", io->str->data[i]);
         }
         printf("\n");

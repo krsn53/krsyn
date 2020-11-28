@@ -1,14 +1,15 @@
 #pragma once
 
 #include <stdint.h>
+#include "./math.h"
 
-void ks_vector_init_base(void** data, uint32_t type_size);
-void ks_vector_reserve_base(void** data, uint32_t type_size, uint32_t *capacity, uint32_t new_cap);
-void ks_vector_clear_base(void**data, uint32_t type_size, uint32_t* length);
-void ks_vector_push_range_base(void** data, uint32_t type_size, uint32_t* length, uint32_t *capacity, uint32_t obj_length, const void*objs);
-void ks_vector_push_base(void** data, uint32_t type_size, uint32_t* length, uint32_t *capacity, const void*obj);
-void ks_vector_pop_base(void**data, uint32_t type_size, uint32_t* length);
-void ks_vector_resize_base(void**data, uint32_t type_size, uint32_t*length, uint32_t* capacity, uint32_t new_size);
+void ks_vector_init_base(void** data, u32 type_size);
+void ks_vector_reserve_base(void** data, u32 type_size, u32 *capacity, u32 new_cap);
+void ks_vector_clear_base(void**data, u32 type_size, u32* length);
+void ks_vector_push_range_base(void** data, u32 type_size, u32* length, u32 *capacity, u32 obj_length, const void*objs);
+void ks_vector_push_base(void** data, u32 type_size, u32* length, u32 *capacity, const void*obj);
+void ks_vector_pop_base(void**data, u32 type_size, u32* length);
+void ks_vector_resize_base(void**data, u32 type_size, u32*length, u32* capacity, u32 new_size);
 
 #define ks_vector_data(data) (void**)&data, sizeof(*data)
 

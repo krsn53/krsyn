@@ -1,7 +1,7 @@
 #include "math.h"
 
 
-static const int16_t sin_table[ks_1(KS_TABLE_BITS)] = {
+static const i16 sin_table[ks_1(KS_TABLE_BITS)] = {
     0, 201, 402, 603, 804, 1005, 1206, 1406,
     1607, 1808, 2009, 2209, 2410, 2610, 2811, 3011,
     3211, 3411, 3611, 3811, 4011, 4210, 4409, 4608,
@@ -131,7 +131,7 @@ static const int16_t sin_table[ks_1(KS_TABLE_BITS)] = {
     -3211, -3011, -2811, -2610, -2410, -2209, -2009, -1808,
     -1607, -1406, -1206, -1005, -804, -603, -402, -201,
 };
-static const int16_t saw_table[ks_1(KS_TABLE_BITS)] = {
+static const i16 saw_table[ks_1(KS_TABLE_BITS)] = {
     32767, 32704, 32640, 32576, 32512, 32448, 32384, 32320,
     32256, 32192, 32128, 32064, 32000, 31936, 31872, 31808,
     31744, 31680, 31616, 31552, 31488, 31424, 31360, 31296,
@@ -261,7 +261,7 @@ static const int16_t saw_table[ks_1(KS_TABLE_BITS)] = {
     -31743, -31807, -31871, -31935, -31999, -32063, -32127, -32191,
     -32255, -32319, -32383, -32447, -32511, -32575, -32639, -32703,
 };
-static const int16_t triangle_table[ks_1(KS_TABLE_BITS)] = {
+static const i16 triangle_table[ks_1(KS_TABLE_BITS)] = {
     0, 127, 255, 383, 511, 639, 767, 895,
     1023, 1151, 1279, 1407, 1535, 1663, 1791, 1919,
     2047, 2175, 2303, 2431, 2559, 2687, 2815, 2943,
@@ -391,7 +391,7 @@ static const int16_t triangle_table[ks_1(KS_TABLE_BITS)] = {
     -2047, -1919, -1791, -1663, -1535, -1407, -1279, -1151,
     -1023, -895, -767, -639, -511, -383, -255, -127,
 };
-static const int32_t noise_table[ks_1(KS_TABLE_BITS)] = {
+static const i32 noise_table[ks_1(KS_TABLE_BITS)] = {
     27530, 12922, 25659, 26162, 29871, 6473, 10984, 25172,
     9101, 18151, 15642, 20606, 11952, 16822, 31201, 30020,
     20830, 23503, 4639, 19888, 534, 7958, 4496, 26350,
@@ -521,7 +521,7 @@ static const int32_t noise_table[ks_1(KS_TABLE_BITS)] = {
     22719, 14551, 7744, 21399, 7181, 11446, 16853, 13972,
     11256, 1653, 3090, 26520, 28802, 32329, 17080, 9315,
 };
-static const uint32_t note_freq[128] = {
+static const u32 note_freq[128] = {
     535809, 567670, 601425, 637188, 675077, 715219, 757748, 802806,
     850544, 901120, 954703, 1011473, 1071618, 1135340, 1202850, 1274376,
     1350154, 1430438, 1515497, 1605613, 1701088, 1802240, 1909406, 2022946,
@@ -539,7 +539,7 @@ static const uint32_t note_freq[128] = {
     345639545, 366192342, 387967271, 411037006, 435478538, 461373440, 488808132, 517874176,
     548668577, 581294108, 615859655, 652480576, 691279090, 732384684, 775934543, 822074012,
 };
-static const int32_t ratescale[128] = {
+static const i32 ratescale[128] = {
     3461439, 3263485, 3076641, 2900284, 2733826, 2576709, 2428412, 2288437,
     2156319, 2031616, 1913911, 1802814, 1697951, 1598974, 1505552, 1417374,
     1334145, 1255586, 1181438, 1111450, 1045391, 983040, 924187, 868639,
@@ -557,7 +557,7 @@ static const int32_t ratescale[128] = {
     -60069, -60376, -60666, -60939, -61197, -61440, -61670, -61887,
     -62092, -62286, -62468, -62640, -62803, -62956, -63101, -63238,
 };
-static const uint16_t keyscale_curves[4][128] = {
+static const u16 keyscale_curves[4][128] = {
     {
         65535, 61856, 58385, 55108, 52015, 49095, 46340, 43739,
         41284, 38967, 36780, 34715, 32767, 30928, 29192, 27554,
@@ -635,55 +635,55 @@ static const uint16_t keyscale_curves[4][128] = {
 
 
 // liniar interpolution
-inline int16_t ks_table_value_li(const int16_t* table, uint32_t phase, uint32_t mask)
+inline i16 ks_table_value_li(const i16* table, u32 phase, u32 mask)
 {
-    uint32_t index_m = phase >> KS_PHASE_BITS;
-    uint32_t index_b = (index_m + 1);
+    u32 index_m = phase >> KS_PHASE_BITS;
+    u32 index_b = (index_m + 1);
 
-    uint32_t under_fixed_b = ks_mask(phase, KS_PHASE_BITS);
-    uint32_t under_fixed_m = ks_1(KS_PHASE_BITS) - under_fixed_b;
+    u32 under_fixed_b = ks_mask(phase, KS_PHASE_BITS);
+    u32 under_fixed_m = ks_1(KS_PHASE_BITS) - under_fixed_b;
 
-    int64_t sin_31 = table[index_m & mask] * under_fixed_m +
+    i64 sin_31 = table[index_m & mask] * under_fixed_m +
         table[index_b & mask] * under_fixed_b;
      sin_31 >>= KS_PHASE_BITS;
 
-    return (int16_t)sin_31;
+    return (i16)sin_31;
 }
 
 // sin table value
-inline int16_t ks_sin(uint32_t phase, bool linear_interpolution)
+inline i16 ks_sin(u32 phase, bool linear_interpolution)
 {
     return linear_interpolution ? ks_table_value_li(sin_table, phase,  ks_m(KS_TABLE_BITS)) :
                                   sin_table[ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
 }
 
-inline int16_t ks_saw(uint32_t phase)
+inline i16 ks_saw(u32 phase)
 {
     return saw_table[ks_mask((phase >> KS_PHASE_BITS), KS_TABLE_BITS)];
 }
 
-inline int16_t ks_triangle(uint32_t phase)
+inline i16 ks_triangle(u32 phase)
 {
     return triangle_table[ks_mask((phase >> KS_PHASE_BITS), KS_TABLE_BITS)];
 }
 
-inline int16_t ks_fake_triangle(uint32_t phase, uint32_t shift)
+inline i16 ks_fake_triangle(u32 phase, u32 shift)
 {
     return triangle_table[ks_mask((phase >> (KS_PHASE_BITS +shift) << (shift)), KS_TABLE_BITS)];
 }
 
-inline int16_t ks_noise(uint32_t phase, uint32_t begin){
+inline i16 ks_noise(u32 phase, u32 begin){
     return noise_table[ks_mask((begin + ((phase >> KS_NOISE_PHASE_BITS))), KS_TABLE_BITS)];
 }
 
-inline uint32_t ks_notefreq(uint8_t notenumber){
+inline u32 ks_notefreq(u8 notenumber){
     return note_freq[notenumber];
 }
 
-inline int32_t ks_ratescale(uint8_t index){
+inline i32 ks_ratescale(u8 index){
     return ratescale[index];
 }
 
-inline uint16_t ks_keyscale_curves(uint8_t type, uint8_t index){
+inline u16 ks_keyscale_curves(u8 type, u8 index){
     return keyscale_curves[type][index];
 }

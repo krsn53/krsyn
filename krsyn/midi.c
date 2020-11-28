@@ -10,8 +10,8 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
     }
 
     if(serialize){
-        uint8_t out[4] = { 0 };
-        uint32_t in = *prop.value.ptr.u32;
+        u8 out[4] = { 0 };
+        u32 in = *prop.value.ptr.u32;
 
         ks_property p = prop;
         p.value.type = KS_VALUE_U8;
@@ -19,7 +19,7 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
         out[0] = in & 0x7f;
         in >>= 7;
 
-        int32_t i = 0;
+        i32 i = 0;
 
         while(in != 0){
             i++;
@@ -34,12 +34,12 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
 
         return true;
     } else {
-        uint8_t in=0;
+        u8 in=0;
 
         ks_property p = prop;
         p.value.type = KS_VALUE_U8;
         p.value.ptr.u8 = & in;
-        uint32_t out=0;
+        u32 out=0;
 
         do{
             if(!ks_io_value(io, funcs, p.value, 0, serialize)) return false;
@@ -172,15 +172,15 @@ void ks_midi_file_free(ks_midi_file* file){
 
 static int compare_midi_event_time (const void *a, const void *b){
     const ks_midi_event* a1 = a, *b1 =b;
-    int64_t ret = (int64_t)a1->time - (int64_t)b1->time;
+    i64 ret = (i64)a1->time - (i64)b1->time;
     if(ret != 0) return ret;
     ret = a1->status - b1->status;
     if(ret != 0) return ret;
     return a1->message.datas[0] - b1->message.datas[1];
 }
 
-static uint32_t calc_delta_bits(uint32_t val){
-    uint32_t ret = 0;
+static u32 calc_delta_bits(u32 val){
+    u32 ret = 0;
     do{
         ret++;
         val>>= 7;
@@ -189,9 +189,9 @@ static uint32_t calc_delta_bits(uint32_t val){
 }
 
 void ks_midi_file_calc_time(ks_midi_file* file){
-    for(uint32_t t =0; t< file->num_tracks; t++){
+    for(u32 t =0; t< file->num_tracks; t++){
         file->tracks[t].events[0].time = file->tracks[t].events[0].delta;
-        for(uint32_t e=1; e<file->tracks[t].num_events; e++){
+        for(u32 e=1; e<file->tracks[t].num_events; e++){
             file->tracks[t].events[e].time = file->tracks[t].events[e-1].time + file->tracks[t].events[e].delta;
         }
     }
@@ -208,9 +208,9 @@ ks_midi_file* ks_midi_file_conbine_tracks(ks_midi_file* file){
     ret->resolution = file->resolution;
     ret->tracks = ks_midi_tracks_new(1);
 
-    uint32_t num_events = 0;
-    uint32_t length =0;
-    for(uint32_t i=0; i<file->num_tracks; i++){
+    u32 num_events = 0;
+    u32 length =0;
+    for(u32 i=0; i<file->num_tracks; i++){
         length += file->tracks[i].length;
         num_events += file->tracks[i].num_events;
     }
@@ -221,16 +221,16 @@ ks_midi_file* ks_midi_file_conbine_tracks(ks_midi_file* file){
     ret->tracks[0].num_events = num_events;
     ret->tracks[0].events = ks_midi_events_new(num_events);
 
-    uint32_t e=0;
-    uint32_t end_time=0;
+    u32 e=0;
+    u32 end_time=0;
 
-    for(uint32_t i=0; i<file->num_tracks; i++){
-        for(uint32_t j=0; j<file->tracks[i].num_events; j++){
+    for(u32 i=0; i<file->num_tracks; i++){
+        for(u32 j=0; j<file->tracks[i].num_events; j++){
             if(file->tracks[i].events[j].status == 0xff &&
             file->tracks[i].events[j].message.meta.type == 0x2f){
                 end_time = MAX(end_time, file->tracks[i].events[j].time);
-                uint32_t delta = file->tracks[i].events[j].delta;
-                int32_t delta_bits=calc_delta_bits(delta);
+                u32 delta = file->tracks[i].events[j].delta;
+                i32 delta_bits=calc_delta_bits(delta);
                 ret->tracks[0].length -= 3 + delta_bits;
                 continue;
             }
@@ -250,20 +250,20 @@ ks_midi_file* ks_midi_file_conbine_tracks(ks_midi_file* file){
     qsort(ret->tracks->events, num_events, sizeof(ks_midi_event), compare_midi_event_time);
 
     {
-        uint32_t old = ret->tracks[0].events[0].delta;
-        int32_t old_bits = calc_delta_bits(old);
-        uint32_t new = ret->tracks[0].events[0].time;
-        int32_t new_bits = calc_delta_bits(new);
+        u32 old = ret->tracks[0].events[0].delta;
+        i32 old_bits = calc_delta_bits(old);
+        u32 new = ret->tracks[0].events[0].time;
+        i32 new_bits = calc_delta_bits(new);
 
         ret->tracks[0].length -= old_bits - new_bits;
     }
 
-    for(uint32_t i=1; i<ret->tracks[0].num_events; i++){
-        uint32_t old = ret->tracks[0].events[i].delta;
-        uint32_t new;
-        int32_t old_bits = calc_delta_bits(old);
+    for(u32 i=1; i<ret->tracks[0].num_events; i++){
+        u32 old = ret->tracks[0].events[i].delta;
+        u32 new;
+        i32 old_bits = calc_delta_bits(old);
         ret->tracks[0].events[i].delta = new = ret->tracks[0].events[i].time - ret->tracks[0].events[i-1].time;
-        int32_t new_bits = calc_delta_bits(new);
+        i32 new_bits = calc_delta_bits(new);
 
         ret->tracks[0].length -= old_bits - new_bits;
     }
@@ -273,24 +273,24 @@ ks_midi_file* ks_midi_file_conbine_tracks(ks_midi_file* file){
 
 
 
-ks_midi_track* ks_midi_tracks_new(uint32_t num_tracks){
+ks_midi_track* ks_midi_tracks_new(u32 num_tracks){
     return calloc(num_tracks, sizeof(ks_midi_track));
 }
 
-ks_midi_event* ks_midi_events_new(uint32_t num_events){
+ks_midi_event* ks_midi_events_new(u32 num_events){
     return calloc(num_events, sizeof(ks_midi_event));
 }
 
 
-void ks_midi_tracks_free(uint32_t num_tracks, ks_midi_track* tracks){
-    for(uint32_t t=0; t < num_tracks; t++){
+void ks_midi_tracks_free(u32 num_tracks, ks_midi_track* tracks){
+    for(u32 t=0; t < num_tracks; t++){
         ks_midi_events_free(tracks[t].num_events, tracks[t].events);
     }
     free(tracks);
 }
 
-void ks_midi_events_free(uint32_t num_events, ks_midi_event* events){
-    for(uint32_t e=0; e<num_events; e++){
+void ks_midi_events_free(u32 num_events, ks_midi_event* events){
+    for(u32 e=0; e<num_events; e++){
         switch (events[e].status) {
         case 0xf0:
         case 0xf7:

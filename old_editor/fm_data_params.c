@@ -29,7 +29,7 @@ static void ks_curve_right_changed(GtkComboBox* combo, gpointer user)
 
 static void enum_param_value_changed(GtkComboBox* combo, gpointer user)
 {
-    uint8_t* data = (uint8_t*) user;
+    u8* data = (u8*) user;
     *data = gtk_combo_box_get_active(combo);
 }
 
@@ -70,13 +70,13 @@ static gchar* phase_det_format(GtkScale* scale, gdouble value, gpointer user)
 
 static gchar* lfo_fms_format(GtkScale* scale, gdouble value, gpointer user)
 {
-    double time = calc_lfo_fms_depth((uint8_t)value) / (double)(1<<16);
+    double time = calc_lfo_fms_depth((u8)value) / (double)(1<<16);
     return g_strdup_printf ("%.3f%s", time*100.0, "%");
 }
 
 static gchar* lfo_freq_format(GtkScale* scale, gdouble value, gpointer user)
 {
-    double time = calc_lfo_freq((uint8_t)value) / (double)(1<<16);
+    double time = calc_lfo_freq((u8)value) / (double)(1<<16);
     if(time < 1.0)
     {
         return g_strdup_printf ("%.1f%s", time*1000.0, "mHz");
@@ -147,7 +147,7 @@ static void add_operator_fixed_frequency( GtkGrid* grid, const char* param_name,
     }
 }
 
-static void add_operator_enum_param_base( GtkGrid* grid, const char* param_name, uint8_t* param_ptr,
+static void add_operator_enum_param_base( GtkGrid* grid, const char* param_name, u8* param_ptr,
                                          void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkComboBox*, gpointer),
                                          GtkCellRenderer* colmun, GType list_type,
                                          void*enum_data[], int list_num,
@@ -166,7 +166,7 @@ static void add_operator_enum_param_base( GtkGrid* grid, const char* param_name,
     }
 }
 
-static void add_operator_param_base( GtkGrid* grid, const char* param_name, uint8_t* param_ptr,
+static void add_operator_param_base( GtkGrid* grid, const char* param_name, u8* param_ptr,
                                     gchar*(* format)(GtkScale*, gdouble, gpointer),
                                       void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkRange*, gpointer),
                                     int min, int max, int top)
@@ -183,12 +183,12 @@ static void add_operator_param_base( GtkGrid* grid, const char* param_name, uint
 
 static void add_operator_phase_coarse( GtkGrid* grid, const char* param_name, ks_phase_coarse_t* param_ptr, int top)
 {
-    add_operator_param_base(grid, param_name, (uint8_t*)param_ptr, phase_coarse_format,
+    add_operator_param_base(grid, param_name, (u8*)param_ptr, phase_coarse_format,
                             phase_coarse_widget_set, operator_phase_coarse_changed,
                             0, 127, top);
 }
 
-static void add_operator_param( GtkGrid* grid, const char* param_name, uint8_t* param_ptr,
+static void add_operator_param( GtkGrid* grid, const char* param_name, u8* param_ptr,
                                gchar*(* format)(GtkScale*, gdouble, gpointer), int max, int top)
 {
     add_operator_param_base(grid, param_name, param_ptr, format,
@@ -197,7 +197,7 @@ static void add_operator_param( GtkGrid* grid, const char* param_name, uint8_t* 
 }
 
 
-static void add_param_with_label_base( GtkGrid* grid, const char* param_name, uint8_t* param_ptr,
+static void add_param_with_label_base( GtkGrid* grid, const char* param_name, u8* param_ptr,
                                       gchar*(* format)(GtkScale*, gdouble, gpointer),
                                  void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkRange*, gpointer),
                                  int min, int max, int top)
@@ -211,7 +211,7 @@ static void add_param_with_label_base( GtkGrid* grid, const char* param_name, ui
     gtk_grid_attach(grid, param, 1, top, 1, 1);
 }
 
-static void add_enum_param_with_label_base( GtkGrid* grid, const char* param_name, uint8_t* param_ptr,
+static void add_enum_param_with_label_base( GtkGrid* grid, const char* param_name, u8* param_ptr,
                                     void(*widget_set)(GtkWidget*, void*), void(*setter)(GtkComboBox*, gpointer),
                                     GtkCellRenderer* colmun, GType list_type,
                                     void* enum_data[], int list_num,
@@ -247,7 +247,7 @@ static void* lfo_table_types[] ={
 
 static void add_keyscale_curve_left_param( GtkGrid* grid, const char* param_name, ks_keyscale_curve_t* param_ptr, int top)
 {
-    add_operator_enum_param_base(grid, param_name, (uint8_t*)param_ptr,
+    add_operator_enum_param_base(grid, param_name, (u8*)param_ptr,
                                  ks_curve_left_widget_set, ks_curve_left_changed,
                                  gtk_cell_renderer_text_new(), G_TYPE_STRING,
                                  ks_curve_types, KS_KEYSCALE_CURVE_NUM_TYPES,
@@ -256,7 +256,7 @@ static void add_keyscale_curve_left_param( GtkGrid* grid, const char* param_name
 
 static void add_keyscale_curve_right_param( GtkGrid* grid, const char* param_name, ks_keyscale_curve_t* param_ptr, int top)
 {
-    add_operator_enum_param_base(grid, param_name, (uint8_t*)param_ptr,
+    add_operator_enum_param_base(grid, param_name, (u8*)param_ptr,
                                  ks_curve_right_widget_set, ks_curve_right_changed,
                                  gtk_cell_renderer_text_new(), G_TYPE_STRING,
                                  ks_curve_types, KS_KEYSCALE_CURVE_NUM_TYPES,
@@ -264,7 +264,7 @@ static void add_keyscale_curve_right_param( GtkGrid* grid, const char* param_nam
 }
 
 static void add_param( GtkGrid* grid,
-                      const char* param_name, uint8_t* param_ptr,
+                      const char* param_name, u8* param_ptr,
                       gchar*(* format)(GtkScale*, gdouble, gpointer),
                       int max, int top)
 {
@@ -273,7 +273,7 @@ static void add_param( GtkGrid* grid,
                               0, max, top);
 }
 
-static void add_enum_param( GtkGrid* grid, const char* param_name, uint8_t* param_ptr,
+static void add_enum_param( GtkGrid* grid, const char* param_name, u8* param_ptr,
                            void* enum_data[], int list_num, int top)
 {
     add_enum_param_with_label_base(grid, param_name, param_ptr,
@@ -283,7 +283,7 @@ static void add_enum_param( GtkGrid* grid, const char* param_name, uint8_t* para
                                    top);
 }
 
-static void add_enum_pixbuf_param( GtkGrid* grid, const char* param_name, uint8_t* param_ptr,
+static void add_enum_pixbuf_param( GtkGrid* grid, const char* param_name, u8* param_ptr,
                                   void* enum_data[], int list_num, int top)
 {
     add_enum_param_with_label_base(grid, param_name, param_ptr,

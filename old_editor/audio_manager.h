@@ -11,17 +11,17 @@
 
 typedef struct audio_state
 {
-    uint32_t            sampling_rate;
+    u32            sampling_rate;
     ks_synth             fm;
     ks_synth_note        note;
-    int8_t              noteon;
+    i8              noteon;
 
     ALCdevice           *device;
     ALCcontext          *context ;
     ALuint              buffers[4];
     ALuint              source;
     gboolean            is_playing;
-    int16_t             buf[NUM_SAMPLES*NUM_CHANNELS];
+    i16             buf[NUM_SAMPLES*NUM_CHANNELS];
 }audio_state;
 
 

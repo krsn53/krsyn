@@ -2,6 +2,18 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
+typedef int64_t i64;
+typedef int32_t i32;
+typedef int16_t i16;
+typedef int8_t  i8;
+
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t  u8;
+
+
 #ifndef MAX
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -23,23 +35,23 @@
 
 
 // liniar interpolution
-int16_t ks_table_value_li(const int16_t* table, uint32_t phase, uint32_t mask);
+i16 ks_table_value_li(const i16* table, u32 phase, u32 mask);
 
 // sin table value
-int16_t ks_sin(uint32_t phase, bool linear_interpolution);
+i16 ks_sin(u32 phase, bool linear_interpolution);
 
-int16_t ks_saw(uint32_t phase);
+i16 ks_saw(u32 phase);
 
-int16_t ks_triangle(uint32_t phase);
+i16 ks_triangle(u32 phase);
 
-int16_t ks_fake_triangle(uint32_t phase, uint32_t shift);
+i16 ks_fake_triangle(u32 phase, u32 shift);
 
-int16_t ks_noise(uint32_t phase, uint32_t begin);
+i16 ks_noise(u32 phase, u32 begin);
 
-uint32_t ks_notefreq(uint8_t notenumber);
+u32 ks_notefreq(u8 notenumber);
 
-int32_t ks_ratescale(uint8_t index);
+i32 ks_ratescale(u8 index);
 
-int32_t ks_ratescale(uint8_t index);
+i32 ks_ratescale(u8 index);
 
-uint16_t ks_keyscale_curves(uint8_t type, uint8_t index);
+u16 ks_keyscale_curves(u8 type, u8 index);

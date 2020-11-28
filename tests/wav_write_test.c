@@ -16,33 +16,33 @@
 
 struct wave_header
 {
-  uint32_t riff_id;
-  uint32_t chunk_size;
-  uint32_t format;
-  uint32_t format_id;
-  uint32_t fmt_chunk_byte_num;
-  uint16_t tone_format;
-  uint16_t channel_num;
-  uint32_t sampling_freq;
-  uint32_t mean_byte_num_per_sec;
-  uint16_t block_size;
-  uint16_t sample_bits;
-  uint32_t sub_chunk_id;
-  uint32_t sub_chunk_size;
+  u32 riff_id;
+  u32 chunk_size;
+  u32 format;
+  u32 format_id;
+  u32 fmt_chunk_byte_num;
+  u16 tone_format;
+  u16 channel_num;
+  u32 sampling_freq;
+  u32 mean_byte_num_per_sec;
+  u16 block_size;
+  u16 sample_bits;
+  u32 sub_chunk_id;
+  u32 sub_chunk_size;
 };
 
 int main( void )
 {
 
-  int32_t buf_len = OUTPUT_LENGTH;
-  int32_t buf_size = sizeof(int16_t) * buf_len;
-  int16_t *buf = malloc(buf_size);
+  i32 buf_len = OUTPUT_LENGTH;
+  i32 buf_size = sizeof(i16) * buf_len;
+  i16 *buf = malloc(buf_size);
 
 
   {
       ks_tones_data tonebin ={
-          .num_tones=1,
-          .tones=(ks_tone_data[1]){
+          .length=1,
+          .data=(ks_tone_data[1]){
               {
                   .msb=0,
                   .lsb=0,

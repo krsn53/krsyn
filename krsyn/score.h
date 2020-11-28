@@ -19,17 +19,17 @@ typedef struct ks_midi_file ks_midi_file;
 
 typedef struct ks_score_channel{
     ks_tones_bank        *bank;
-    uint8_t             program_number;
+    u8             program_number;
     ks_synth*            program;
 
-    int16_t             panpot_left;
-    int16_t             panpot_right;
-    int32_t             pitchbend;
+    i16             panpot_left;
+    i16             panpot_right;
+    i32             pitchbend;
 }ks_score_channel;
 
 typedef struct ks_score_note_info{
-    uint8_t            note_number;
-    uint8_t            channel;
+    u8            note_number;
+    u8            channel;
 }ks_score_note_info;
 
 typedef struct ks_score_note{
@@ -39,13 +39,13 @@ typedef struct ks_score_note{
 }ks_score_note;
 
 typedef struct ks_score_state{
-    uint16_t            quater_time;
-    uint16_t            frames_per_event;
-    uint16_t            current_frame;
-    uint16_t            polyphony_bits;
+    u16            quater_time;
+    u16            frames_per_event;
+    u16            current_frame;
+    u16            polyphony_bits;
 
-    uint32_t            current_event;
-    uint32_t            current_tick;
+    u32            current_event;
+    u32            current_tick;
 
     ks_score_channel    channels        [KS_NUM_CHANNELS];
     ks_score_note       notes           [];
@@ -53,55 +53,55 @@ typedef struct ks_score_state{
 
 
 typedef struct ks_score_event{
-    uint32_t            delta;
-    uint8_t             status;
-    uint8_t             datas           [3];
+    u32            delta;
+    u8             status;
+    u8             datas           [3];
 }ks_score_event;
 
 typedef struct ks_score_data{
     char                title           [64];
     char                author          [64];
     char                license         [64];
-    uint16_t            resolution;
-    uint32_t            num_events;
+    u16            resolution;
+    u32            num_events;
     const ks_score_event  *events;
 }ks_score_data;
 
 ks_io_decl_custom_func(ks_score_event);
 ks_io_decl_custom_func(ks_score_data);
 
-ks_score_data* ks_score_data_new(uint32_t resolution, uint32_t num_events, const ks_score_event *events);
+ks_score_data* ks_score_data_new(u32 resolution, u32 num_events, const ks_score_event *events);
 void ks_score_data_free(ks_score_data* song);
 
-ks_score_state* ks_score_state_new(uint32_t polyphony_bits);
+ks_score_state* ks_score_state_new(u32 polyphony_bits);
 void ks_score_state_free(ks_score_state* state);
 
-bool ks_score_state_note_on(ks_score_state* state, uint32_t sampling_rate, uint8_t channel_number, ks_score_channel* channel, uint8_t note_number, uint8_t velocity);
-bool ks_score_state_note_off(ks_score_state* state, uint8_t channel_number, ks_score_channel* channel, uint8_t note_number);
-bool ks_score_state_program_change(ks_score_state* state, const ks_tones*tones, ks_score_channel* channel, uint8_t program);
-bool ks_score_state_tempo_change(ks_score_state* state, uint32_t sampling_rate, const ks_score_data* score, const uint8_t* datas);
-bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t type, uint8_t value);
-bool ks_score_channel_set_panpot(ks_score_channel* ch, uint8_t value);
-bool ks_score_channel_set_picthbend(ks_score_channel* ch, uint8_t msb, uint8_t lsb);
-bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones,  ks_score_channel* channel, uint8_t msb, uint8_t lsb);
-bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t msb);
-bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, uint8_t lsb);
+bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel_number, ks_score_channel* channel, u8 note_number, u8 velocity);
+bool ks_score_state_note_off(ks_score_state* state, u8 channel_number, ks_score_channel* channel, u8 note_number);
+bool ks_score_state_program_change(ks_score_state* state, const ks_tones*tones, ks_score_channel* channel, u8 program);
+bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* datas);
+bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 type, u8 value);
+bool ks_score_channel_set_panpot(ks_score_channel* ch, u8 value);
+bool ks_score_channel_set_picthbend(ks_score_channel* ch, u8 msb, u8 lsb);
+bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones,  ks_score_channel* channel, u8 msb, u8 lsb);
+bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 msb);
+bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 lsb);
 
 
-void ks_score_data_render(const ks_score_data* score, uint32_t sampling_rate, ks_score_state *state, const ks_tones *tones, int16_t *buf, uint32_t len);
+void ks_score_data_render(const ks_score_data* score, u32 sampling_rate, ks_score_state *state, const ks_tones *tones, i16 *buf, u32 len);
 
-bool ks_score_data_event_run(const ks_score_data* score, uint32_t sampling_rate, ks_score_state* state,  const ks_tones* tones);
+bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_score_state* state,  const ks_tones* tones);
 
-void ks_score_state_set_default(ks_score_state *state, const ks_tones *tones, uint32_t sampling_rate, uint32_t resolution);
+void ks_score_state_set_default(ks_score_state *state, const ks_tones *tones, u32 sampling_rate, u32 resolution);
 
-ks_score_event* ks_score_events_new(uint32_t num_events, ks_score_event events[]);
+ks_score_event* ks_score_events_new(u32 num_events, ks_score_event events[]);
 void ks_score_events_free(const ks_score_event *events);
 
 bool ks_score_note_is_enabled(const ks_score_note* note);
 
 bool ks_score_note_info_equals(ks_score_note_info i1, ks_score_note_info i2);
-int16_t ks_score_note_info_hash(ks_score_note_info id);
-ks_score_note_info ks_score_note_info_of(uint8_t note_number, uint8_t channel);
+i16 ks_score_note_info_hash(ks_score_note_info id);
+ks_score_note_info ks_score_note_info_of(u8 note_number, u8 channel);
 
 
 ks_score_data* ks_score_data_from_midi(ks_midi_file *file);
