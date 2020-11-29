@@ -49,10 +49,10 @@ typedef bool (* ks_value_func)(ks_io*, const ks_io_funcs*, void*,  u32);
 
 
 typedef union ks_value_ptr{
-    u8 *u8;
-    u16* u16;
-    u32* u32;
-    u64* u64;
+    u8 *u8v;
+    u16* u16v;
+    u32* u32v;
+    u64* u64v;
     const char* str;
     char* ch;
     ks_array_data* arr;

@@ -133,28 +133,28 @@ inline u32 ks_io_value_text(ks_io* io, ks_value_ptr v, ks_value_type type, u32 o
         switch (type) {
         case KS_VALUE_U64:
         {
-            u64 *u = v.u64;
+            u64 *u = v.u64v;
             u+= offset;
             *u=p;
             break;
         }
         case KS_VALUE_U32:
         {
-            u32 *u = v.u32;
+            u32 *u = v.u32v;
             u+= offset;
             *u=p;
             break;
         }
         case KS_VALUE_U16:
         {
-            u16 *u = v.u16;
+            u16 *u = v.u16v;
             u+= offset;
             *u=p;
             break;
         }
         case KS_VALUE_U8:
         {
-            u8* u = v.u8;
+            u8* u = v.u8v;
             u+= offset;
             *u = p;
             break;
@@ -174,7 +174,7 @@ inline u32 ks_io_value_text(ks_io* io, ks_value_ptr v, ks_value_type type, u32 o
         switch (type) {
         case KS_VALUE_U64:
         {
-            u64 *u = v.u64;
+            u64 *u = v.u64v;
             u+= offset;
             p = *u;
             break;
@@ -182,21 +182,21 @@ inline u32 ks_io_value_text(ks_io* io, ks_value_ptr v, ks_value_type type, u32 o
         case KS_VALUE_MAGIC_NUMBER:
         case KS_VALUE_U32:
         {
-            u32 *u = v.u32;
+            u32 *u = v.u32v;
             u+= offset;
             p = *u;
             break;
         }
         case KS_VALUE_U16:
         {
-            u16 *u = v.u16;
+            u16 *u = v.u16v;
             u+= offset;
             p = *u;
             break;
         }
         case KS_VALUE_U8:
         {
-            u8* u = v.u8;
+            u8* u = v.u8v;
             u+= offset;
             p = *u;
             break;
@@ -620,28 +620,28 @@ inline bool ks_io_value_binary(ks_io* io, const ks_io_funcs* funcs, ks_value val
         union {
             u64* u;
             char(* c)[sizeof(u64)];
-        } v = {.u = value.ptr.u64 + offset};
+        } v = {.u = value.ptr.u64v + offset};
         return ks_io_value_bin(io, sizeof(*v.c), *v.c, swap_endian, serialize);
     }
     case KS_VALUE_U32:{
         union {
             u32* u;
             char(* c)[sizeof(u32)];
-        } v = {.u = value.ptr.u32 + offset};
+        } v = {.u = value.ptr.u32v + offset};
         return ks_io_value_bin(io, sizeof(*v.c), *v.c, swap_endian, serialize);
     }
     case KS_VALUE_U16:{
         union {
             u16* u;
             char(* c)[sizeof(u16)];
-        } v = {.u = value.ptr.u16 + offset};
+        } v = {.u = value.ptr.u16v + offset};
         return ks_io_value_bin(io, sizeof(*v.c), *v.c, swap_endian, serialize);
     }
     case KS_VALUE_U8:{
         union {
             u8* u;
             char(* c)[sizeof(u8)];
-        } v = {.u = value.ptr.u8 + offset};
+        } v = {.u = value.ptr.u8v + offset};
         return ks_io_value_bin(io, sizeof(*v.c), *v.c, swap_endian, serialize);
     }
     default:

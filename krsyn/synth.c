@@ -8,7 +8,7 @@
 
 ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
-    ks_fp_arr_u8(phase_coarses.u8);
+    ks_fp_arr_u8(phase_coarses.b);
     ks_fp_arr_u8(phase_fines);
     ks_fp_arr_u8(phase_dets);
 
@@ -28,7 +28,7 @@ ks_io_begin_custom_func(ks_synth_data)
     ks_fp_arr_u8(keyscale_low_depths);
     ks_fp_arr_u8(keyscale_high_depths);
     ks_fp_arr_u8(keyscale_mid_points);
-    ks_fp_arr_u8(keyscale_curve_types.u8);
+    ks_fp_arr_u8(keyscale_curve_types.b);
     ks_fp_arr_u8(lfo_ams_depths);
 
     ks_fp_u8(algorithm);
@@ -64,8 +64,8 @@ void ks_synth_data_set_default(ks_synth_data* data)
     *data = (ks_synth_data){ 0 };
     for(u32 i=0; i<KS_NUM_OPERATORS; i++)
     {
-        data->phase_coarses.b[i].fixed_frequency = false;
-        data->phase_coarses.b[i].value = 2;
+        data->phase_coarses.st[i].fixed_frequency = false;
+        data->phase_coarses.st[i].value = 2;
         data->phase_fines[i] = 0;
         data->phase_dets[i] = 0;
 
@@ -87,8 +87,8 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->keyscale_low_depths[i] = 0;
         data->keyscale_high_depths[i] = 0;
         data->keyscale_mid_points[i] = 69;
-        data->keyscale_curve_types.b[i].left = 0;
-        data->keyscale_curve_types.b[i].right = 0;
+        data->keyscale_curve_types.st[i].left = 0;
+        data->keyscale_curve_types.st[i].right = 0;
 
         data->lfo_ams_depths[i] = 0;
     }
@@ -180,8 +180,8 @@ static inline void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_syn
 {
     for(u32 i=0; i<KS_NUM_OPERATORS; i++)
     {
-        synth->fixed_frequency[i] = calc_fixed_frequency(data->phase_coarses.b[i].fixed_frequency);
-        synth->phase_coarses[i] = calc_phase_coarses(data->phase_coarses.b[i].value);
+        synth->fixed_frequency[i] = calc_fixed_frequency(data->phase_coarses.st[i].fixed_frequency);
+        synth->phase_coarses[i] = calc_phase_coarses(data->phase_coarses.st[i].value);
 
         synth->phase_fines[i] = calc_phase_fines(data->phase_fines[i]);
         synth->phase_dets[i] = calc_phase_dets(data->phase_dets[i]);
@@ -200,8 +200,8 @@ static inline void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_syn
         synth->keyscale_low_depths[i] = calc_keyscale_low_depths(data->keyscale_low_depths[i]);
         synth->keyscale_high_depths[i] = calc_keyscale_high_depths(data->keyscale_high_depths[i]);
         synth->keyscale_mid_points[i] = calc_keyscale_mid_points(data->keyscale_mid_points[i]);
-        synth->keyscale_curve_types[0][i] = calc_keyscale_curve_types_left(data->keyscale_curve_types.b[i].left);
-        synth->keyscale_curve_types[1][i] = calc_keyscale_curve_types_right(data->keyscale_curve_types.b[i].right);
+        synth->keyscale_curve_types[0][i] = calc_keyscale_curve_types_left(data->keyscale_curve_types.st[i].left);
+        synth->keyscale_curve_types[1][i] = calc_keyscale_curve_types_right(data->keyscale_curve_types.st[i].right);
 
         synth->lfo_ams_depths[i] = calc_lfo_ams_depths(data->lfo_ams_depths[i]);
     }

@@ -1,6 +1,6 @@
 #include "logger.h"
 #include "score.h"
-#include "tones.h"
+#include "tone_list.h"
 #include "math.h"
 #include "midi.h"
 
@@ -10,21 +10,21 @@ ks_io_begin_custom_func(ks_score_event)
     ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
     ks_fp_u8(status);
     if(ks_access(status) == 0xff ) {
-        ks_fp_u8(datas[0]);
-        if(ks_access(datas[0]) == 0x51){
-            ks_fp_u8(datas[2]);
-            ks_fp_u8(datas[3]);
+        ks_fp_u8(data[0]);
+        if(ks_access(data[0]) == 0x51){
+            ks_fp_u8(data[2]);
+            ks_fp_u8(data[3]);
         }
     }
      else {
         switch (ks_access(status) >> 4) {
         case 0xc:
         case 0xd:
-            ks_fp_u8(datas[0]);
+            ks_fp_u8(data[0]);
             break;
         default:
-            ks_fp_u8(datas[0]);
-            ks_fp_u8(datas[1]);
+            ks_fp_u8(data[0]);
+            ks_fp_u8(data[1]);
             break;
         }
     }
@@ -122,13 +122,13 @@ bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel
 }
 
 bool ks_score_state_note_off(ks_score_state* state, u8 channel_number, ks_score_channel* channel, u8 note_number){
-    ks_tones_bank* bank = channel->bank;
+    tone_list_bank* bank = channel->bank;
     if(bank == NULL) {
         ks_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
         return false;
     }
 
-    if(ks_tones_bank_is_empty(bank)) {
+    if(tone_list_bank_is_empty(bank)) {
         ks_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
         return false;
     }
@@ -150,7 +150,7 @@ bool ks_score_state_note_off(ks_score_state* state, u8 channel_number, ks_score_
     return true;
 }
 
-bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 program){
+bool ks_score_state_program_change(ks_score_state* state, const tone_list* tones, ks_score_channel* channel, u8 program){
 
     if(channel->bank == NULL) {
         ks_error("Failed to run program_change of channel %d for not set bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
@@ -159,13 +159,13 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones,
 
     ks_synth* p = channel->bank->programs[program];
     if(p == NULL){
-        ks_tones_bank* bank = ks_tones_find_bank(tones, ks_tones_bank_number_of(0,0));
+        tone_list_bank* bank = tone_list_find_bank(tones, tone_list_bank_number_of(0,0));
         if(bank == NULL){
             bank = tones->data;
         }
         p = channel->bank->programs[program];
 
-        ks_tones_bank* begin = tones->data;
+        tone_list_bank* begin = tones->data;
         u32 it=0;
         while(begin[it].programs[program] == NULL){
             it++;
@@ -181,8 +181,8 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tones* tones,
     return true;
 }
 
-bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 msb, u8 lsb){
-    ks_tones_bank *bank = ks_tones_find_bank(tones, ks_tones_bank_number_of(msb, lsb));
+bool ks_score_state_bank_select(ks_score_state* state, const tone_list* tones, ks_score_channel* channel, u8 msb, u8 lsb){
+    tone_list_bank *bank = tone_list_find_bank(tones, tone_list_bank_number_of(msb, lsb));
     if(bank == NULL) {
         ks_error("Failed to run bank_select of channel %d for not found bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
         return false;
@@ -193,7 +193,7 @@ bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones, ks
     return ks_score_state_program_change(state, tones, channel, channel->program_number);
 }
 
-bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 msb){
+bool ks_score_state_bank_select_msb(ks_score_state* state, const tone_list* tones, ks_score_channel* channel, u8 msb){
     u8 lsb = 0;
     if(channel->bank != NULL){
         lsb = channel->bank->bank_number.lsb;
@@ -201,7 +201,7 @@ bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones
     return ks_score_state_bank_select(state, tones, channel, msb, lsb);
 }
 
-bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 lsb){
+bool ks_score_state_bank_select_lsb(ks_score_state* state, const tone_list* tones, ks_score_channel* channel, u8 lsb){
     u8 msb = 0;
     if(channel->bank != NULL){
         msb = channel->bank->bank_number.msb;
@@ -220,14 +220,14 @@ bool ks_score_channel_set_picthbend(ks_score_channel* channel, u8 msb, u8 lsb){
     return true;
 }
 
-bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* datas){
-    const u32 quarter = datas[1] + ks_v(datas[2], KS_QUARTER_TIME_BITS);
+bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* data){
+    const u32 quarter = data[1] + ks_v(data[2], KS_QUARTER_TIME_BITS);
     state->quater_time = quarter;
     state->frames_per_event= calc_frames_per_event(sampling_rate, state->quater_time, score->resolution);
     return true;
 }
 
-bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 type, u8 value){
+bool ks_score_state_control_change(ks_score_state* state, const tone_list* tones, ks_score_channel* channel, u8 type, u8 value){
     switch (type) {
     case 0x00:
         return ks_score_state_bank_select_msb(state, tones, channel, value);
@@ -240,7 +240,7 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones,
 }
 
 
-void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_score_state* state, const ks_tones*tones, i16* buf, u32 len){
+void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_score_state* state, const tone_list*tones, i16* buf, u32 len){
     u32 i=0;
     do{
         u32 frame = MIN(len-i, state->current_frame*2);
@@ -300,17 +300,17 @@ void ks_score_events_free(const ks_score_event* events){
 
 
 
-bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_score_state *state,  const ks_tones *tones){
+bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_score_state *state,  const tone_list *tones){
     do{
         const ks_score_event* msg = &score->events[state->current_event];
         switch (msg->status) {
         case 0xff:
             // tempo
-            if(msg->datas[0] == 0x51){
-                ks_score_state_tempo_change(state, sampling_rate, score, msg->datas);
+            if(msg->data[0] == 0x51){
+                ks_score_state_tempo_change(state, sampling_rate, score, msg->data);
             }
             // end of track
-            else if(msg->datas[0] == 0x2f){
+            else if(msg->data[0] == 0x2f){
                 return true;
             }
 
@@ -322,23 +322,23 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
             switch (msg->status >> 4) {
             // note off
             case 0x8:
-                ks_score_state_note_off(state, channel_num, channel, msg->datas[0]);
+                ks_score_state_note_off(state, channel_num, channel, msg->data[0]);
                 break;
             // note on
             case 0x9:
-                ks_score_state_note_on(state, sampling_rate, channel_num, channel, msg->datas[0], msg->datas[1]);
+                ks_score_state_note_on(state, sampling_rate, channel_num, channel, msg->data[0], msg->data[1]);
                 break;
             // control change
             case 0xb:
-                ks_score_state_control_change(state, tones, channel, msg->datas[0], msg->datas[1]);
+                ks_score_state_control_change(state, tones, channel, msg->data[0], msg->data[1]);
                 break;
             // program change
             case 0xc:
-                ks_score_state_program_change(state, tones, channel, msg->datas[0]);
+                ks_score_state_program_change(state, tones, channel, msg->data[0]);
                 break;
             // pich wheel change
             case 0xe:
-                ks_score_channel_set_picthbend(channel, msg->datas[1], msg->datas[2]);
+                ks_score_channel_set_picthbend(channel, msg->data[1], msg->data[2]);
                 break;
             }
         }
@@ -350,7 +350,7 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
 }
 
 
-void ks_score_state_set_default(ks_score_state* state, const ks_tones* tones, u32 sampling_rate, u32 resolution){
+void ks_score_state_set_default(ks_score_state* state, const tone_list* tones, u32 sampling_rate, u32 resolution){
     state->quater_time = ks_1(KS_QUARTER_TIME_BITS - 1); // 0.5
     state->current_frame = 0;
     state->current_event = 0;
@@ -382,7 +382,7 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
             // tempo
             if(msg->message.meta.type == 0x51){
                 events[ret->num_events].status = 0xff;
-                events[ret->num_events].datas[0] = 0x51;
+                events[ret->num_events].data[0] = 0x51;
                 //msg->message.meta.length == 0x03;
                 const u32 quarter_micro = ks_v((u32)msg->message.meta.data[0], 16) +
                         ks_v((u32)msg->message.meta.data[1], 8) +
@@ -391,8 +391,8 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
                 const u32 quarter_mili_fp8 = quarter_mili * ks_1(KS_QUARTER_TIME_BITS);
                 const u32 quarter_fp8 = quarter_mili_fp8 / 1000;
                 // little endian
-                events[ret->num_events].datas[1] = ks_mask(quarter_fp8, KS_QUARTER_TIME_BITS);
-                events[ret->num_events].datas[2] = quarter_fp8 >> KS_QUARTER_TIME_BITS;
+                events[ret->num_events].data[1] = ks_mask(quarter_fp8, KS_QUARTER_TIME_BITS);
+                events[ret->num_events].data[2] = quarter_fp8 >> KS_QUARTER_TIME_BITS;
 
                 ret->num_events++;
                 events[ret->num_events].delta = msg->time - time;
@@ -401,8 +401,8 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
             // end of track
             else if(msg->message.meta.type == 0x2f){
                 events[ret->num_events].status = 0xff;
-                events[ret->num_events].datas[0] = 0x2f;
-                events[ret->num_events].datas[1] = 0x00;
+                events[ret->num_events].data[0] = 0x2f;
+                events[ret->num_events].data[1] = 0x00;
 
                 ret->num_events++;
                 events[ret->num_events].delta = msg->time - time;
@@ -413,8 +413,8 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
             if(msg->status >= 0x80 &&
                     msg->status < 0xe0){
                 events[ret->num_events].status = msg->status;
-                events[ret->num_events].datas[0] = msg->message.datas[0];
-                events[ret->num_events].datas[1] = msg->message.datas[1];
+                events[ret->num_events].data[0] = msg->message.data[0];
+                events[ret->num_events].data[1] = msg->message.data[1];
 
                 ret->num_events++;
                 events[ret->num_events].delta = msg->time - time;

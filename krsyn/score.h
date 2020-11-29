@@ -13,12 +13,12 @@
 
 #define KS_QUARTER_TIME_BITS    8u
 
-typedef struct ks_tones ks_tones;
-typedef struct ks_tones_bank ks_tones_bank;
+typedef struct tone_list tone_list;
+typedef struct tone_list_bank tone_list_bank;
 typedef struct ks_midi_file ks_midi_file;
 
 typedef struct ks_score_channel{
-    ks_tones_bank        *bank;
+    tone_list_bank        *bank;
     u8             program_number;
     ks_synth*            program;
 
@@ -55,7 +55,7 @@ typedef struct ks_score_state{
 typedef struct ks_score_event{
     u32            delta;
     u8             status;
-    u8             datas           [3];
+    u8             data           [3];
 }ks_score_event;
 
 typedef struct ks_score_data{
@@ -78,21 +78,21 @@ void ks_score_state_free(ks_score_state* state);
 
 bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel_number, ks_score_channel* channel, u8 note_number, u8 velocity);
 bool ks_score_state_note_off(ks_score_state* state, u8 channel_number, ks_score_channel* channel, u8 note_number);
-bool ks_score_state_program_change(ks_score_state* state, const ks_tones*tones, ks_score_channel* channel, u8 program);
-bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* datas);
-bool ks_score_state_control_change(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 type, u8 value);
+bool ks_score_state_program_change(ks_score_state* state, const tone_list*tones, ks_score_channel* channel, u8 program);
+bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* data);
+bool ks_score_state_control_change(ks_score_state* state, const tone_list* tones, ks_score_channel* channel, u8 type, u8 value);
 bool ks_score_channel_set_panpot(ks_score_channel* ch, u8 value);
 bool ks_score_channel_set_picthbend(ks_score_channel* ch, u8 msb, u8 lsb);
-bool ks_score_state_bank_select(ks_score_state* state, const ks_tones* tones,  ks_score_channel* channel, u8 msb, u8 lsb);
-bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 msb);
-bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tones* tones, ks_score_channel* channel, u8 lsb);
+bool ks_score_state_bank_select(ks_score_state* state, const tone_list* tones,  ks_score_channel* channel, u8 msb, u8 lsb);
+bool ks_score_state_bank_select_msb(ks_score_state* state, const tone_list* tones, ks_score_channel* channel, u8 msb);
+bool ks_score_state_bank_select_lsb(ks_score_state* state, const tone_list* tones, ks_score_channel* channel, u8 lsb);
 
 
-void ks_score_data_render(const ks_score_data* score, u32 sampling_rate, ks_score_state *state, const ks_tones *tones, i16 *buf, u32 len);
+void ks_score_data_render(const ks_score_data* score, u32 sampling_rate, ks_score_state *state, const tone_list *tones, i16 *buf, u32 len);
 
-bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_score_state* state,  const ks_tones* tones);
+bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_score_state* state,  const tone_list* tones);
 
-void ks_score_state_set_default(ks_score_state *state, const ks_tones *tones, u32 sampling_rate, u32 resolution);
+void ks_score_state_set_default(ks_score_state *state, const tone_list *tones, u32 sampling_rate, u32 resolution);
 
 ks_score_event* ks_score_events_new(u32 num_events, ks_score_event events[]);
 void ks_score_events_free(const ks_score_event *events);

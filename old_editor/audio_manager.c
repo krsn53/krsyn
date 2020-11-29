@@ -283,9 +283,9 @@ void internal_process(audio_state* state, ALuint buffer){
 
 static gboolean audio_stream_update(gpointer ptr)
 {
-    void **user_datas =ptr;
-    GtkWidget* widget = GTK_WIDGET(user_datas[0]);
-    audio_state* state = (audio_state*)(user_datas[1]);
+    void **user_data =ptr;
+    GtkWidget* widget = GTK_WIDGET(user_data[0]);
+    audio_state* state = (audio_state*)(user_data[1]);
     if (gtk_widget_get_window(widget) == NULL){
         return FALSE;
     }
@@ -365,16 +365,16 @@ GtkWidget* wave_viewer_new(audio_state* state)
 {
     GtkWidget* drawing = gtk_drawing_area_new();
     guint *callback_id = malloc(sizeof(guint));
-    void** user_datas = malloc(sizeof(void*)*3);
+    void** user_data = malloc(sizeof(void*)*3);
 
-    user_datas[0] = drawing;
-    user_datas[1] = state;
-    user_datas[2] = callback_id;
+    user_data[0] = drawing;
+    user_data[1] = state;
+    user_data[2] = callback_id;
     gtk_widget_set_size_request(drawing, 200, 100);
-    *callback_id = g_timeout_add(50, audio_stream_update,  user_datas);
+    *callback_id = g_timeout_add(50, audio_stream_update,  user_data);
 
     g_signal_connect(drawing, "draw", G_CALLBACK(wave_draw), state);
-    g_signal_connect(drawing, "destroy", G_CALLBACK(wave_delete), user_datas);
+    g_signal_connect(drawing, "destroy", G_CALLBACK(wave_delete), user_data);
 
     return drawing;
 }

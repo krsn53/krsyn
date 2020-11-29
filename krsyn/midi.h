@@ -8,7 +8,7 @@ typedef struct ks_midi_event{
     u32 delta;
     u8 status;
     union{
-        u8 datas[2];
+        u8 data[2];
 
         struct{
             u32 length;

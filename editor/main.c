@@ -1,7 +1,7 @@
 #include "raygui_impl.h"
 
-#define SCREEN_WIDTH 535
-#define SCREEN_HEIGHT 600
+#define SCREEN_WIDTH 750
+#define SCREEN_HEIGHT 560
 
 #define SAMPLING_RATE               48000
 #define MAX_SAMPLES_PER_UPDATE      4096
@@ -45,38 +45,108 @@ bool SaveLoadSynth(ks_synth_data* bin, GuiFileDialogState* file_dialog_state, bo
     return ret;
 }
 
+
+static void program_number_increment(u8* msb, u8* lsb, u8* program, u8* note){
+    if(*note < 0x7f){
+        ++ *note;
+        return;
+    }
+
+    if(*note != KS_NOTENUMBER_ALL){
+        *note = 0;
+    }
+
+    if(*program < 0x7f){
+        ++ *program;
+        return;
+    }
+
+    *program = 0;
+    if(*lsb < 0x7f){
+        ++ *lsb;
+        return;
+    }
+
+    *lsb = 0;
+    ++ * msb;
+}
+
+
+static int ks_tone_data_compare1(ks_tone_data* t1, ks_tone_data* t2){
+    int ret = t1->program - t2->program;
+    if(ret != 0) return ret;
+    ret = t1->lsb - t1->lsb;
+    if(ret != 0) return ret;
+    ret = t1->msb - t2->msb;
+    return ret;
+}
+
+static int ks_tone_data_compare2(ks_tone_data* t1, ks_tone_data* t2){
+    int ret = ks_tone_data_compare1(t1, t2);
+    if(ret != 0) return ret;
+    ret = t1->note - t2->note;
+    return ret;
+}
+
+static bool ks_tone_list_exist(const ks_tone_list_data* v, ks_tone_data* tone){
+    for(u32 i=0; i< v->length; i++){
+        int c = ks_tone_data_compare1(&v->data[i], tone);
+        if(c == 0) return true;
+
+    }
+    return false;
+}
+
+static void ks_tone_list_push(ks_tone_list_data* v, i32 *current){
+    if(v->length >= 128*128*128) return;
+    ks_tone_data tone;
+    i32 pos = *current;
+    if(v->length > 0){
+        tone = v->data[pos];
+        program_number_increment(&tone.msb, &tone.lsb, &tone.program, &tone.note);
+        while(ks_tone_list_exist(v, &tone)){
+            program_number_increment(&tone.msb, &tone.lsb, &tone.program, &tone.note);
+        }
+        u32 i=0;
+        for(; i< v->length; i++){
+            int c = ks_tone_data_compare1(&v->data[i], &tone);
+            if(c > 0) {
+                pos = i;
+                break;
+            }
+        }
+        if(i == v->length) pos = i;
+    } else {
+        memset(&tone, 0, sizeof(tone));
+        tone.msb = 0;
+        tone.lsb = 0;
+        tone.program = 0;
+        tone.note = KS_NOTENUMBER_ALL;
+        tone.note = KS_NOTENUMBER_ALL;
+    }
+    strcpy(tone.name, "Noname Tone\0");
+    ks_synth_data_set_default(&tone.synth);
+
+
+    *current = pos;
+    ks_vector_insert(v, pos, tone);
+
+}
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
 int main()
 {
-    ks_tones_data tones_data;
-
-    ks_vector_init(&tones_data);
-    ks_vector_resize(&tones_data, 1);
-
-    ks_synth_data * current = &tones_data.data[0].synth;
+    // editor state
+    ks_tone_list_data tones;
+    int tone_list_scroll=0;
+    i32 current =0;
     ks_synth_data temp;
     ks_synth synth;
     ks_synth_note note = { 0 };
     i8 noteon_number = -1;
     bool dirty = false;
     GuiFileDialogState file_dialog_state;
-
-    ks_synth_data_set_default(&tones_data.data[0].synth);
-    ks_synth_data_set_default(&temp);
-
-    InitAudioDevice();
-
-    AudioStream audiostream = InitAudioStream(SAMPLING_RATE, 16, NUM_CHANNELS);
-    i16 *buf = malloc(sizeof(i16)*MAX_SAMPLES_PER_UPDATE* NUM_CHANNELS);
-    PlayAudioStream(audiostream);
-
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn editor - noname");
-    SetTargetFPS(60);
-
-
-    //--------------------------------------------------------------------------------------
     enum{
         EDIT,
         CONFIRM_NEW,
@@ -84,14 +154,36 @@ int main()
         LOAD_DIALOG,
     }state = EDIT;
 
+    AudioStream audiostream;
+    i16 *buf;
 
-    int margin = 5;
-    int base_width = 100;
+    // editor state init
+    audiostream = InitAudioStream(SAMPLING_RATE, 16, NUM_CHANNELS);
+    buf = malloc(sizeof(i16)*MAX_SAMPLES_PER_UPDATE* NUM_CHANNELS);
+
+    ks_vector_init(&tones);
+    ks_tone_list_push(&tones, &current);
+
+    PlayAudioStream(audiostream);
+
+    ks_synth_data_set_default(&tones.data[0].synth);
+    ks_synth_data_set_default(&temp);
+
+    InitAudioDevice();
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn editor - noname");
+    SetTargetFPS(60);
+
+
+    GuiSetStyle(LISTVIEW, LIST_ITEMS_HEIGHT, 14);
+
+    //--------------------------------------------------------------------------------------
+    const int margin = 3;
+    const int base_width = 100;
     Rectangle base_pos = (Rectangle) { margin, margin, base_width,  GetLineWidth() };
 
     const char* text;
 
-    const float line_width = 10;
+    const float line_width = 12;
     const float step_x = base_width + margin;
     const float step = line_width+ margin;
 
@@ -118,10 +210,10 @@ int main()
         // Update
         //----------------------------------------------------------------------------------
         if(state == EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
-            if(memcmp(current, &temp, sizeof(ks_synth_data)) != 0 ){
+            if(memcmp(&tones.data[current].synth, &temp, sizeof(ks_synth_data)) != 0 ){
                 if(!dirty){
                     dirty = true;
-                    temp = *current;
+                    temp = tones.data[current].synth;
                     SetWindowTitle(FormatText("krsyn editor - %s%s",  file_dialog_state.fileNameText[0] == 0 ?
                                        "noname" : file_dialog_state.fileNameText, "*"));
                 }
@@ -139,11 +231,6 @@ int main()
             Rectangle x_pos = base_pos;
             Rectangle pos = base_pos;
             Rectangle pos2;
-
-
-
-
-
             {
                 pos2 = pos;
                 pos2.height *= 2;
@@ -168,7 +255,7 @@ int main()
                         file_dialog_state.fileDialogActive = true;
                         state = SAVE_DIALOG;
                     } else {
-                        if(SaveLoadSynth(current, &file_dialog_state, true)){
+                        if(SaveLoadSynth(&tones.data[current].synth, &file_dialog_state, true)){
                             dirty = false;
                         }
                     }
@@ -190,6 +277,68 @@ int main()
             x_pos.y += step*2;
 
             pos.x = x_pos.x;
+            // tone list
+            {
+                pos2 = pos;
+                pos2.width = base_width*2;
+                pos2.height = 300;
+                char str[tones.length][40];
+                int start, end;
+
+                GuiListViewGetInfo(pos2, tones.length, tone_list_scroll, &start, &end);
+
+                const char *ptr[tones.length];
+                for(i32 i=start; i< end; i++){
+                    if(tones.data[i].note == KS_NOTENUMBER_ALL){
+                        snprintf(str[i], 48, "0x%02x%02x%4d%4s%20s", tones.data[i].msb, tones.data[i].lsb, tones.data[i].program, "    ", tones.data[i].name);
+                    } else {
+                        snprintf(str[i], 48, "0x%02x%02x%4d%4d%20s", tones.data[i].msb, tones.data[i].lsb, tones.data[i].program, tones.data[i].note, tones.data[i].name);
+                    }
+                }
+
+                for(i32 i=0; i<tones.length; i++){
+                    ptr[i] = str[i];
+                }
+                current = GuiListViewEx(pos2, ptr, tones.length, NULL, &tone_list_scroll, current);
+                if(current < 0){
+                    current = 0;
+                }
+
+                pos.y += pos2.height + margin;
+
+                pos2 = pos;
+                pos2.width = base_width-margin;
+                pos2.height *= 1.5;
+
+                if(GuiButton(pos2, "Add")){
+                    ks_tone_list_push(&tones, &current);
+                    dirty = true;
+                }
+
+                pos2.x += base_width;
+
+                if(tones.length == 1) {
+                    GuiDisable();
+                }
+                if(GuiButton(pos2, "remove")){
+                    ks_vector_remove(&tones, current);
+                    current --;
+                    if(current < 0) current = 0;
+                    dirty = true;
+                }
+                if(tones.length == 1 && state == EDIT){
+                    GuiEnable();
+                }
+
+                pos.y += pos2.height + margin;
+                pos2.y = pos.y;
+
+
+
+                pos.y = x_pos.y;
+            }
+            x_pos.x += step_x*2;
+            pos.x = x_pos.x;
             pos.y += step / 2.0;
 
 
@@ -202,7 +351,7 @@ int main()
                     pos2.height = step * 4;
                     GuiAlignedLabel("Algorithm", pos2, GUI_TEXT_ALIGN_RIGHT);
                     pos2.x += step_x;
-                    current->algorithm = PropertyIntImage(pos2, algorithm_images, current->algorithm, 0, 10, 1);
+                    tones.data[current].synth.algorithm = PropertyIntImage(pos2, algorithm_images, tones.data[current].synth.algorithm, 0, 10, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += pos2.height + margin;
@@ -211,8 +360,8 @@ int main()
                     GuiAlignedLabel("Feedback", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f PI", 2.0f *calc_feedback_level(current->feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
-                    current->feedback_level = PropertyInt(pos, text, current->feedback_level, 0, 255, 1);
+                    text = FormatText("%.3f PI", 2.0f *calc_feedback_level(tones.data[current].synth.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
+                    tones.data[current].synth.feedback_level = PropertyInt(pos, text, tones.data[current].synth.feedback_level, 0, 255, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -221,8 +370,8 @@ int main()
                     GuiAlignedLabel("Panpot", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f", 2.0f * calc_panpot(current->panpot) / ks_1(KS_PANPOT_BITS) - 1.0f);
-                    current->panpot = PropertyInt(pos, text, current->panpot, 0, 127, 1);
+                    text = FormatText("%.3f", 2.0f * calc_panpot(tones.data[current].synth.panpot) / ks_1(KS_PANPOT_BITS) - 1.0f);
+                    tones.data[current].synth.panpot = PropertyInt(pos, text, tones.data[current].synth.panpot, 0, 127, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -234,7 +383,7 @@ int main()
                     pos2.x += step_x;
 
 
-                    current->lfo_wave_type = PropertyIntImage(pos2, lfo_wave_images, current->lfo_wave_type, 0, KS_LFO_NUM_WAVES-1, 1);
+                    tones.data[current].synth.lfo_wave_type = PropertyIntImage(pos2, lfo_wave_images, tones.data[current].synth.lfo_wave_type, 0, KS_LFO_NUM_WAVES-1, 1);
 
                 }
                 pos.x = x_pos.x;
@@ -244,7 +393,7 @@ int main()
                     GuiAlignedLabel("LFO Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    float hz = calc_lfo_freq(current->lfo_freq) / (float)ks_1(KS_FREQUENCY_BITS);
+                    float hz = calc_lfo_freq(tones.data[current].synth.lfo_freq) / (float)ks_1(KS_FREQUENCY_BITS);
                     if(hz >= 1.0f){
                         text = FormatText("%.1f Hz", hz);
                     }
@@ -256,7 +405,7 @@ int main()
                     }
 
 
-                    current->lfo_freq = PropertyInt(pos, text, current->lfo_freq, 0, 255, 1);
+                    tones.data[current].synth.lfo_freq = PropertyInt(pos, text, tones.data[current].synth.lfo_freq, 0, 255, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -265,8 +414,8 @@ int main()
                     GuiAlignedLabel("LFO Initial Phase", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.1f deg", 360.0f *calc_lfo_det(current->lfo_det) / (float)ks_1(KS_PHASE_MAX_BITS));
-                    current->lfo_det = PropertyInt(pos, text, current->lfo_det, 0, 255, 1);
+                    text = FormatText("%.1f deg", 360.0f *calc_lfo_det(tones.data[current].synth.lfo_det) / (float)ks_1(KS_PHASE_MAX_BITS));
+                    tones.data[current].synth.lfo_det = PropertyInt(pos, text, tones.data[current].synth.lfo_det, 0, 255, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -275,8 +424,8 @@ int main()
                     GuiAlignedLabel("LFO FMS", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f %%", 100.0f *calc_lfo_fms_depth(current->lfo_fms_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
-                    current->lfo_fms_depth= PropertyInt(pos, text, current->lfo_fms_depth, 0, 240, 1);
+                    text = FormatText("%.3f %%", 100.0f *calc_lfo_fms_depth(tones.data[current].synth.lfo_fms_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
+                    tones.data[current].synth.lfo_fms_depth= PropertyInt(pos, text, tones.data[current].synth.lfo_fms_depth, 0, 240, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -314,15 +463,15 @@ int main()
                 }
 
                 int samp = SAMPLING_RATE  * 2/ 440.0f;
-                float dx = wave_rec.width / samp;
+                float dx = wave_rec.width * 2.0 / samp;
                 float x = 0.0f;
                 float y =  wave_rec.y + wave_rec.height/2.0f ;
-                float amp = wave_rec.height /2.0f / INT16_MAX;
+                float amp = wave_rec.height * 0.5f /2.0f / INT16_MAX;
 
-                for(int i=0; i<samp; i++){
+                for(int i=0; i<samp; i+=2){
                     float base_x = wave_rec.x + x;
 
-                    DrawLineV((Vector2){base_x, y - buf[i]*amp}, (Vector2){base_x+dx, y - buf[i+1]*amp}, GREEN);
+                    DrawLineV((Vector2){base_x, y - ((i32)buf[i] + buf[i+1])*amp}, (Vector2){base_x+dx, y - ((i32)buf[i+2] + buf[i+3])*amp}, GREEN);
                     x+= dx;
                 }
 
@@ -350,7 +499,7 @@ int main()
                 GuiAlignedLabel("Fixed Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    current->phase_coarses.b[i].fixed_frequency = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "", current->phase_coarses.b[i].fixed_frequency);
+                    tones.data[current].synth.phase_coarses.st[i].fixed_frequency = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "", tones.data[current].synth.phase_coarses.st[i].fixed_frequency);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -359,13 +508,13 @@ int main()
                 GuiAlignedLabel("Phase Coarse", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    if(current->phase_coarses.b[i].fixed_frequency){
-                        text = FormatText("%.1f Hz", ks_notefreq(current->phase_coarses.b[i].value) / (float)ks_1(KS_FREQUENCY_BITS));
+                    if(tones.data[current].synth.phase_coarses.st[i].fixed_frequency){
+                        text = FormatText("%.1f Hz", ks_notefreq(tones.data[current].synth.phase_coarses.st[i].value) / (float)ks_1(KS_FREQUENCY_BITS));
                     }
                     else {
-                        text = FormatText("%.1f", calc_phase_coarses(current->phase_coarses.b[i].value) / 2.0f);
+                        text = FormatText("%.1f", calc_phase_coarses(tones.data[current].synth.phase_coarses.st[i].value) / 2.0f);
                     }
-                    current->phase_coarses.b[i].value = PropertyInt(pos, text, current->phase_coarses.b[i].value, 0, 127, 1);
+                    tones.data[current].synth.phase_coarses.st[i].value = PropertyInt(pos, text, tones.data[current].synth.phase_coarses.st[i].value, 0, 127, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -374,8 +523,8 @@ int main()
                 GuiAlignedLabel("Phase Detune", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.3f", calc_phase_fines(current->phase_fines[i]) / (float)ks_v(2, KS_PHASE_FINE_BITS));
-                    current->phase_fines[i] = PropertyInt(pos, text, current->phase_fines[i], 0, 255, 1);
+                    text = FormatText("%.3f", calc_phase_fines(tones.data[current].synth.phase_fines[i]) / (float)ks_v(2, KS_PHASE_FINE_BITS));
+                    tones.data[current].synth.phase_fines[i] = PropertyInt(pos, text, tones.data[current].synth.phase_fines[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                  pos.x = x_pos.x; pos.y += step;
@@ -384,8 +533,8 @@ int main()
                  GuiAlignedLabel("Inital Phase", pos, GUI_TEXT_ALIGN_RIGHT);
                  pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.1f deg", 360.0*calc_phase_dets(current->phase_dets[i]) / (float)ks_1(KS_PHASE_MAX_BITS));
-                    current->phase_dets[i] = PropertyInt(pos, text, current->phase_dets[i], 0, 255, 1);
+                    text = FormatText("%.1f deg", 360.0*calc_phase_dets(tones.data[current].synth.phase_dets[i]) / (float)ks_1(KS_PHASE_MAX_BITS));
+                    tones.data[current].synth.phase_dets[i] = PropertyInt(pos, text, tones.data[current].synth.phase_dets[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -400,11 +549,11 @@ int main()
                     pos2 = pos;
                     pos2.width /= 2.0f;
                     for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                        text = FormatText("%.3f", calc_envelope_points(current->envelope_points[e][i]) / (float)ks_1(KS_ENVELOPE_BITS));
-                        current->envelope_points[e][i] = PropertyInt(pos2, text, current->envelope_points[e][i], 0, 255, 1);
+                        text = FormatText("%.3f", calc_envelope_points(tones.data[current].synth.envelope_points[e][i]) / (float)ks_1(KS_ENVELOPE_BITS));
+                        tones.data[current].synth.envelope_points[e][i] = PropertyInt(pos2, text, tones.data[current].synth.envelope_points[e][i], 0, 255, 1);
                         pos2.x += step_x / 2.0f;
 
-                        float sec = ks_calc_envelope_times(current->envelope_times[e][i]) / (float)ks_1(16);
+                        float sec = ks_calc_envelope_times(tones.data[current].synth.envelope_times[e][i]) / (float)ks_1(16);
                         if(sec >= 1.0f){
                             text = FormatText("%.1f s", sec);
                         }
@@ -415,7 +564,7 @@ int main()
                             text = FormatText("%.3f ms", sec*1000.0f);
                         }
 
-                        current->envelope_times[e][i] = PropertyInt(pos2, text, current->envelope_times[e][i], 0, 255, 1);
+                        tones.data[current].synth.envelope_times[e][i] = PropertyInt(pos2, text, tones.data[current].synth.envelope_times[e][i], 0, 255, 1);
                         pos2.x += step_x / 2.0f;
                     }
                     pos.x = x_pos.x; pos.y += step;
@@ -425,7 +574,7 @@ int main()
                 GuiAlignedLabel("Release Time", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    float sec = ks_calc_envelope_times(current->envelope_release_times[i]) / (float)ks_1(16);
+                    float sec = ks_calc_envelope_times(tones.data[current].synth.envelope_release_times[i]) / (float)ks_1(16);
                     if(sec >= 1.0f){
                         text = FormatText("%.1f s", sec);
                     }
@@ -436,7 +585,7 @@ int main()
                         text = FormatText("%.3f ms", sec*1000.0f);
                     }
 
-                    current->envelope_release_times[i] = PropertyInt(pos, text, current->envelope_release_times[i], 0, 255, 1);
+                    tones.data[current].synth.envelope_release_times[i] = PropertyInt(pos, text, tones.data[current].synth.envelope_release_times[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -445,8 +594,8 @@ int main()
                GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
                pos.x += step_x;
                for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                   text = FormatText("%.1f %%", 100.0*calc_ratescales(current->ratescales[i]) / (float)ks_1(KS_RATESCALE_BITS));
-                   current->ratescales[i] = PropertyInt(pos, text, current->ratescales[i], 0, 255, 1);
+                   text = FormatText("%.1f %%", 100.0*calc_ratescales(tones.data[current].synth.ratescales[i]) / (float)ks_1(KS_RATESCALE_BITS));
+                   tones.data[current].synth.ratescales[i] = PropertyInt(pos, text, tones.data[current].synth.ratescales[i], 0, 255, 1);
                    pos.x += step_x;
                }
                pos.x = x_pos.x; pos.y += step;
@@ -455,8 +604,8 @@ int main()
                 GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.1f %%", 100*calc_velocity_sens(current->velocity_sens[i]) / (float)ks_1(KS_VELOCITY_SENS_BITS));
-                    current->velocity_sens[i] = PropertyInt(pos, text, current->velocity_sens[i], 0, 255, 1);
+                    text = FormatText("%.1f %%", 100*calc_velocity_sens(tones.data[current].synth.velocity_sens[i]) / (float)ks_1(KS_VELOCITY_SENS_BITS));
+                    tones.data[current].synth.velocity_sens[i] = PropertyInt(pos, text, tones.data[current].synth.velocity_sens[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -468,9 +617,9 @@ int main()
                 pos2.width = (base_width - margin)/ 2.0;
                 pos2.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    current->keyscale_curve_types.b[i].left = PropertyIntImage(pos2, keyscale_left_images, current->keyscale_curve_types.b[i].left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
+                    tones.data[current].synth.keyscale_curve_types.st[i].left = PropertyIntImage(pos2, keyscale_left_images, tones.data[current].synth.keyscale_curve_types.st[i].left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
                     pos2.x += pos2.width  +margin;
-                    current->keyscale_curve_types.b[i].right = PropertyIntImage(pos2, keyscale_right_images, current->keyscale_curve_types.b[i].right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
+                    tones.data[current].synth.keyscale_curve_types.st[i].right = PropertyIntImage(pos2, keyscale_right_images, tones.data[current].synth.keyscale_curve_types.st[i].right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
                     pos2.x +=  pos2.width +margin;
                 }
                 pos.x = x_pos.x; pos.y += (pos2.height + margin);
@@ -483,13 +632,13 @@ int main()
                 pos2.width /=2.0f;
 
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(current->keyscale_low_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
-                    current->keyscale_low_depths[i] = PropertyInt(pos2, text, current->keyscale_low_depths[i], 0, 255, 1);
+                    text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(tones.data[current].synth.keyscale_low_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
+                    tones.data[current].synth.keyscale_low_depths[i] = PropertyInt(pos2, text, tones.data[current].synth.keyscale_low_depths[i], 0, 255, 1);
 
                     pos2.x += step_x/2.0f;
 
-                    text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(current->keyscale_high_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
-                    current->keyscale_high_depths[i] = PropertyInt(pos2, text, current->keyscale_high_depths[i], 0, 255, 1);
+                    text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(tones.data[current].synth.keyscale_high_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
+                    tones.data[current].synth.keyscale_high_depths[i] = PropertyInt(pos2, text, tones.data[current].synth.keyscale_high_depths[i], 0, 255, 1);
                     pos2.x += step_x / 2.0f;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -499,8 +648,8 @@ int main()
                 GuiAlignedLabel("Keyscale Mid Key", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%d", calc_keyscale_mid_points(current->keyscale_mid_points[i]));
-                    current->keyscale_mid_points[i] = PropertyInt(pos, text, current->keyscale_mid_points[i], 0, 127, 1);
+                    text = FormatText("%d", calc_keyscale_mid_points(tones.data[current].synth.keyscale_mid_points[i]));
+                    tones.data[current].synth.keyscale_mid_points[i] = PropertyInt(pos, text, tones.data[current].synth.keyscale_mid_points[i], 0, 127, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -509,8 +658,8 @@ int main()
                 GuiAlignedLabel("LFO AMS", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.1f %%", 100*calc_lfo_ams_depths(current->lfo_ams_depths[i]) / (float)ks_1(KS_LFO_DEPTH_BITS));
-                    current->lfo_ams_depths[i] = PropertyInt(pos, text, current->lfo_ams_depths[i], 0, 255, 1);
+                    text = FormatText("%.1f %%", 100*calc_lfo_ams_depths(tones.data[current].synth.lfo_ams_depths[i]) / (float)ks_1(KS_LFO_DEPTH_BITS));
+                    tones.data[current].synth.lfo_ams_depths[i] = PropertyInt(pos, text, tones.data[current].synth.lfo_ams_depths[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -616,7 +765,7 @@ int main()
                 }
 
                 if(noteon != -1){
-                    ks_synth_set(&synth, SAMPLING_RATE, current);
+                    ks_synth_set(&synth, SAMPLING_RATE, &tones.data[current].synth);
                     ks_synth_note_on(&note, &synth, SAMPLING_RATE, noteon, velocity);
                     noteon_number = noteon;
                 }
@@ -649,8 +798,10 @@ int main()
                 if(run_new){
                     dirty = false;
                     state = EDIT;
-                    ks_synth_data_set_default(current);
-                    temp = *current;
+                    current = 0;
+                    ks_vector_clear(&tones);
+                    ks_tone_list_push(&tones, &current);
+                    temp = tones.data[current].synth;
                     SetWindowTitle(FormatText("krsyn editor - noname"));
                 }
                 break;
@@ -670,7 +821,7 @@ int main()
                             ks_error("Failed to load synth");
 
                         }else {
-                            *current = temp = load;
+                            tones.data[current].synth = temp = load;
                             dirty = false;
                             SetWindowTitle(FormatText("krsyn editor - %s", file_dialog_state.fileNameText));
                         }
@@ -683,7 +834,7 @@ int main()
                 GuiFileDialog(&file_dialog_state, true);
                 if(!file_dialog_state.fileDialogActive){
                     if(file_dialog_state.SelectFilePressed){
-                        if(SaveLoadSynth(current,&file_dialog_state, true)){
+                        if(SaveLoadSynth(&tones.data[current].synth,&file_dialog_state, true)){
                             dirty = false;
                             SetWindowTitle(FormatText("krsyn editor - %s",  file_dialog_state.fileNameText));
                         }

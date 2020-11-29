@@ -40,7 +40,7 @@ int main( void )
 
 
   {
-      ks_tones_data tonebin ={
+      ks_tone_list_data tonebin ={
           .length=1,
           .data=(ks_tone_data[1]){
               {
@@ -51,7 +51,7 @@ int main( void )
                   .name="EPiano",
                   .synth={
                       // Magic number : KSYN
-                      .phase_coarses.u8={
+                      .phase_coarses.b={
                           56,
                           16,
                           12,
@@ -153,7 +153,7 @@ int main( void )
                           69,
                           69,
                       },
-                      .keyscale_curve_types.u8={
+                      .keyscale_curve_types.b={
                           0,
                           0,
                           0,
@@ -179,7 +179,7 @@ int main( void )
 
 
 
-      ks_tones* tones = ks_tones_new_from_data(SAMPLING_RATE, &tonebin);
+      tone_list* tones = tone_list_new_from_data(SAMPLING_RATE, &tonebin);
 
       ks_score_data song = {
           // Magic number : KSCR
@@ -189,153 +189,153 @@ int main( void )
               {
                   .delta=0,
                   .status=255,
-                  .datas[0]=81,
-                  .datas[1]=128,
-                  .datas[2]=0,
+                  .data[0]=81,
+                  .data[1]=128,
+                  .data[2]=0,
               },
               {
                   .delta=0,
                   .status=144,
-                  .datas[0]=60,
-                  .datas[1]=100,
+                  .data[0]=60,
+                  .data[1]=100,
               },
               {
                   .delta=0,
                   .status=144,
-                  .datas[0]=52,
-                  .datas[1]=100,
+                  .data[0]=52,
+                  .data[1]=100,
               },
               {
                   .delta=24,
                   .status=144,
-                  .datas[0]=62,
-                  .datas[1]=100,
+                  .data[0]=62,
+                  .data[1]=100,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=60,
-                  .datas[1]=0,
+                  .data[0]=60,
+                  .data[1]=0,
               },
               {
                   .delta=24,
                   .status=144,
-                  .datas[0]=64,
-                  .datas[1]=100,
+                  .data[0]=64,
+                  .data[1]=100,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=62,
-                  .datas[1]=0,
+                  .data[0]=62,
+                  .data[1]=0,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=52,
-                  .datas[1]=0,
+                  .data[0]=52,
+                  .data[1]=0,
               },
               {
                   .delta=0,
                   .status=144,
-                  .datas[0]=50,
-                  .datas[1]=100,
+                  .data[0]=50,
+                  .data[1]=100,
               },
               {
                   .delta=24,
                   .status=144,
-                  .datas[0]=65,
-                  .datas[1]=100,
+                  .data[0]=65,
+                  .data[1]=100,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=64,
-                  .datas[1]=0,
+                  .data[0]=64,
+                  .data[1]=0,
               },
               {
                   .delta=24,
                   .status=144,
-                  .datas[0]=64,
-                  .datas[1]=100,
+                  .data[0]=64,
+                  .data[1]=100,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=65,
-                  .datas[1]=0,
+                  .data[0]=65,
+                  .data[1]=0,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=50,
-                  .datas[1]=0,
+                  .data[0]=50,
+                  .data[1]=0,
               },
               {
                   .delta=0,
                   .status=144,
-                  .datas[0]=55,
-                  .datas[1]=100,
+                  .data[0]=55,
+                  .data[1]=100,
               },
               {
                   .delta=24,
                   .status=144,
-                  .datas[0]=62,
-                  .datas[1]=100,
+                  .data[0]=62,
+                  .data[1]=100,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=55,
-                  .datas[1]=0,
+                  .data[0]=55,
+                  .data[1]=0,
               },
               {
                   .delta=24,
                   .status=144,
-                  .datas[0]=60,
-                  .datas[1]=100,
+                  .data[0]=60,
+                  .data[1]=100,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=64,
-                  .datas[1]=0,
+                  .data[0]=64,
+                  .data[1]=0,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=62,
-                  .datas[1]=0,
+                  .data[0]=62,
+                  .data[1]=0,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=62,
-                  .datas[1]=0,
+                  .data[0]=62,
+                  .data[1]=0,
               },
               {
                   .delta=0,
                   .status=144,
-                  .datas[0]=48,
-                  .datas[1]=100,
+                  .data[0]=48,
+                  .data[1]=100,
               },
               {
                   .delta=48,
                   .status=128,
-                  .datas[0]=60,
-                  .datas[1]=0,
+                  .data[0]=60,
+                  .data[1]=0,
               },
               {
                   .delta=0,
                   .status=128,
-                  .datas[0]=48,
-                  .datas[1]=0,
+                  .data[0]=48,
+                  .data[1]=0,
               },
               {
                   .delta=24,
                   .status=255,
-                  .datas[0]=47,
-                  .datas[1]=0,
+                  .data[0]=47,
+                  .data[1]=0,
               },
           },
       };
@@ -346,7 +346,7 @@ int main( void )
 
       ks_score_data_render(&song, SAMPLING_RATE, state, tones, buf, buf_len);
 
-      ks_tones_free(tones);
+      tone_list_free(tones);
       ks_score_state_free(state);
   }
 

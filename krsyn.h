@@ -6,7 +6,7 @@ extern "C" {
 
 #include "krsyn/logger.h"
 #include "krsyn/synth.h"
-#include "krsyn/tones.h"
+#include "krsyn/tone_list.h"
 #include "krsyn/score.h"
 
 #ifdef __cplusplus

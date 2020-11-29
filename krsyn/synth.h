@@ -101,8 +101,8 @@ typedef struct ks_synth_data
 {
     //! Frequency magnification of output.
     union {
-        ks_phase_coarse_t       b                   [KS_NUM_OPERATORS];
-        u8                      u8                  [KS_NUM_OPERATORS];
+        ks_phase_coarse_t       st                   [KS_NUM_OPERATORS];
+        u8                      b                    [KS_NUM_OPERATORS];
     }phase_coarses;
 
     //! Detune of frequency. Max value is half octave.
@@ -138,8 +138,8 @@ typedef struct ks_synth_data
 
     //! Kind of keyscale curve. Upper 4 bits are value for the notes which bellow keyscale_mid_points, and lower 4 bits are value for the notes which above keyscale_mid_points.
     union {
-         ks_keyscale_curve_t    b                  [KS_NUM_OPERATORS];
-         u8                u8                      [KS_NUM_OPERATORS];
+         ks_keyscale_curve_t    st                  [KS_NUM_OPERATORS];
+         u8                     b                   [KS_NUM_OPERATORS];
     }keyscale_curve_types;
 
     //! Amplitude modulation sensitivity of LFO.

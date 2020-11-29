@@ -11,7 +11,7 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
 
     if(serialize){
         u8 out[4] = { 0 };
-        u32 in = *prop.value.ptr.u32;
+        u32 in = *prop.value.ptr.u32v;
 
         ks_property p = prop;
         p.value.type = KS_VALUE_U8;
@@ -28,7 +28,7 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
             in >>= 7;
         }
         for(; i>=0; i--){
-            p.value.ptr.u8 =  &out[i];
+            p.value.ptr.u8v =  &out[i];
             if(!ks_io_value(io, funcs, p.value, 0, serialize)) return false;
         }
 
@@ -38,7 +38,7 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
 
         ks_property p = prop;
         p.value.type = KS_VALUE_U8;
-        p.value.ptr.u8 = & in;
+        p.value.ptr.u8v = & in;
         u32 out=0;
 
         do{
@@ -47,7 +47,7 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
             out |= in & 0x7f;
         }while(in >= 0x80);
 
-        *prop.value.ptr.u32 = out;
+        *prop.value.ptr.u32v = out;
 
         return true;
     }
@@ -77,7 +77,7 @@ ks_io_begin_custom_func(ks_midi_event)
        //midi event
         case 0xf1:
         case 0xf3:
-            ks_fp_u8(message.datas[0]);
+            ks_fp_u8(message.data[0]);
             break;
         case 0xf6:
         case 0xf8:
@@ -85,16 +85,16 @@ ks_io_begin_custom_func(ks_midi_event)
         case 0xfb:
         case 0xfc:
         case 0xfe:
-            ks_fp_arr_u8(message.datas);
+            ks_fp_arr_u8(message.data);
             break;
         default:
             switch (ks_access(status) >> 4) {
             case 0xc:
             case 0xd:
-                ks_fp_u8(message.datas[0]);
+                ks_fp_u8(message.data[0]);
                 break;
             default:
-                 ks_fp_arr_u8(message.datas);
+                 ks_fp_arr_u8(message.data);
                 break;
             }
     }
@@ -176,7 +176,7 @@ static int compare_midi_event_time (const void *a, const void *b){
     if(ret != 0) return ret;
     ret = a1->status - b1->status;
     if(ret != 0) return ret;
-    return a1->message.datas[0] - b1->message.datas[1];
+    return a1->message.data[0] - b1->message.data[1];
 }
 
 static u32 calc_delta_bits(u32 val){

@@ -348,8 +348,8 @@ GtkWidget*  operator_params_new(editor_state *state)
     row ++;
 
     // パラメータ一覧表示
-    add_operator_fixed_frequency(grid, "Fixed Frequency", state->data.phase_coarses.b, row++);
-    add_operator_phase_coarse(grid, "Phase Coarse", state->data.phase_coarses.b, row++);
+    add_operator_fixed_frequency(grid, "Fixed Frequency", state->data.phase_coarses.st, row++);
+    add_operator_phase_coarse(grid, "Phase Coarse", state->data.phase_coarses.st, row++);
     add_operator_param(grid, "Phase Fine", state->data.phase_fines, zero_one_format, 255, row++);
     add_operator_param(grid, "Phase Dat", state->data.phase_dets, phase_det_format, 255, row++);
 
@@ -367,8 +367,8 @@ GtkWidget*  operator_params_new(editor_state *state)
     add_operator_param(grid, "KS Low Depth", state->data.keyscale_low_depths, zero_one_format2, 255, row++);
     add_operator_param(grid, "KS High Depth", state->data.keyscale_high_depths, zero_one_format2, 255, row++);
     add_operator_param(grid, "KS Mid Point", state->data.keyscale_mid_points, NULL, 127, row++);
-    add_keyscale_curve_left_param(grid, "KS Type Left", state->data.keyscale_curve_types.b, row++);
-    add_keyscale_curve_right_param(grid, "KS Type Right", state->data.keyscale_curve_types.b, row++);
+    add_keyscale_curve_left_param(grid, "KS Type Left", state->data.keyscale_curve_types.st, row++);
+    add_keyscale_curve_right_param(grid, "KS Type Right", state->data.keyscale_curve_types.st, row++);
 
     add_operator_param(grid, "LFO AMS Depth", state->data.lfo_ams_depths,  zero_one_format2, 255, row++);
 
