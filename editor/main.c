@@ -72,7 +72,7 @@ static void program_number_increment(u8* msb, u8* lsb, u8* program, u8* note){
 }
 
 
-static int ks_tone_data_compare1(ks_tone_data* t1, ks_tone_data* t2){
+static int ks_tone_data_compare1(const ks_tone_data* t1, const ks_tone_data* t2){
     int ret = t1->program - t2->program;
     if(ret != 0) return ret;
     ret = t1->lsb - t1->lsb;
@@ -81,11 +81,13 @@ static int ks_tone_data_compare1(ks_tone_data* t1, ks_tone_data* t2){
     return ret;
 }
 
-static int ks_tone_data_compare2(ks_tone_data* t1, ks_tone_data* t2){
+static int ks_tone_data_compare2(const void* v1, const void* v2){
+    const ks_tone_data* t1 = v1, *t2 = v2;
     int ret = ks_tone_data_compare1(t1, t2);
     if(ret != 0) return ret;
     ret = t1->note - t2->note;
-    return ret;
+    if(ret != 0) return ret;
+    return strcmp(t1->name, t2->name);
 }
 
 static bool ks_tone_list_exist(const ks_tone_list_data* v, ks_tone_data* tone){
@@ -97,41 +99,35 @@ static bool ks_tone_list_exist(const ks_tone_list_data* v, ks_tone_data* tone){
     return false;
 }
 
-static void ks_tone_list_push(ks_tone_list_data* v, i32 *current){
+static void ks_tone_list_sort(ks_tone_list_data* v, i32* current){
+    qsort(v->data, v->length, sizeof(ks_tone_data), ks_tone_data_compare2);
+    *current = 0;
+}
+
+static void ks_tone_list_insert(ks_tone_list_data* v, ks_tone_data d, i32 *current){
     if(v->length >= 128*128*128) return;
+
+    i32 pos = *current + 1;
+
+    *current = pos;
+    ks_vector_insert(v, pos, d);
+}
+
+static void ks_tone_list_insert_empty(ks_tone_list_data*v, i32 *current){
     ks_tone_data tone;
-    i32 pos = *current;
-    if(v->length > 0){
-        tone = v->data[pos];
-        program_number_increment(&tone.msb, &tone.lsb, &tone.program, &tone.note);
-        while(ks_tone_list_exist(v, &tone)){
-            program_number_increment(&tone.msb, &tone.lsb, &tone.program, &tone.note);
-        }
-        u32 i=0;
-        for(; i< v->length; i++){
-            int c = ks_tone_data_compare1(&v->data[i], &tone);
-            if(c > 0) {
-                pos = i;
-                break;
-            }
-        }
-        if(i == v->length) pos = i;
-    } else {
-        memset(&tone, 0, sizeof(tone));
-        tone.msb = 0;
-        tone.lsb = 0;
-        tone.program = 0;
-        tone.note = KS_NOTENUMBER_ALL;
-        tone.note = KS_NOTENUMBER_ALL;
-    }
+    memset(&tone, 0, sizeof(tone));
+    tone.msb = 0;
+    tone.lsb = 0;
+    tone.program = 0;
+    tone.note = KS_NOTENUMBER_ALL;
+    tone.note = KS_NOTENUMBER_ALL;
+
     strcpy(tone.name, "Noname Tone\0");
     ks_synth_data_set_default(&tone.synth);
 
-
-    *current = pos;
-    ks_vector_insert(v, pos, tone);
-
+    ks_tone_list_insert(v, tone, current);
 }
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -140,6 +136,7 @@ int main()
     // editor state
     ks_tone_list_data tones;
     int tone_list_scroll=0;
+    int textbox_focus = -1;
     i32 current =0;
     ks_synth_data temp;
     ks_synth synth;
@@ -162,7 +159,7 @@ int main()
     buf = malloc(sizeof(i16)*MAX_SAMPLES_PER_UPDATE* NUM_CHANNELS);
 
     ks_vector_init(&tones);
-    ks_tone_list_push(&tones, &current);
+    ks_tone_list_insert_empty(&tones, &current);
 
     PlayAudioStream(audiostream);
 
@@ -237,19 +234,19 @@ int main()
                 pos.y += step *2;
 
                 float step_x = pos2.width + margin;
-                if(GuiButton(pos2, "#8#New")){
+                if(GuiLabelButton(pos2, "#8#New")){
                     state = CONFIRM_NEW;
                 }
                 pos2.x += step_x;
 
-                if(GuiButton(pos2, "#1#Open")){
+                if(GuiLabelButton(pos2, "#1#Open")){
                     state = LOAD_DIALOG;
                     strcpy(file_dialog_state.titleText, "Load Synth");
                     file_dialog_state.fileDialogActive = true;
                 }
                 pos2.x += step_x;
 
-                if(GuiButton(pos2, "#2#Save")){
+                if(GuiLabelButton(pos2, "#2#Save")){
                     if(strcmp(file_dialog_state.fileNameText, "") == 0){
                         strcpy(file_dialog_state.titleText, "Save Synth");
                         file_dialog_state.fileDialogActive = true;
@@ -262,14 +259,14 @@ int main()
                 }
                 pos2.x += step_x;
 
-                if(GuiButton(pos2, "#2#Save As")){
+                if(GuiLabelButton(pos2, "#2#Save As")){
                     strcpy(file_dialog_state.titleText, "Save Synth");
                     file_dialog_state.fileDialogActive = true;
                     state = SAVE_DIALOG;
                 }
                 pos2.x += step_x;
 
-                if(GuiButton(pos2, "#159#Exit")){
+                if(GuiLabelButton(pos2, "#159#Exit")){
                     break;
                 }
             }
@@ -308,10 +305,10 @@ int main()
 
                 pos2 = pos;
                 pos2.width = base_width-margin;
-                pos2.height *= 1.5;
+                pos2.height *= 2.0f;
 
                 if(GuiButton(pos2, "Add")){
-                    ks_tone_list_push(&tones, &current);
+                    ks_tone_list_insert_empty(&tones, &current);
                     dirty = true;
                 }
 
@@ -320,7 +317,7 @@ int main()
                 if(tones.length == 1) {
                     GuiDisable();
                 }
-                if(GuiButton(pos2, "remove")){
+                if(GuiButton(pos2, "Remove")){
                     ks_vector_remove(&tones, current);
                     current --;
                     if(current < 0) current = 0;
@@ -330,10 +327,91 @@ int main()
                     GuiEnable();
                 }
 
+                 pos.y += pos2.height + margin;
+                 pos2.y = pos.y;
+                 pos2.x = pos.x;
+
+                 if(GuiButton(pos2, "Copy")){
+                     ks_tone_list_insert(&tones, tones.data[current], &current);
+                     dirty = true;
+                 }
+
+                pos2.x += base_width;
+                if(GuiButton(pos2, "Sort")){
+                    ks_tone_list_sort(&tones, &current);
+                    dirty = true;
+                }
+
                 pos.y += pos2.height + margin;
                 pos2.y = pos.y;
+                pos2.width = pos.width*0.75f - margin;
+                pos2.x = pos.x;
 
+                int id = 0;
+                int tmp_focus = -1;
+                bool mouse_button_pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+                {
+                    GuiAlignedLabel("Name", pos2, GUI_TEXT_ALIGN_RIGHT);
+                    pos2.x += base_width*0.75f;
+                    pos2.width = pos.width * 1.25f;
+                    if(GuiTextBox(pos2, tones.data[current].name, sizeof(tones.data[current].name), textbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    id++;
+                    pos2.x = pos.x;
+                }
+                pos2.y += pos2.height + margin;
+                pos2.x += pos.width*0.75f;
+                {
+                    int tmp_val = tones.data[current].msb;
+                    if(GuiValueBox(pos2, "MSB", &tmp_val, 0, 127, textbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    tones.data[current].msb = tmp_val & 0x7f;
+                    id++;
+                }
+                pos2.y += pos2.height + margin;
+                {
+                    int tmp_val = tones.data[current].lsb;
+                    if(GuiValueBox(pos2, "LSB", &tmp_val, 0, 127, textbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    tones.data[current].lsb = tmp_val & 0x7f;
+                    id++;
+                }
+                pos2.y += pos2.height + margin;
+                {
+                    int tmp_val = tones.data[current].program;
+                    if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, textbox_focus == id)){
+                       if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2))  tmp_focus = id;
+                    }
+                    tones.data[current].program = tmp_val & 0x7f;
+                    id++;
+                }
+                pos2.y += pos2.height + margin;
+                {
+                    bool tmp = tones.data[current].note != KS_NOTENUMBER_ALL;
+                    tmp = GuiCheckBox((Rectangle){pos2.x, pos2.y, base_pos.height, base_pos.height}, "Is Percussion", tmp);
+                    if(!tmp) {
+                        tones.data[current].note = KS_NOTENUMBER_ALL;
+                    } else {
+                        tones.data[current].note &= 0x7f;
+                    }
+                }
+                pos2.y += step;
 
+                if(tones.data[current].note != KS_NOTENUMBER_ALL){
+                    int tmp_val = tones.data[current].note;
+                    if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, textbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    tones.data[current].note = tmp_val & 0x7f;
+                    id++;
+                }
+
+                if(mouse_button_pressed){
+                    textbox_focus = tmp_focus;
+                }
 
                 pos.y = x_pos.y;
             }
@@ -800,7 +878,7 @@ int main()
                     state = EDIT;
                     current = 0;
                     ks_vector_clear(&tones);
-                    ks_tone_list_push(&tones, &current);
+                    ks_tone_list_insert_empty(&tones, &current);
                     temp = tones.data[current].synth;
                     SetWindowTitle(FormatText("krsyn editor - noname"));
                 }

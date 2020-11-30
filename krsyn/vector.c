@@ -52,6 +52,9 @@ inline void ks_vector_resize_base(void**data, u32 type_size, u32*length, u32* ca
 }
 
 inline void ks_vector_insert_base(void**data, u32 type_size, u32*length, u32* capacity, u32 index, const void* obj){
+    if(index >= *length) {
+        return ks_vector_push_base(data, type_size, length, capacity, obj);
+    }
     if(*length +1 > *capacity){
         ks_vector_reserve_base(data, type_size, capacity, *capacity * 2);
     }
