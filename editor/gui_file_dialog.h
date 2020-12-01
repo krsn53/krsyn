@@ -216,10 +216,11 @@ GuiFileDialogState InitGuiFileDialog(int width, int height, const char *initPath
     return state;
 }
 
+
 // Read files in new path
 static void FD_RELOAD_DIRPATH(GuiFileDialogState *state)
 {
-    for (int i = 0; i < state->dirFilesCount; i++) RL_FREE(state->dirFiles[i]);
+    for (int i = 0; i <  MAX_DIRECTORY_FILES; i++) RL_FREE(state->dirFiles[i]);
     RL_FREE(state->dirFiles);
 
     state->dirFiles = ReadDirectoryFiles(state->dirPathText, &state->dirFilesCount, state->filterExt);
@@ -383,7 +384,7 @@ void GuiFileDialog(GuiFileDialogState *state, bool save)
         if (!state->fileDialogActive)
         {
             // RL_FREE dirFiles memory
-            for (int i = 0; i < state->dirFilesCount; i++)
+            for (int i = 0; i <  MAX_DIRECTORY_FILES; i++)
             {
                 RL_FREE(state->dirFiles[i]);
                 RL_FREE(dirFilesIcon[i]);

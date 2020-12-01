@@ -18,7 +18,7 @@ static void emit_update_params_signal(GtkWidget* current)
 static GtkFileFilter* tone_file_filter_new(){
     GtkFileFilter *ret = gtk_file_filter_new();
     gtk_file_filter_add_pattern(ret, "*.ksyb");
-    gtk_file_filter_add_pattern(ret, "*.ksyt");
+    gtk_file_filter_add_pattern(ret, "*.ksyc");
     return ret;
 }
 
@@ -59,7 +59,7 @@ static void new_menu_activate(GtkMenuItem *item, gpointer user_data){
 
 gboolean editor_open_tone(const char* file, editor_state* state)
 {
-    bool text_format = strcmp(file + strlen(file) - 4, "ksyt") == 0;
+    bool text_format = strcmp(file + strlen(file) - 4, "ksyc") == 0;
 
     ks_io* io = ks_io_new();
 
@@ -84,7 +84,7 @@ gboolean editor_save_tone(const char* file, editor_state* state){
     unsigned long len;
 
     len = strlen(file);
-    bool text_format = strcmp(file + len - 4, "ksyt") == 0;
+    bool text_format = strcmp(file + len - 4, "ksyc") == 0;
 
     if(strcmp(file + len - 4, ".ksyb") != 0 && !text_format){
         file_path = g_strdup_printf("%s.ksyb", file);

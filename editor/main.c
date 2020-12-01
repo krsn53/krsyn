@@ -13,12 +13,12 @@
 //------------------------------------------------------------------------------------
 bool SaveLoadSynth(ks_synth_data* bin, GuiFileDialogState* file_dialog_state, bool serialize){
     ks_io * io = ks_io_new();
-    bool text_format = true;
-    if(IsFileExtension(file_dialog_state->fileNameText, ".ksyb")){
-        text_format= false;
+    bool text_format = false;
+    if(IsFileExtension(file_dialog_state->fileNameText, ".ksyc")){
+        text_format= true;
     } else {
-        if(!IsFileExtension(file_dialog_state->fileNameText, ".ksyt")){
-            strcpy(file_dialog_state->fileNameText + strlen(file_dialog_state->fileNameText), ".ksyt");
+        if(!IsFileExtension(file_dialog_state->fileNameText, ".ksyb")){
+            strcpy(file_dialog_state->fileNameText + strlen(file_dialog_state->fileNameText), ".ksyb");
         }
     }
 
@@ -45,6 +45,39 @@ bool SaveLoadSynth(ks_synth_data* bin, GuiFileDialogState* file_dialog_state, bo
     return ret;
 }
 
+bool SaveLoadToneList(ks_tone_list_data* bin, GuiFileDialogState* file_dialog_state, bool serialize){
+    ks_io * io = ks_io_new();
+    bool text_format = false;
+    if(IsFileExtension(file_dialog_state->fileNameText, ".kstc")){
+        text_format= true;
+    } else {
+        if(!IsFileExtension(file_dialog_state->fileNameText, ".kstb")){
+            strcpy(file_dialog_state->fileNameText + strlen(file_dialog_state->fileNameText), ".kstb");
+        }
+    }
+
+    if(!serialize){
+        ks_io_read_file(io, FormatText("%s/%s", file_dialog_state->dirPathText, file_dialog_state->fileNameText));
+    }
+
+    bool ret;
+    if(text_format){
+        ret = serialize ? ks_io_begin_serialize(io, clike, ks_prop_root(*bin, ks_tone_list_data)) :
+                          ks_io_begin_deserialize(io, clike, ks_prop_root(*bin, ks_tone_list_data)) ;
+    }
+     else {
+        ret = serialize ? ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(*bin, ks_tone_list_data)) :
+                          ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*bin, ks_tone_list_data)) ;
+    }
+
+    if(serialize){
+        SaveFileData(FormatText("%s/%s", file_dialog_state->dirPathText, file_dialog_state->fileNameText), io->str->data, io->str->length);
+    }
+
+    ks_io_free(io);
+
+    return ret;
+}
 
 static void program_number_increment(u8* msb, u8* lsb, u8* program, u8* note){
     if(*note < 0x7f){
@@ -128,27 +161,44 @@ static void ks_tone_list_insert_empty(ks_tone_list_data*v, i32 *current){
     ks_tone_list_insert(v, tone, current);
 }
 
+static void mark_dirty(bool* dirty, GuiFileDialogState* file_dialog_state){
+    if(*dirty) return;
+    *dirty = true;
+    SetWindowTitle(FormatText("krsyn editor - %s%s",  file_dialog_state->fileNameText[0] == 0 ?
+                       "noname" : file_dialog_state->fileNameText,  "*"));
+}
+
+static void unmark_dirty(bool* dirty, GuiFileDialogState* file_dialog_state){
+    *dirty = false;
+    SetWindowTitle(FormatText("krsyn editor - %s",  file_dialog_state->fileNameText[0] == 0 ?
+                       "noname" : file_dialog_state->fileNameText));
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
 int main()
 {
+    static const char*  tone_list_ext = ".kstb;.kstc";
+    static const char* synth_ext = ".ksyb;.ksyc";
     // editor state
     ks_tone_list_data tones;
     int tone_list_scroll=0;
     int textbox_focus = -1;
-    i32 current =0;
+    i32 current =-1;
     ks_synth_data temp;
     ks_synth synth;
     ks_synth_note note = { 0 };
     i8 noteon_number = -1;
     bool dirty = false;
-    GuiFileDialogState file_dialog_state;
+    GuiFileDialogState file_dialog_state, file_dialog_state_synth;
     enum{
         EDIT,
         CONFIRM_NEW,
         SAVE_DIALOG,
         LOAD_DIALOG,
+        IMPORT_SYNTH_DIALOG,
+        EXPORT_SYNTH_DIALOG,
     }state = EDIT;
 
     AudioStream audiostream;
@@ -194,9 +244,10 @@ int main()
     SetTextureFilter(keyscale_left_images, FILTER_BILINEAR);
     SetTextureFilter(keyscale_right_images, FILTER_BILINEAR);
 
-    file_dialog_state = InitGuiFileDialog(500, 500, file_dialog_state.dirPathText, false);
-    strcpy(file_dialog_state.filterExt, ".ksyb;.ksyt");
-
+    file_dialog_state = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, file_dialog_state.dirPathText, false);
+    strcpy(file_dialog_state.filterExt, tone_list_ext);
+    file_dialog_state_synth = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, file_dialog_state_synth.dirPathText, false);
+    strcpy(file_dialog_state_synth.filterExt, synth_ext);
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
@@ -209,10 +260,8 @@ int main()
         if(state == EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
             if(memcmp(&tones.data[current].synth, &temp, sizeof(ks_synth_data)) != 0 ){
                 if(!dirty){
-                    dirty = true;
+                    mark_dirty(&dirty, &file_dialog_state);
                     temp = tones.data[current].synth;
-                    SetWindowTitle(FormatText("krsyn editor - %s%s",  file_dialog_state.fileNameText[0] == 0 ?
-                                       "noname" : file_dialog_state.fileNameText, "*"));
                 }
             }
         }
@@ -241,28 +290,43 @@ int main()
 
                 if(GuiLabelButton(pos2, "#1#Open")){
                     state = LOAD_DIALOG;
-                    strcpy(file_dialog_state.titleText, "Load Synth");
+                    strcpy(file_dialog_state.titleText, "Load Tone List");
                     file_dialog_state.fileDialogActive = true;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#2#Save")){
                     if(strcmp(file_dialog_state.fileNameText, "") == 0){
-                        strcpy(file_dialog_state.titleText, "Save Synth");
+                        strcpy(file_dialog_state.titleText, "Save Tone List");
                         file_dialog_state.fileDialogActive = true;
+                        strcpy(file_dialog_state.filterExt, tone_list_ext);
                         state = SAVE_DIALOG;
                     } else {
-                        if(SaveLoadSynth(&tones.data[current].synth, &file_dialog_state, true)){
-                            dirty = false;
+                        if(SaveLoadToneList(&tones, &file_dialog_state, true)){
+                            unmark_dirty(&dirty, &file_dialog_state);
                         }
                     }
                 }
                 pos2.x += step_x;
 
-                if(GuiLabelButton(pos2, "#2#Save As")){
-                    strcpy(file_dialog_state.titleText, "Save Synth");
+                if(GuiLabelButton(pos2, "#3#Save As")){
+                    strcpy(file_dialog_state.titleText, "Save Tone List");
                     file_dialog_state.fileDialogActive = true;
                     state = SAVE_DIALOG;
+                }
+                pos2.x += step_x;
+
+                if(GuiLabelButton(pos2, "#6#Import Synth")){
+                    strcpy(file_dialog_state.titleText, "Import Synth");
+                    file_dialog_state_synth.fileDialogActive = true;
+                    state = IMPORT_SYNTH_DIALOG;
+                }
+                pos2.x += step_x;
+
+                if(GuiLabelButton(pos2, "#7#Export Synth")){
+                    strcpy(file_dialog_state.titleText, "Export Synth");
+                    file_dialog_state_synth.fileDialogActive = true;
+                    state = EXPORT_SYNTH_DIALOG;
                 }
                 pos2.x += step_x;
 
@@ -307,9 +371,16 @@ int main()
                 pos2.width = base_width-margin;
                 pos2.height *= 2.0f;
 
+                if(tones.length >= 128*128*128) {
+                    GuiDisable();
+                }
                 if(GuiButton(pos2, "Add")){
                     ks_tone_list_insert_empty(&tones, &current);
-                    dirty = true;
+                    program_number_increment(&tones.data[current].msb, &tones.data[current].lsb, &tones.data[current].program, &tones.data[current].note);
+                    mark_dirty(&dirty, &file_dialog_state);
+                }
+                if(tones.length >= 128*128*128 && state == EDIT){
+                    GuiEnable();
                 }
 
                 pos2.x += base_width;
@@ -321,7 +392,7 @@ int main()
                     ks_vector_remove(&tones, current);
                     current --;
                     if(current < 0) current = 0;
-                    dirty = true;
+                    mark_dirty(&dirty, &file_dialog_state);
                 }
                 if(tones.length == 1 && state == EDIT){
                     GuiEnable();
@@ -333,13 +404,13 @@ int main()
 
                  if(GuiButton(pos2, "Copy")){
                      ks_tone_list_insert(&tones, tones.data[current], &current);
-                     dirty = true;
+                     mark_dirty(&dirty, &file_dialog_state);
                  }
 
                 pos2.x += base_width;
                 if(GuiButton(pos2, "Sort")){
                     ks_tone_list_sort(&tones, &current);
-                    dirty = true;
+                    mark_dirty(&dirty, &file_dialog_state);
                 }
 
                 pos.y += pos2.height + margin;
@@ -402,7 +473,7 @@ int main()
 
                 if(tones.data[current].note != KS_NOTENUMBER_ALL){
                     int tmp_val = tones.data[current].note;
-                    if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, textbox_focus == id)){
+                    if(GuiValueBox(pos2, "Note Number", &tmp_val, 0, 127, textbox_focus == id)){
                         if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                     }
                     tones.data[current].note = tmp_val & 0x7f;
@@ -874,13 +945,12 @@ int main()
                 }
 
                 if(run_new){
-                    dirty = false;
+                    unmark_dirty(&dirty, &file_dialog_state);
                     state = EDIT;
                     current = 0;
                     ks_vector_clear(&tones);
                     ks_tone_list_insert_empty(&tones, &current);
                     temp = tones.data[current].synth;
-                    SetWindowTitle(FormatText("krsyn editor - noname"));
                 }
                 break;
             }
@@ -894,14 +964,15 @@ int main()
                             break;
                         }
 
-                        ks_synth_data load;
-                        if(!SaveLoadSynth(&load,&file_dialog_state, false)){
+                        ks_tone_list_data load;
+                        if(!SaveLoadToneList(&load,&file_dialog_state, false)){
                             ks_error("Failed to load synth");
 
                         }else {
-                            tones.data[current].synth = temp = load;
-                            dirty = false;
-                            SetWindowTitle(FormatText("krsyn editor - %s", file_dialog_state.fileNameText));
+                            free(tones.data);
+                            tones = load;
+                            current = 0;
+                            unmark_dirty(&dirty, &file_dialog_state);
                         }
                     }
                     state = EDIT;
@@ -912,12 +983,35 @@ int main()
                 GuiFileDialog(&file_dialog_state, true);
                 if(!file_dialog_state.fileDialogActive){
                     if(file_dialog_state.SelectFilePressed){
-                        if(SaveLoadSynth(&tones.data[current].synth,&file_dialog_state, true)){
-                            dirty = false;
-                            SetWindowTitle(FormatText("krsyn editor - %s",  file_dialog_state.fileNameText));
+                        if(SaveLoadToneList(&tones ,&file_dialog_state, true)){
+                            unmark_dirty(&dirty, &file_dialog_state);
                         }
-                        state = EDIT;
                     }
+                    state = EDIT;
+                }
+                break;
+            }
+            case IMPORT_SYNTH_DIALOG:{
+                GuiFileDialog(&file_dialog_state_synth, false);
+                if(!file_dialog_state_synth.fileDialogActive){
+                    if(file_dialog_state_synth.SelectFilePressed){
+                        ks_synth_data tmp;
+                        if(SaveLoadSynth(&tmp ,&file_dialog_state_synth, false)){
+                            mark_dirty(&dirty, &file_dialog_state);
+                            tones.data[current].synth = temp = tmp;
+                        }
+                    }
+                    state = EDIT;
+                }
+                break;
+            }
+            case EXPORT_SYNTH_DIALOG:{
+                GuiFileDialog(&file_dialog_state_synth, true);
+                if(!file_dialog_state_synth.fileDialogActive){
+                    if(file_dialog_state_synth.SelectFilePressed){
+                        SaveLoadSynth(&tones.data[current].synth ,&file_dialog_state_synth, true);
+                    }
+                    state = EDIT;
                 }
                 break;
             }
@@ -937,6 +1031,7 @@ int main()
     CloseAudioDevice();
 
     free(buf);
+    free(tones.data);
 
     return 0;
 }

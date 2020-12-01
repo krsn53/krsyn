@@ -10,12 +10,12 @@ ks_io_begin_custom_func(ks_tone_data)
     ks_fp_u8(lsb);
     ks_fp_u8(program);
     ks_fp_u8(note);
-    ks_fp_str_p(name);
+    ks_fp_str(name);
     ks_fp_obj(synth, ks_synth_data);
 ks_io_end_custom_func(ks_tone_data)
 
 ks_io_begin_custom_func(ks_tone_list_data)
-    ks_magic_number("KTON");
+    ks_magic_number("KSTN");
     ks_fp_u32(length);
     ks_fp_arr_obj_len(data, ks_tone_data, ks_access(length));
     if(!__SERIALIZE) ks_access(capacity) = ks_access(length);
