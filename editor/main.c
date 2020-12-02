@@ -1,7 +1,7 @@
 #include "raygui_impl.h"
 
-#define SCREEN_WIDTH 750
-#define SCREEN_HEIGHT 560
+#define SCREEN_WIDTH 730
+#define SCREEN_HEIGHT 550
 
 #define SAMPLING_RATE               48000
 #define MAX_SAMPLES_PER_UPDATE      4096
@@ -291,14 +291,14 @@ int main()
                 if(GuiLabelButton(pos2, "#1#Open")){
                     state = LOAD_DIALOG;
                     strcpy(file_dialog_state.titleText, "Load Tone List");
-                    file_dialog_state.fileDialogActive = true;
+                    file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#2#Save")){
                     if(strcmp(file_dialog_state.fileNameText, "") == 0){
                         strcpy(file_dialog_state.titleText, "Save Tone List");
-                        file_dialog_state.fileDialogActive = true;
+                        file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
                         strcpy(file_dialog_state.filterExt, tone_list_ext);
                         state = SAVE_DIALOG;
                     } else {
@@ -311,21 +311,21 @@ int main()
 
                 if(GuiLabelButton(pos2, "#3#Save As")){
                     strcpy(file_dialog_state.titleText, "Save Tone List");
-                    file_dialog_state.fileDialogActive = true;
+                    file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
                     state = SAVE_DIALOG;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#6#Import Synth")){
                     strcpy(file_dialog_state.titleText, "Import Synth");
-                    file_dialog_state_synth.fileDialogActive = true;
+                    file_dialog_state_synth.fileDialogActiveState = DIALOG_ACTIVE;
                     state = IMPORT_SYNTH_DIALOG;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#7#Export Synth")){
                     strcpy(file_dialog_state.titleText, "Export Synth");
-                    file_dialog_state_synth.fileDialogActive = true;
+                    file_dialog_state_synth.fileDialogActiveState = DIALOG_ACTIVE;
                     state = EXPORT_SYNTH_DIALOG;
                 }
                 pos2.x += step_x;
@@ -928,18 +928,15 @@ int main()
                 bool run_new = !dirty;
 
                 if(dirty){
-                    Rectangle rec={0,0, 300, 100};
+                    Rectangle rec={0,0, 200, 100};
                     rec.x = (SCREEN_WIDTH - rec.width)/ 2;
                     rec.y = (SCREEN_HEIGHT - rec.height) / 2;
-                    int res = GuiMessageBox(rec, "Confirm", "Save before create a new synth ?" , "Yes;No;Cancel");
+                    int res = GuiMessageBox(rec, "Confirm", "Clear current and Create new ?" , "Yes;No");
 
-                    if(res == 0 || res ==3){
+                    if(res == 0 || res ==2){
                         state = EDIT;
                     }
                     else if(res == 1) {
-                        // save
-                    }
-                    else if(res == 2) {
                         run_new = true;
                     }
                 }
@@ -956,11 +953,11 @@ int main()
             }
             case LOAD_DIALOG:{
                 GuiFileDialog(&file_dialog_state, false);
-                if(!file_dialog_state.fileDialogActive) {
+                if(file_dialog_state.fileDialogActiveState == DIALOG_DEACTIVE) {
                     if(file_dialog_state.SelectFilePressed){
                         if(strcmp(file_dialog_state.fileNameText, "") == 0){
                             file_dialog_state.SelectFilePressed = false;
-                            file_dialog_state.fileDialogActive = true;
+                            file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
                             break;
                         }
 
@@ -972,6 +969,7 @@ int main()
                             free(tones.data);
                             tones = load;
                             current = 0;
+                            temp = tones.data[current].synth;
                             unmark_dirty(&dirty, &file_dialog_state);
                         }
                     }
@@ -981,7 +979,7 @@ int main()
             }
             case SAVE_DIALOG:{
                 GuiFileDialog(&file_dialog_state, true);
-                if(!file_dialog_state.fileDialogActive){
+                if(file_dialog_state.fileDialogActiveState == DIALOG_DEACTIVE){
                     if(file_dialog_state.SelectFilePressed){
                         if(SaveLoadToneList(&tones ,&file_dialog_state, true)){
                             unmark_dirty(&dirty, &file_dialog_state);
@@ -993,7 +991,7 @@ int main()
             }
             case IMPORT_SYNTH_DIALOG:{
                 GuiFileDialog(&file_dialog_state_synth, false);
-                if(!file_dialog_state_synth.fileDialogActive){
+                if(file_dialog_state_synth.fileDialogActiveState == DIALOG_DEACTIVE){
                     if(file_dialog_state_synth.SelectFilePressed){
                         ks_synth_data tmp;
                         if(SaveLoadSynth(&tmp ,&file_dialog_state_synth, false)){
@@ -1007,7 +1005,7 @@ int main()
             }
             case EXPORT_SYNTH_DIALOG:{
                 GuiFileDialog(&file_dialog_state_synth, true);
-                if(!file_dialog_state_synth.fileDialogActive){
+                if(file_dialog_state_synth.fileDialogActiveState == DIALOG_DEACTIVE){
                     if(file_dialog_state_synth.SelectFilePressed){
                         SaveLoadSynth(&tones.data[current].synth ,&file_dialog_state_synth, true);
                     }

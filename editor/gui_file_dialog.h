@@ -50,7 +50,11 @@ typedef struct {
     Vector2 position;
     Vector2 size;
 
-    bool fileDialogActive;
+    enum {
+        DIALOG_DEACTIVE,
+        DIALOG_ACTIVE,
+        DIALOG_SAVE_CONFIRM
+    } fileDialogActiveState;
 
     bool dirPathEditMode;
     char dirPathText[256];
@@ -176,7 +180,7 @@ GuiFileDialogState InitGuiFileDialog(int width, int height, const char *initPath
     state.size.y = height == -1 ? 310 : height;
     state.position = (Vector2){ GetScreenWidth()/2 - state.size.x/2, GetScreenHeight()/2 - state.size.y/2 };
 
-    state.fileDialogActive = active;
+    state.fileDialogActiveState = active ? DIALOG_ACTIVE : DIALOG_DEACTIVE;
     state.dirPathEditMode = false;
 
     state.filesListActive = -1;
@@ -230,7 +234,10 @@ static void FD_RELOAD_DIRPATH(GuiFileDialogState *state)
 // Update and draw file dialog
 void GuiFileDialog(GuiFileDialogState *state, bool save)
 {
-    if (state->fileDialogActive)
+    if(state->fileDialogActiveState == DIALOG_SAVE_CONFIRM){
+        GuiDisable();
+    }
+    if (state->fileDialogActiveState != DIALOG_DEACTIVE)
     {
         const int winWidth = state->size.x;
         const int winHeight = state->size.y;
@@ -261,8 +268,10 @@ void GuiFileDialog(GuiFileDialogState *state, bool save)
         //------------------------------------------------------------------------------------
 
         DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)), 0.85f));
-        state->fileDialogActive = !GuiWindowBox((Rectangle){ state->position.x + 0, state->position.y + 0, winWidth, winHeight }, FormatText("#198#%s", state->titleText));
-
+       int res = GuiWindowBox((Rectangle){ state->position.x + 0, state->position.y + 0, winWidth, winHeight }, FormatText("#198#%s", state->titleText)) ? DIALOG_DEACTIVE : DIALOG_ACTIVE;
+        if( state->fileDialogActiveState == DIALOG_ACTIVE){
+             state->fileDialogActiveState = res;
+        }
         if (GuiButton((Rectangle){ state->position.x + winWidth - 50, state->position.y + 35, 40, 25 }, "< .."))// || IsKeyReleased(KEY_DPAD_Y))
         {
             // Move dir path one level up
@@ -374,14 +383,22 @@ void GuiFileDialog(GuiFileDialogState *state, bool save)
 #endif
         }, "Select");// || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_DPAD_A);
 
-        if (state->SelectFilePressed) state->fileDialogActive = false;
+        if (state->fileDialogActiveState == DIALOG_ACTIVE && state->SelectFilePressed) {
+            if(save && FileExists(FormatText("%s/%s", state->dirPathText, state->fileNameText))){
+                state->fileDialogActiveState = DIALOG_SAVE_CONFIRM;
+            }else {
+                state->fileDialogActiveState = DIALOG_DEACTIVE;
+            }
+        }
 
 #ifdef PLATFORM_DESKTOP
-        if (GuiButton((Rectangle){ state->position.x + winWidth - 120, state->position.y + winHeight - 30, 110, 25 }, "Quit")) state->fileDialogActive = false;
+        if (GuiButton((Rectangle){ state->position.x + winWidth - 120, state->position.y + winHeight - 30, 110, 25 }, "Quit")){
+            state->fileDialogActiveState = DIALOG_DEACTIVE;
+        }
 #endif
 
         // File dialog has been closed!
-        if (!state->fileDialogActive)
+        if (state->fileDialogActiveState == DIALOG_DEACTIVE)
         {
             // RL_FREE dirFiles memory
             for (int i = 0; i <  MAX_DIRECTORY_FILES; i++)
@@ -395,6 +412,20 @@ void GuiFileDialog(GuiFileDialogState *state, bool save)
 
             dirFilesIcon = NULL;
             state->dirFiles = NULL;
+        }
+    }
+
+    if(state->fileDialogActiveState == DIALOG_SAVE_CONFIRM){
+        GuiEnable();
+
+        Rectangle rec={0,0, 250, 100};
+        rec.x = (GetScreenWidth() - rec.width)/ 2;
+        rec.y = (GetScreenHeight() - rec.height) / 2;
+        int res = GuiMessageBox(rec, "Confirm", FormatText("\"%s\" is already exists, Override ?", state->fileNameText) , "Yes;No");
+        if(res == 0 || res == 2){
+            state->fileDialogActiveState = DIALOG_ACTIVE;
+        } else if(res == 1){
+            state->fileDialogActiveState = DIALOG_DEACTIVE;
         }
     }
 }

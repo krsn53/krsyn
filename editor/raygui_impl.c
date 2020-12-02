@@ -11,7 +11,6 @@
 #include "gui_file_dialog.h"
 
 static Vector2 dragBeginPos = {-1.0f, 1.0f};
-static Vector2 prePos = {-1.0f, 1.0f};
 
 
 int GetLineWidth(){
@@ -35,7 +34,6 @@ static inline int UpdateProperty(Rectangle rec, int value, int min_value, int ma
                     value+=step;
                 } else {
                     dragBeginPos = mouse;
-                    prePos = dragBeginPos;
                     *state = GUI_STATE_PRESSED;
                     DisableCursor();
                 }
@@ -63,15 +61,14 @@ static inline int UpdateProperty(Rectangle rec, int value, int min_value, int ma
 
         if(!is_enum){
             if(CheckCollisionPointRec(dragBeginPos, rec) && IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
-                value += (mouse.x - prePos.x)* step;
-                prePos = mouse;
+                value += (mouse.x - dragBeginPos.x)* step;
+                SetMousePosition(dragBeginPos.x, dragBeginPos.y);
 
                 *state = GUI_STATE_PRESSED;
             }
 
             if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
                 dragBeginPos = (Vector2) { -1.0f, -1.0f};
-                prePos = (Vector2) {-1.0f, -1.0f};
                 EnableCursor();
             }
         }
