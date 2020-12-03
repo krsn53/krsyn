@@ -8,36 +8,36 @@
 
 ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
-    ks_fp_arr_u8(phase_coarses.b);
-    ks_fp_arr_u8(phase_fines);
-    ks_fp_arr_u8(phase_dets);
+    ks_arr_u8(phase_coarses.b);
+    ks_arr_u8(phase_fines);
+    ks_arr_u8(phase_dets);
 
-    ks_fp_arr_u8(envelope_points[0]);
-    ks_fp_arr_u8(envelope_points[1]);
-    ks_fp_arr_u8(envelope_points[2]);
-    ks_fp_arr_u8(envelope_points[3]);
+    ks_arr_u8(envelope_points[0]);
+    ks_arr_u8(envelope_points[1]);
+    ks_arr_u8(envelope_points[2]);
+    ks_arr_u8(envelope_points[3]);
 
-    ks_fp_arr_u8(envelope_times[0]);
-    ks_fp_arr_u8(envelope_times[1]);
-    ks_fp_arr_u8(envelope_times[2]);
-    ks_fp_arr_u8(envelope_times[3]);
+    ks_arr_u8(envelope_times[0]);
+    ks_arr_u8(envelope_times[1]);
+    ks_arr_u8(envelope_times[2]);
+    ks_arr_u8(envelope_times[3]);
 
-    ks_fp_arr_u8(envelope_release_times);
-    ks_fp_arr_u8(velocity_sens);
-    ks_fp_arr_u8(ratescales);
-    ks_fp_arr_u8(keyscale_low_depths);
-    ks_fp_arr_u8(keyscale_high_depths);
-    ks_fp_arr_u8(keyscale_mid_points);
-    ks_fp_arr_u8(keyscale_curve_types.b);
-    ks_fp_arr_u8(lfo_ams_depths);
+    ks_arr_u8(envelope_release_times);
+    ks_arr_u8(velocity_sens);
+    ks_arr_u8(ratescales);
+    ks_arr_u8(keyscale_low_depths);
+    ks_arr_u8(keyscale_high_depths);
+    ks_arr_u8(keyscale_mid_points);
+    ks_arr_u8(keyscale_curve_types.b);
+    ks_arr_u8(lfo_ams_depths);
 
-    ks_fp_u8(algorithm);
-    ks_fp_u8(feedback_level);
-    ks_fp_u8(panpot);
-    ks_fp_u8(lfo_wave_type);
-    ks_fp_u8(lfo_freq);
-    ks_fp_u8(lfo_det);
-    ks_fp_u8(lfo_fms_depth);
+    ks_u8(algorithm);
+    ks_u8(feedback_level);
+    ks_u8(panpot);
+    ks_u8(lfo_wave_type);
+    ks_u8(lfo_freq);
+    ks_u8(lfo_det);
+    ks_u8(lfo_fms_depth);
 ks_io_end_custom_func(ks_synth_data)
 
 

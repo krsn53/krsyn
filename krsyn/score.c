@@ -8,23 +8,23 @@
 
 ks_io_begin_custom_func(ks_score_event)
     ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
-    ks_fp_u8(status);
+    ks_u8(status);
     if(ks_access(status) == 0xff ) {
-        ks_fp_u8(data[0]);
+        ks_u8(data[0]);
         if(ks_access(data[0]) == 0x51){
-            ks_fp_u8(data[2]);
-            ks_fp_u8(data[3]);
+            ks_u8(data[2]);
+            ks_u8(data[3]);
         }
     }
      else {
         switch (ks_access(status) >> 4) {
         case 0xc:
         case 0xd:
-            ks_fp_u8(data[0]);
+            ks_u8(data[0]);
             break;
         default:
-            ks_fp_u8(data[0]);
-            ks_fp_u8(data[1]);
+            ks_u8(data[0]);
+            ks_u8(data[1]);
             break;
         }
     }
@@ -32,12 +32,12 @@ ks_io_end_custom_func(ks_score_event)
 
 ks_io_begin_custom_func(ks_score_data)
     ks_magic_number("KSCR");
-    ks_fp_str(title);
-    ks_fp_str(author);
-    ks_fp_str(license);
-    ks_fp_u16(resolution);
-    ks_fp_u32(num_events);
-    ks_fp_arr_obj_len(events, ks_score_event, ks_access(num_events));
+    ks_str(title);
+    ks_str(author);
+    ks_str(license);
+    ks_u16(resolution);
+    ks_u32(num_events);
+    ks_arr_obj_len(events, ks_score_event, ks_access(num_events));
 ks_io_end_custom_func(ks_score_data)
 
 inline bool ks_score_note_is_enabled(const ks_score_note* note){

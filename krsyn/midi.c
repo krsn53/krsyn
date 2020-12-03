@@ -6,7 +6,7 @@
 bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_property prop,  bool serialize){
     if(funcs != &binary_big_endian_serializer && funcs != & binary_big_endian_deserializer &&
             funcs != &binary_little_endian_serializer && funcs != &binary_little_endian_deserializer) {
-        return ks_io_fixed_property(io, funcs, prop, serialize);
+        return ks_io_property(io, funcs, prop, serialize);
     }
 
     if(serialize){
@@ -56,28 +56,28 @@ bool ks_io_variable_length_number(ks_io* io, const ks_io_funcs*funcs, ks_propert
 ks_io_begin_custom_func(ks_midi_event)
     ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
 
-    ks_fp_u8(status);
+    ks_u8(status);
     switch (ks_access(status)) {
         //SysEx
         case 0xf0:
         case 0xf7:
             ks_func_prop(ks_io_variable_length_number, ks_prop_u32(message.sys_ex.length));
-            ks_fp_arr_u8_len(message.sys_ex.data, ks_access(message.sys_ex.length));
+            ks_arr_u8_len(message.sys_ex.data, ks_access(message.sys_ex.length));
             break;
        //meta
         case 0xff:
-            ks_fp_u8(message.meta.type);
+            ks_u8(message.meta.type);
             ks_func_prop(ks_io_variable_length_number, ks_prop_u32(message.meta.length));
             if(ks_access(message.meta.type) > 0x00 && ks_access(message.meta.type) < 0x08){
-                ks_fp_str_len(message.meta.data, ks_access(message.meta.length));
+                ks_str_len(message.meta.data, ks_access(message.meta.length));
             } else {
-                 ks_fp_arr_u8_len(message.meta.data, ks_access(message.meta.length));
+                 ks_arr_u8_len(message.meta.data, ks_access(message.meta.length));
             }
             break;
        //midi event
         case 0xf1:
         case 0xf3:
-            ks_fp_u8(message.data[0]);
+            ks_u8(message.data[0]);
             break;
         case 0xf6:
         case 0xf8:
@@ -85,16 +85,16 @@ ks_io_begin_custom_func(ks_midi_event)
         case 0xfb:
         case 0xfc:
         case 0xfe:
-            ks_fp_arr_u8(message.data);
+            ks_arr_u8(message.data);
             break;
         default:
             switch (ks_access(status) >> 4) {
             case 0xc:
             case 0xd:
-                ks_fp_u8(message.data[0]);
+                ks_u8(message.data[0]);
                 break;
             default:
-                 ks_fp_arr_u8(message.data);
+                 ks_arr_u8(message.data);
                 break;
             }
     }
@@ -102,10 +102,10 @@ ks_io_end_custom_func(ks_midi_event)
 
 ks_io_begin_custom_func(ks_midi_track)
     ks_magic_number("MTrk");
-    ks_fp_u32(length);
+    ks_u32(length);
 
     if(__SERIALIZE){
-        ks_fp_arr_obj_len(events, ks_midi_event, ks_access(num_events));
+        ks_arr_obj_len(events, ks_midi_event, ks_access(num_events));
     } else {
         ks_access(num_events) = 0;
 
@@ -114,7 +114,7 @@ ks_io_begin_custom_func(ks_midi_track)
         if(!ks_io_array_begin(__IO, __FUNCS, &arr, 0, __SERIALIZE)) return false;
 
         for(;;){
-            __FUNCS->array_elem(__IO, __FUNCS, &arr, ks_access(num_events));
+            __FUNCS->array_elem(__IO, __FUNCS, arr, ks_access(num_events));
             if(ks_access(events)[ks_access(num_events)].status == 0xff &&
                 ks_access(events)[ks_access(num_events)].message.meta.type == 0x2f){
                 ks_access(num_events) ++;
@@ -131,11 +131,11 @@ ks_io_end_custom_func(ks_midi_track)
 
 ks_io_begin_custom_func(ks_midi_file)
     ks_magic_number("MThd");
-    ks_fp_u32(length);
-    ks_fp_u16(format);
-    ks_fp_u16(num_tracks);
-    ks_fp_u16(resolution);
-    ks_fp_arr_obj_len(tracks, ks_midi_track, ks_access(num_tracks));
+    ks_u32(length);
+    ks_u16(format);
+    ks_u16(num_tracks);
+    ks_u16(resolution);
+    ks_arr_obj_len(tracks, ks_midi_track, ks_access(num_tracks));
 
     ks_midi_file_calc_time(__OBJECT);
 ks_io_end_custom_func(ks_midi_file)

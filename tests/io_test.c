@@ -48,17 +48,17 @@ bool Test_equals(const Test *t1, const Test *t2){
 ks_io_decl_custom_func(Test);
 
 ks_io_begin_custom_func(Test)
-    ks_fp_u8(u8);
-    ks_fp_u16(u16);
-    ks_fp_u32(u32);
-    ks_fp_u64(u64);
-    ks_fp_arr_u8(arr);
-    ks_fp_u32(len_arr);
-    ks_fp_arr_u16_len(arr_len, ks_access(len_arr));
-    ks_fp_str(strarr);
-    ks_fp_str_p(str_p);
-    ks_fp_u32(len_str);
-    ks_fp_str_len(str_len, ks_access(len_str));
+    ks_u8(u8);
+    ks_u16(u16);
+    ks_u32(u32);
+    ks_u64(u64);
+    ks_arr_u8(arr);
+    ks_u32(len_arr);
+    ks_arr_u16_len(arr_len, ks_access(len_arr));
+    ks_str(strarr);
+    ks_str_p(str_p);
+    ks_u32(len_str);
+    ks_str_len(str_len, ks_access(len_str));
 ks_io_end_custom_func(Test)
 
 int main ( void ){
