@@ -308,10 +308,7 @@ static inline u32 keyscale(const ks_synth *synth, u8 notenum, u32 i)
         {
             return keyscale_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i);
         }
-        else
-        {
-            return 1<< KS_KEYSCALE_CURVE_BITS;
-        }
+        return 1<< KS_KEYSCALE_CURVE_BITS;
     }
 
     if(synth->keyscale_curve_types[1][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[0][i] > KS_KEYSCALE_CURVE_ED )

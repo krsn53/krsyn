@@ -28,11 +28,6 @@ void uint8_spin_value_changed(GtkSpinButton* spin, gpointer user)
     *data = gtk_spin_button_get_value(spin);
 }
 
-void u8oggled(GtkToggleButton* tog, gpointer user)
-{
-    u8*data= (u8*) tog;
-    *data = (u8)gtk_toggle_button_get_active(tog);
-}
 
 
 GtkWidget* check_param_new(u8* param_ptr,
