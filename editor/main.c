@@ -1,7 +1,7 @@
 #include "raygui_impl.h"
 
 #define SCREEN_WIDTH 730
-#define SCREEN_HEIGHT 550
+#define SCREEN_HEIGHT 565
 
 #define SAMPLING_RATE               48000
 #define MAX_SAMPLES_PER_UPDATE      4096
@@ -668,6 +668,16 @@ int main()
                 }
                 pos.x = x_pos.x; pos.y += step;
 
+                // phase tune
+                GuiAlignedLabel("Phase Tune", pos, GUI_TEXT_ALIGN_RIGHT);
+                pos.x += step_x;
+                for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
+                    text = FormatText("%d", (tones.data[current].synth.phase_tunes[i] - 127));
+                    tones.data[current].synth.phase_tunes[i] = PropertyInt(pos, text, tones.data[current].synth.phase_tunes[i], 0, 255, 1);
+                    pos.x += step_x;
+                }
+                 pos.x = x_pos.x; pos.y += step;
+
                 // phase fine
                 GuiAlignedLabel("Phase Fine", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
@@ -942,11 +952,12 @@ int main()
                 }
 
                 if(run_new){
+                    strcpy(file_dialog_state.fileNameText, "");
                     unmark_dirty(&dirty, &file_dialog_state);
                     state = EDIT;
-                    current = 0;
                     ks_vector_clear(&tones);
                     ks_tone_list_insert_empty(&tones, &current);
+                    current = 0;
                     temp = tones.data[current].synth;
                 }
                 break;

@@ -9,6 +9,7 @@
 ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
     ks_arr_u8(phase_coarses.b);
+    ks_arr_u8(phase_tunes);
     ks_arr_u8(phase_fines);
     ks_arr_u8(phase_dets);
 
@@ -67,6 +68,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->phase_coarses.st[i].fixed_frequency = false;
         data->phase_coarses.st[i].value = 2;
         data->phase_fines[i] = 0;
+        data->phase_tunes[i] = 127;
         data->phase_dets[i] = 0;
 
         data->envelope_times[0][i] = 0;
@@ -150,6 +152,7 @@ inline i64 ks_linear(u8 val, i32 MIN, i32 MAX)
     return ret;
 }
 
+
 // min <= val <= max
 inline i64 ks_linear2(u8 val, i32 MIN, i32 MAX)
 {
@@ -183,7 +186,7 @@ static inline void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_syn
         synth->fixed_frequency[i] = calc_fixed_frequency(data->phase_coarses.st[i].fixed_frequency);
         synth->phase_coarses[i] = calc_phase_coarses(data->phase_coarses.st[i].value);
 
-        synth->phase_fines[i] = calc_phase_fines(data->phase_fines[i]);
+        synth->phase_fines[i] = calc_phase_fines(data->phase_fines[i]) + calc_phase_tunes(data->phase_tunes[i]) ;
         synth->phase_dets[i] = calc_phase_dets(data->phase_dets[i]);
 
         for(u32 e=0; e < KS_ENVELOPE_NUM_POINTS; e++)

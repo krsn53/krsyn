@@ -15,12 +15,12 @@
 #define KS_PHASE_COARSE_BITS            1u
 #define KS_PHASE_FINE_BITS              (KS_FREQUENCY_BITS - 1u)
 
-#define KS_NUM_OPERATORS                 4u
+#define KS_NUM_OPERATORS                4u
 
-#define KS_ENVELOPE_BITS                 30u
-#define KS_ENVELOPE_NUM_POINTS            4u
+#define KS_ENVELOPE_BITS                30u
+#define KS_ENVELOPE_NUM_POINTS          4u
 
-#define KS_RATESCALE_BITS                      16u
+#define KS_RATESCALE_BITS               16u
 #define KS_VELOCITY_SENS_BITS           16u
 
 #define KS_KEYSCALE_CURVE_TABLE_BITS    7u
@@ -93,6 +93,7 @@ typedef struct ks_keyscale_curve_t
     u8 right : 4;
 }ks_keyscale_curve_t;
 
+
 /**
  * @struct ks_synth_data
  * @brief Binary data of the synthesizer.
@@ -101,40 +102,43 @@ typedef struct ks_synth_data
 {
     //! Frequency magnification of output.
     union {
-        ks_phase_coarse_t       st                   [KS_NUM_OPERATORS];
-        u8                      b                    [KS_NUM_OPERATORS];
+        ks_phase_coarse_t       st                  [KS_NUM_OPERATORS];
+        u8                      b                   [KS_NUM_OPERATORS];
     }phase_coarses;
 
-    //! Fine of frequency. Max value is half octave.
-    u8                     phase_fines               [KS_NUM_OPERATORS];
+    //! Fine of frequency. Max value is 0.5 coarse.
+    u8                      phase_fines             [KS_NUM_OPERATORS];
+
+    //! Detune of frequency.
+    u8                      phase_tunes             [KS_NUM_OPERATORS];
 
     //! Initial phase of wave. Every time note on event arises, phase is initialized.
-    u8                     phase_dets                [KS_NUM_OPERATORS];
+    u8                      phase_dets              [KS_NUM_OPERATORS];
 
     //! Amplitude at envelope_times. i.e. Total Level and Sustain Level.
-    u8                     envelope_points          [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u8                      envelope_points         [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
     //! Time until becoming envelop_points. i.e. Attack Time and Sustain Time.
-    u8                     envelope_times           [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u8                      envelope_times          [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
     //! Release time. Time until amplitude becoming zero from note off.
-    u8                     envelope_release_times   [KS_NUM_OPERATORS];
+    u8                      envelope_release_times  [KS_NUM_OPERATORS];
 
 
     //! Volume change degree by velocity.
-    u8                     velocity_sens           [KS_NUM_OPERATORS];
+    u8                      velocity_sens           [KS_NUM_OPERATORS];
 
     //! Envelope speed change degree by note number.
-    u8                     ratescales              [KS_NUM_OPERATORS];
+    u8                      ratescales              [KS_NUM_OPERATORS];
 
     //! Volume change degree by note number when note number is smaller than keyscale_mid_points.
-    u8                     keyscale_low_depths     [KS_NUM_OPERATORS];
+    u8                      keyscale_low_depths     [KS_NUM_OPERATORS];
 
     //! Volume change degree by note number when note number is bigger than keyscale_mid_points.
-    u8                     keyscale_high_depths    [KS_NUM_OPERATORS];
+    u8                      keyscale_high_depths    [KS_NUM_OPERATORS];
 
     //! Note number which is center of keyscale.
-    u8                     keyscale_mid_points     [KS_NUM_OPERATORS];
+    u8                      keyscale_mid_points     [KS_NUM_OPERATORS];
 
     //! Kind of keyscale curve. Upper 4 bits are value for the notes which bellow keyscale_mid_points, and lower 4 bits are value for the notes which above keyscale_mid_points.
     union {
@@ -143,7 +147,7 @@ typedef struct ks_synth_data
     }keyscale_curve_types;
 
     //! Amplitude modulation sensitivity of LFO.
-    u8                     lfo_ams_depths          [KS_NUM_OPERATORS]; // zero : disabled
+    u8                     lfo_ams_depths           [KS_NUM_OPERATORS]; // zero : disabled
 
 
     //! algorithm number, 0~7:FM 8~10:PCM
@@ -345,16 +349,18 @@ i16 ks_apply_panpot(i16 in, i16 pan);
 
 #define ks_linear_i (i32)ks_linear
 #define ks_linear_u (u32)ks_linear
+#define ks_linear_u16 (u32)ks_linear16
 #define ks_linear2_i (i32)ks_linear2
 #define ks_linear2_u (u32)ks_linear2
 
 #define calc_fixed_frequency(value)                     (value)
 #define calc_phase_coarses(value)                       (value)
 #define calc_phase_fines(value)                         ks_linear_u(value, 0, 1 << (KS_PHASE_FINE_BITS))
+#define calc_phase_tunes(value)                         ks_linear_u(value-127, 0, 1<< (KS_PHASE_FINE_BITS - 6))
 #define calc_phase_dets(value)                          ks_linear_u(value, 0, ks_1(KS_PHASE_MAX_BITS))
-#define calc_envelope_points(value)                      ks_linear2_i(value, 0, 1 << KS_ENVELOPE_BITS)
-#define calc_envelope_samples(smp_freq, value)           ks_calc_envelope_samples(smp_freq, value)
-#define calc_envelope_release_samples(smp_freq, value)   calc_envelope_samples(smp_ferq,value)
+#define calc_envelope_points(value)                     ks_linear2_i(value, 0, 1 << KS_ENVELOPE_BITS)
+#define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, value)
+#define calc_envelope_release_samples(smp_freq, value)  calc_envelope_samples(smp_ferq,value)
 #define calc_velocity_sens(value)                       ks_linear2_u(value, 0, 1 << KS_VELOCITY_SENS_BITS)
 #define calc_ratescales(value)                          ks_linear2_u(value, 0, 1 << KS_RATESCALE_BITS)
 #define calc_keyscale_low_depths(value)                 ks_linear2_u(value, 0, 1 << KS_KEYSCALE_DEPTH_BITS)

@@ -397,6 +397,21 @@ void GuiFileDialog(GuiFileDialogState *state, bool save)
         }
 #endif
 
+        if(state->fileDialogActiveState == DIALOG_SAVE_CONFIRM){
+            GuiEnable();
+
+            Rectangle rec={0,0, 250, 100};
+            rec.x = (GetScreenWidth() - rec.width)/ 2;
+            rec.y = (GetScreenHeight() - rec.height) / 2;
+            int mes = GuiMessageBox(rec, "Confirm", FormatText("\"%s\" is already exists, Override ?", state->fileNameText) , "Yes;No");
+            if(mes == 0 || mes == 2){
+                state->fileDialogActiveState = DIALOG_ACTIVE;
+            } else if(mes == 1){
+                state->SelectFilePressed = true;
+                state->fileDialogActiveState = DIALOG_DEACTIVE;
+            }
+        }
+
         // File dialog has been closed!
         if (state->fileDialogActiveState == DIALOG_DEACTIVE)
         {
@@ -412,20 +427,6 @@ void GuiFileDialog(GuiFileDialogState *state, bool save)
 
             dirFilesIcon = NULL;
             state->dirFiles = NULL;
-        }
-    }
-
-    if(state->fileDialogActiveState == DIALOG_SAVE_CONFIRM){
-        GuiEnable();
-
-        Rectangle rec={0,0, 250, 100};
-        rec.x = (GetScreenWidth() - rec.width)/ 2;
-        rec.y = (GetScreenHeight() - rec.height) / 2;
-        int res = GuiMessageBox(rec, "Confirm", FormatText("\"%s\" is already exists, Override ?", state->fileNameText) , "Yes;No");
-        if(res == 0 || res == 2){
-            state->fileDialogActiveState = DIALOG_ACTIVE;
-        } else if(res == 1){
-            state->fileDialogActiveState = DIALOG_DEACTIVE;
         }
     }
 }
