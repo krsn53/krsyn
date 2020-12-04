@@ -105,11 +105,11 @@ typedef struct ks_synth_data
         u8                      b                    [KS_NUM_OPERATORS];
     }phase_coarses;
 
-    //! Detune of frequency. Max value is half octave.
-    u8                     phase_fines             [KS_NUM_OPERATORS];
+    //! Fine of frequency. Max value is half octave.
+    u8                     phase_fines               [KS_NUM_OPERATORS];
 
     //! Initial phase of wave. Every time note on event arises, phase is initialized.
-    u8                     phase_dets              [KS_NUM_OPERATORS];
+    u8                     phase_dets                [KS_NUM_OPERATORS];
 
     //! Amplitude at envelope_times. i.e. Total Level and Sustain Level.
     u8                     envelope_points          [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
@@ -177,35 +177,35 @@ ks_synth_data;
 */
 typedef struct ks_synth
 {
-    u32    phase_coarses           [KS_NUM_OPERATORS];
-    u32    phase_fines             [KS_NUM_OPERATORS];
-    u32    phase_dets              [KS_NUM_OPERATORS];
+    u32         phase_coarses           [KS_NUM_OPERATORS];
+    u32         phase_fines             [KS_NUM_OPERATORS];
+    u32         phase_dets              [KS_NUM_OPERATORS];
 
-    i32     envelope_points          [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32    envelope_samples         [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32    envelope_release_samples [KS_NUM_OPERATORS];
+    i32         envelope_points          [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u32         envelope_samples         [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u32         envelope_release_samples [KS_NUM_OPERATORS];
 
-    u32    velocity_sens           [KS_NUM_OPERATORS];
-    u32    lfo_ams_depths          [KS_NUM_OPERATORS];
+    u32         velocity_sens           [KS_NUM_OPERATORS];
+    u32         lfo_ams_depths          [KS_NUM_OPERATORS];
 
-    u32    ratescales              [KS_NUM_OPERATORS];
-    u32    keyscale_low_depths     [KS_NUM_OPERATORS];
-    u32    keyscale_high_depths    [KS_NUM_OPERATORS];
-    u8     keyscale_mid_points     [KS_NUM_OPERATORS];
-    u8     keyscale_curve_types    [2][KS_NUM_OPERATORS];
+    u32         ratescales              [KS_NUM_OPERATORS];
+    u32         keyscale_low_depths     [KS_NUM_OPERATORS];
+    u32         keyscale_high_depths    [KS_NUM_OPERATORS];
+    u8          keyscale_mid_points     [KS_NUM_OPERATORS];
+    u8          keyscale_curve_types    [2][KS_NUM_OPERATORS];
 
-    u8     algorithm;
-    u32    feedback_level;
+    u8          algorithm;
+    u32         feedback_level;
 
-    i16     panpot_left,            panpot_right;
+    i16         panpot_left,            panpot_right;
 
-    u32    lfo_det;
-    u32    lfo_freq;
-    u32    lfo_fms_depth;
+    u32         lfo_det;
+    u32         lfo_freq;
+    u32         lfo_fms_depth;
 
     bool        fixed_frequency         [KS_NUM_OPERATORS];
 
-    u8     lfo_wave_type;
+    u8          lfo_wave_type;
     bool        lfo_ams_enabled;
     bool        lfo_fms_enabled;
 }

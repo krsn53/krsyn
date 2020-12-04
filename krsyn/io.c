@@ -485,16 +485,19 @@ inline bool ks_io_object_clike(ks_io* io, const ks_io_funcs* funcs,  ks_object_d
     ks_object_func objfunc = serialize ? obj.serializer : obj.deserializer;
     if(serialize){
         if(! objfunc(io, funcs, obj.data, offset)) return false;
+        io->indent--;
+        if(! (ks_io_print_indent(io,'\t', serialize)&&
+              ks_io_fixed_text(io, "}", serialize)  &&
+              (io->indent == 0 || ks_io_fixed_text(io, ",", serialize))  &&
+              ks_io_print_endl(io, serialize))) return false;
     } else {
-        while( objfunc(io, funcs, obj.data, offset));
+        for(;;){
+            objfunc(io, funcs, obj.data, offset);
+            if( ks_io_text(io, "}", serialize)) break;
+        }
+        io->indent--;
+        if(!(io->indent == 0 || ks_io_fixed_text(io, ",", serialize))) return false;
     }
-
-    io->indent--;
-
-    if(! (ks_io_print_indent(io,'\t', serialize)&&
-          ks_io_fixed_text(io, "}", serialize)  &&
-          (io->indent == 0 || ks_io_fixed_text(io, ",", serialize))  &&
-          ks_io_print_endl(io, serialize))) return false;
 
     return true;
 }

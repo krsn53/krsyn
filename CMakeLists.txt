@@ -21,5 +21,4 @@ add_subdirectory(tests)
 
 if(NOT ${CMAKE_C_COMPILER_ID} STREQUAL TinyCC)
     add_subdirectory(editor)
-    add_subdirectory(old_editor)
 endif()

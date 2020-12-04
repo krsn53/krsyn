@@ -669,7 +669,7 @@ int main()
                 pos.x = x_pos.x; pos.y += step;
 
                 // phase fine
-                GuiAlignedLabel("Phase Detune", pos, GUI_TEXT_ALIGN_RIGHT);
+                GuiAlignedLabel("Phase Fine", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                     text = FormatText("%.3f", calc_phase_fines(tones.data[current].synth.phase_fines[i]) / (float)ks_v(2, KS_PHASE_FINE_BITS));
