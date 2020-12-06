@@ -4,3 +4,6 @@
 [submodule "editor/raygui"]
 	path = editor/raygui
 	url = https://github.com/raysan5/raygui.git
+[submodule "editor/rtmidi"]
+	path = editor/rtmidi
+	url = https://github.com/thestk/rtmidi.git
