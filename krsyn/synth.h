@@ -13,7 +13,7 @@
 #define KS_FREQUENCY_BITS               16u
 
 #define KS_PHASE_COARSE_BITS            1u
-#define KS_PHASE_FINE_BITS              (KS_FREQUENCY_BITS - 1u)
+#define KS_PHASE_FINE_BITS              (KS_FREQUENCY_BITS)
 
 #define KS_NUM_OPERATORS                4u
 

@@ -742,7 +742,12 @@ int main()
                 GuiAlignedLabel("Phase Fine", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.3f", calc_phase_fines(tones_data.data[current].synth.phase_fines[i]) / (float)ks_v(2, KS_PHASE_FINE_BITS));
+                    if(tones_data.data[current].synth.phase_coarses.st[i].fixed_frequency){
+                        text = FormatText("%.1f cent", calc_phase_fines(tones_data.data[current].synth.phase_fines[i]) * 100.0f / (float)ks_1(KS_PHASE_FINE_BITS));
+                    }
+                    else {
+                        text = FormatText("x %.3f", calc_phase_fines(tones_data.data[current].synth.phase_fines[i]) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
+                    }
                     tones_data.data[current].synth.phase_fines[i] = PropertyInt(pos, text, tones_data.data[current].synth.phase_fines[i], 0, 255, 1);
                     pos.x += step_x;
                 }

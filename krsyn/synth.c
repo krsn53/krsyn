@@ -249,8 +249,8 @@ static inline u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 fine)
 {
     u32 freq = ks_notefreq(coarse);
     u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
-    // 5461 ~ 2^16 * 1/12
-    u32 freq_rate = ks_1(KS_FREQUENCY_BITS) + ((5461 * fine) >> KS_PHASE_FINE_BITS);
+    // 2730 ~ 2^15 * 1/12
+    u32 freq_rate = ks_1(KS_FREQUENCY_BITS) + ((2730 * fine) >> KS_PHASE_FINE_BITS);
 
     freq_11 *= freq_rate;
     freq_11 >>= KS_FREQUENCY_BITS;
