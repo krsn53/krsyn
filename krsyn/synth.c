@@ -109,6 +109,9 @@ inline  bool  ks_synth_note_is_enabled     (const ks_synth_note* note){
     return *((u32*)note->envelope_states) != 0;
 }
 
+inline bool ks_synth_note_is_on (const ks_synth_note* note){
+    return (*((u32*)note->envelope_states) & 0x0f0f0f0f) != 0;
+}
 
 inline u32 ks_exp_u(u8 val, u32 base, int num_v_bit)
 {
@@ -247,7 +250,7 @@ static inline u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 fine)
     u32 freq = ks_notefreq(coarse);
     u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
     // 5461 ~ 2^16 * 1/12
-    u32 freq_rate = (1<<KS_FREQUENCY_BITS) + ((5461 * fine) >> KS_PHASE_FINE_BITS);
+    u32 freq_rate = ks_1(KS_FREQUENCY_BITS) + ((5461 * fine) >> KS_PHASE_FINE_BITS);
 
     freq_11 *= freq_rate;
     freq_11 >>= KS_FREQUENCY_BITS;
@@ -261,7 +264,7 @@ static inline u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 fin
     u32 freq = ks_notefreq(notenum);
     u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
 
-    u32 freq_rate = (coarse << (KS_FREQUENCY_BITS - KS_PHASE_COARSE_BITS)) + fine;
+    u32 freq_rate = (coarse * (ks_1(KS_FREQUENCY_BITS) + fine)) >> KS_PHASE_COARSE_BITS;
     u64 delta_11 = (u32)(freq_11 / sampling_rate);
     delta_11 *= freq_rate;
     delta_11 >>= KS_FREQUENCY_BITS;

@@ -62,7 +62,7 @@ typedef enum ks_envelope_state
     KS_ENVELOPE_OFF = 0,
     KS_ENVELOPE_ON,
     KS_ENVELOPE_SUSTAINED,
-    KS_ENVELOPE_RELEASED,
+    KS_ENVELOPE_RELEASED = 0x80,
 }ks_synth_envelope_state;
 
 /**
@@ -329,9 +329,16 @@ void                        ks_synth_note_off                (ks_synth_note* not
 /**
  * @brief ks_synth_note_is_enabled
  * @param note Checked note which is enabled or not
- * @return
+ * @return True if note is enabled, otherwise false
  */
 bool                        ks_synth_note_is_enabled        (const ks_synth_note* note);
+
+/**
+ * @brief ks_synth_note_is_on
+ * @param note Checked note which is on or not
+ * @return True if note is on, otherwise false
+ */
+bool                        ks_synth_note_is_on             (const ks_synth_note* note);
 
 u32 ks_exp_u(u8 val, u32 base, int num_v_bit);
 
@@ -356,7 +363,7 @@ i16 ks_apply_panpot(i16 in, i16 pan);
 #define calc_fixed_frequency(value)                     (value)
 #define calc_phase_coarses(value)                       (value)
 #define calc_phase_fines(value)                         ks_linear_u(value, 0, 1 << (KS_PHASE_FINE_BITS))
-#define calc_phase_tunes(value)                         ks_linear_u(value-127, 0, 1<< (KS_PHASE_FINE_BITS - 6))
+#define calc_phase_tunes(value)                         ks_linear_u(value-127, 0, 1<< (KS_PHASE_FINE_BITS - 8))
 #define calc_phase_dets(value)                          ks_linear_u(value, 0, ks_1(KS_PHASE_MAX_BITS))
 #define calc_envelope_points(value)                     ks_linear2_i(value, 0, 1 << KS_ENVELOPE_BITS)
 #define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, value)

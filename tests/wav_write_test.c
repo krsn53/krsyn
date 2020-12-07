@@ -179,13 +179,13 @@ int main( void )
 
 
 
-      tone_list* tones = tone_list_new_from_data(SAMPLING_RATE, &tonebin);
+      ks_tone_list* tones = ks_tone_list_new_from_data(SAMPLING_RATE, &tonebin);
 
       ks_score_data song = {
           // Magic number : KSCR
           .resolution=48,
-          .num_events=25,
-          .events=(ks_score_event[25]){
+          .length=25,
+          .data=(ks_score_event[25]){
               {
                   .delta=0,
                   .status=255,
@@ -346,7 +346,7 @@ int main( void )
 
       ks_score_data_render(&song, SAMPLING_RATE, state, tones, buf, buf_len);
 
-      tone_list_free(tones);
+      ks_tone_list_free(tones);
       ks_score_state_free(state);
   }
 
