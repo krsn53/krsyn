@@ -2,11 +2,11 @@
 
 
 inline int ks_log(int type, const char* message, ...){
-    const unsigned pre_size = sizeof ("krsyn Warning : ");
+    const unsigned pre_size = sizeof ("Warning : ");
     const char* pre[NUM_KS_LOG_TYPES]= {
-        "krsyn Info    : ",
-        "krsyn Warning : ",
-        "krsyn Error   : "
+        "Info    : ",
+        "Warning : ",
+        "Error   : "
     };
     char str[pre_size + strlen(message) + 3];
     snprintf(str, sizeof(str), "%s%s\n",pre[type], message);

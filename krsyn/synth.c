@@ -308,20 +308,29 @@ static inline u32 keyscale_value(const ks_synth *synth, u32 table_index, u32 tab
 
 static inline u32 keyscale(const ks_synth *synth, u8 notenum, u32 i)
 {
-    if(notenum < synth->keyscale_mid_points[i])
-    {
-        if(synth->keyscale_curve_types[0][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[1][i] > KS_KEYSCALE_CURVE_ED)
-        {
+    // <-- |mid point|
+    if(notenum < synth->keyscale_mid_points[i]){
+        // volume up until mid point
+        if(synth->keyscale_curve_types[0][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[1][i] > KS_KEYSCALE_CURVE_ED ){
             return keyscale_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i);
         }
-        return 1<< KS_KEYSCALE_CURVE_BITS;
+        else {
+            return 1<< KS_KEYSCALE_CURVE_BITS;
+        }
+    }
+    // |mid point| -->
+    else {
+        // volume down from after mid point
+        if(synth->keyscale_curve_types[1][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[0][i] > KS_KEYSCALE_CURVE_ED){
+            return keyscale_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i);
+        }
+        else {
+             return 1<< KS_KEYSCALE_CURVE_BITS;
+        }
     }
 
-    if(synth->keyscale_curve_types[1][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[0][i] > KS_KEYSCALE_CURVE_ED )
-    {
-        return keyscale_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i);
-    }
-    return 1<< KS_KEYSCALE_CURVE_BITS;
+
+    return 0;
 }
 
 void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_rate, u8 notenum, u8 vel)

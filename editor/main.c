@@ -905,7 +905,8 @@ int main()
 
                 Rectangle noteon_rec;
 
-                i8 noteon = -1;
+                i8 noteonw = -1;
+                i8 noteonb = -1;
                 i8 velocity = 0;
 
                 float x = pos.x;
@@ -918,8 +919,6 @@ int main()
                     Rectangle recs[12];
 
                     for(int k=0; k<7; k++){
-
-
                         Rectangle rec = recs[whites[k]] = (Rectangle){x2, y, white.x, white.y};
                         i8 n = whites[k]+ offset;
 
@@ -960,8 +959,8 @@ int main()
                             i8 n = offset + whites[i];
                             Vector2 mouse = GetMousePosition();
                             if(CheckCollisionPointRec(mouse, recs[whites[i]]) ){
-                                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && noteon_number != n){
-                                        noteon = n;
+                                if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
+                                        noteonw = n;
                                         velocity = (mouse.y - recs[whites[i]].y)*127 / recs[whites[i]].height;
                                 }
                             }
@@ -970,8 +969,8 @@ int main()
                             i8 n = offset + blacks[i];
                             Vector2 mouse = GetMousePosition();
                             if(CheckCollisionPointRec(mouse, recs[blacks[i]]) ){
-                                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && noteon_number != n){
-                                        noteon = n;
+                                if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
+                                        noteonb = n;
                                         velocity = (mouse.y - recs[blacks[i]].y)*127 / recs[blacks[i]].height;
                                 }
                             }
@@ -988,10 +987,18 @@ int main()
                     noteon_number = -1;
                 }
 
-                if(noteon != -1){
-                    ks_synth_set(&synth, SAMPLING_RATE, &tones_data.data[current].synth);
-                    ks_synth_note_on(&note, &synth, SAMPLING_RATE, noteon, velocity);
-                    noteon_number = noteon;
+                if(noteonb != -1){
+                    if(noteonb != noteon_number){
+                        ks_synth_set(&synth, SAMPLING_RATE, &tones_data.data[current].synth);
+                        ks_synth_note_on(&note, &synth, SAMPLING_RATE, noteonb, velocity);
+                        noteon_number = noteonb;
+                    }
+                } else if(noteonw != -1){
+                    if(noteonw != noteon_number){
+                        ks_synth_set(&synth, SAMPLING_RATE, &tones_data.data[current].synth);
+                        ks_synth_note_on(&note, &synth, SAMPLING_RATE, noteonw, velocity);
+                        noteon_number = noteonw;
+                    }
                 }
             }
 

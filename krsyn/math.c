@@ -635,7 +635,7 @@ static const u16 keyscale_curves[4][128] = {
 
 
 // liniar interpolution
-inline i16 ks_table_value_li(const i16* table, u32 phase, u32 mask)
+static inline i16 ks_table_value_li(const i16* table, u32 phase, u32 mask)
 {
     u32 index_m = phase >> KS_PHASE_BITS;
     u32 index_b = (index_m + 1);
@@ -680,8 +680,8 @@ inline u32 ks_notefreq(u8 notenumber){
     return note_freq[notenumber];
 }
 
-inline i32 ks_ratescale(u8 index){
-    return ratescale[index];
+inline i32 ks_ratescale(u8 notenumber){
+    return ratescale[notenumber];
 }
 
 inline u16 ks_keyscale_curves(u8 type, u8 index){
