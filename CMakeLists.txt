@@ -10,10 +10,12 @@ function(add_resources target dir)
     endforeach()
 endfunction()
 
+add_subdirectory(ksio)
 
-file(GLOB krsyn_src *.c *.h krsyn/*.c krsyn/*.h)
+file(GLOB krsyn_src krsyn/*.c krsyn/*.h)
 add_library(krsyn ${krsyn_src})
-
+target_include_directories(krsyn PUBLIC .)
+target_link_libraries(krsyn ksio)
 set_property(TARGET krsyn PROPERTY C_STANDARD 11)
 
 add_subdirectory(tests)

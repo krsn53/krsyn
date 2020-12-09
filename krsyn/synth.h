@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "./math.h"
-#include "./io.h"
+#include <ksio/io.h>
 
 #define KS_PHASE_COARSE_BITS            1u
 #define KS_PHASE_FINE_BITS              (KS_FREQUENCY_BITS)

@@ -7,3 +7,6 @@
 [submodule "editor/rtmidi"]
 	path = editor/rtmidi
 	url = https://github.com/thestk/rtmidi.git
+[submodule "ksio"]
+	path = ksio
+	url = git@github.com:krsn53/ksio.git

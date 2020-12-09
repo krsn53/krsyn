@@ -2,9 +2,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
+#include <ksio/io.h>
 #include "./synth.h"
-#include "./io.h"
+
 
 #define KS_NUM_MAX_PROGRAMS          128u
 #define KS_NOTENUMBER_ALL            0x80

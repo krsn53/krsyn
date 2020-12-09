@@ -1,7 +1,7 @@
 #include "tone_list.h"
 #include "./synth.h"
-#include "./logger.h"
-#include "./vector.h"
+#include <ksio/logger.h>
+#include <ksio/vector.h>
 
 #include <stdlib.h>
 #include <stdarg.h>

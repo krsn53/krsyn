@@ -13,7 +13,7 @@
 #define MIDIIN_POLYPHONY_BITS       6
 
 #include "../krsyn.h"
-#include "../krsyn/vector.h"
+#include <ksio/vector.h>
 
 //------------------------------------------------------------------------------------
 bool SaveLoadSynth(ks_synth_data* bin, GuiFileDialogState* file_dialog_state, bool serialize){
