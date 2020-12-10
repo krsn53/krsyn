@@ -1,5 +1,10 @@
 #include "raygui_impl.h"
+#ifdef PLATFORM_DESKTOP
 #include "rtmidi/rtmidi_c.h"
+#endif
+#ifdef PLATFORM_WEB
+#include <emscripten/emscripten.h>
+#endif
 
 #define SCREEN_WIDTH 730
 #define SCREEN_HEIGHT 565
@@ -130,32 +135,28 @@ static void update_tone_list(ks_tone_list ** ptr, ks_tone_list_data* dat, ks_sco
     score_state->current_tick = tmptick;
 }
 
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
-int main()
-{
-    static const char* tone_list_ext = ".kstb;.kstc";
-    static const char* synth_ext = ".ksyb;.ksyc";
-    //--------------------------------------------------------------------------------------
-    // editor state
+static const int update_per_events = MIDIIN_RESOLUTION / 0.5f * SAMPLES_PER_UPDATE / SAMPLING_RATE;
+static const char* tone_list_ext=".kstb;.kstc";
+static const char* synth_ext = ".ksyb;.ksyc";
+
+typedef struct editor_state{
     ks_tone_list_data tones_data;
     ks_tone_list *tones;
-    int tone_list_scroll=0;
-    int textbox_focus = -1;
-    i32 current =-1;
-    ks_synth_data temp;
+    int tone_list_scroll;
+    int texsbox_focus;
+    i32 current_tone_index;
+    ks_synth_data temp_synth;
     ks_synth synth;
-    ks_synth_note note = { 0 };
+    ks_synth_note note;
 
     ks_score_data score;
     ks_score_state* score_state;
-    const int update_per_events = MIDIIN_RESOLUTION / 0.5f * SAMPLES_PER_UPDATE / SAMPLING_RATE;
+
     double  time;
     ks_score_event events[KS_NUM_CHANNELS * 2 * update_per_events];
-
-    i8 noteon_number = -1;
-    bool dirty = false;
+    const char* dialog_message;
+    i8 noteon_number;
+    bool dirty;
     GuiFileDialogState file_dialog_state, file_dialog_state_synth;
     enum{
         EDIT,
@@ -165,57 +166,129 @@ int main()
         IMPORT_SYNTH_DIALOG,
         EXPORT_SYNTH_DIALOG,
         SETTINGS,
-    }state = EDIT;
+        ERROR_DIALOG,
+    }display_mode;
 
     AudioStream audiostream;
     i16 *buf;
-
+#ifdef PLATFORM_DESKTOP
     RtMidiInPtr midiin;
     u32 midiin_port;
-    int midiin_list_scroll =0;
+    int midiin_list_scroll;
+#endif
+} editor_state;
+
+//------------------------------------------------------------------------------------
+// Program main entry point
+//------------------------------------------------------------------------------------
+int main(int argc, char** argv)
+{
+    //--------------------------------------------------------------------------------------
+    // editor state
+
+    editor_state es;
 
     //--------------------------------------------------------------------------------------
-    // editor state init
-    audiostream = InitAudioStream(SAMPLING_RATE, 16, NUM_CHANNELS);
-    buf = malloc(sizeof(i16)*BUFFER_LENGTH_PER_UPDATE);
+    // editor init
 
-    ks_vector_init(&tones_data);
-    ks_tone_list_insert_empty(&tones_data, &current);
+    es.tone_list_scroll=0;
+    es.texsbox_focus = -1;
+    es.current_tone_index =-1;
+    memset(&es.note, 0, sizeof(es.note));
+    es.noteon_number = -1;
+    es.dirty = false;
+    es.display_mode= EDIT;
 
-    events[0].delta = 0xffffffff;
-    events[0].status = 0xff;
-    events[0].data[0] = 0x2f;
-    score.data = events;
-    score.length = 0;
-    score.resolution = MIDIIN_RESOLUTION;
+    es.audiostream = InitAudioStream(SAMPLING_RATE, 16, NUM_CHANNELS);
+    es.buf = malloc(sizeof(i16)*BUFFER_LENGTH_PER_UPDATE);
 
-    score_state = ks_score_state_new(MIDIIN_POLYPHONY_BITS);
-    time = 0;
+    ks_vector_init(&es.tones_data);
+    ks_tone_list_insert_empty(&es.tones_data, &es.current_tone_index);
 
-    update_tone_list(&tones, &tones_data, score_state);
+    es.events[0].delta = 0xffffffff;
+    es.events[0].status = 0xff;
+    es.events[0].data[0] = 0x2f;
+    es.score.data = es.events;
+    es.score.length = 0;
+    es.score.resolution = MIDIIN_RESOLUTION;
 
-    PlayAudioStream(audiostream);
+    es.score_state= ks_score_state_new(MIDIIN_POLYPHONY_BITS);
+    es.time = 0;
 
-    ks_synth_data_set_default(&tones_data.data[0].synth);
-    ks_synth_data_set_default(&temp);
+    update_tone_list(&es.tones, &es.tones_data, es.score_state);
+
+    PlayAudioStream(es.audiostream);
+
+    ks_synth_data_set_default(&es.tones_data.data[0].synth);
+    ks_synth_data_set_default(&es.temp_synth);
 
     InitAudioDevice();
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn editor - noname");
     SetTargetFPS(60);
 
     GuiSetStyle(LISTVIEW, LIST_ITEMS_HEIGHT, 14);
-
+#ifdef PLATFORM_DESKTOP
     enum RtMidiApi api;
     if(rtmidi_get_compiled_api(&api, 1) != 0){
-        midiin = rtmidi_in_create(api, "C", sizeof(events) / sizeof(events[0]));
-        rtmidi_open_port(midiin, 0, rtmidi_get_port_name(midiin, 0));
-        midiin_port = 0;
+        es.midiin = rtmidi_in_create(api, "C", sizeof(es.events) / sizeof(es.events[0]));
+        rtmidi_open_port(es.midiin, 0, rtmidi_get_port_name(es.midiin, 0));
+        es.midiin_port = 0;
 
     } else {
-        midiin = NULL;
-        midiin_port = 0;
+        es.midiin = NULL;
+        es.midiin_port = 0;
     }
+    es.midiin_list_scroll =0;
+#endif
 
+    //--------------------------------------------------------------------------------------
+    // argments
+    if(argc == 2){
+        if(!FileExists(argv[1])){
+            es.dialog_message = "File not exists.";
+            es.display_mode = ERROR_DIALOG;
+        }
+        else if(IsFileExtension(argv[1], tone_list_ext)){
+            const char* filename = GetFileName(argv[1]);
+            strcpy(es.file_dialog_state.fileNameText, filename);
+            memset(es.file_dialog_state.dirPathText, 0 , sizeof(es.file_dialog_state.dirPathText));
+            //for unix file system
+            if(argv[1][0] == '/'){
+                strncpy(es.file_dialog_state.dirPathText, argv[1], strlen(argv[1]) - strlen(filename));
+            }
+            else {
+                const char* dir = GetDirectoryPath(argv[1]);
+                strcpy(es.file_dialog_state.dirPathText, dir);
+            }
+
+            if(!SaveLoadToneList(&es.tones_data, &es.file_dialog_state, false)){
+                es.dialog_message = "Failed to load tone list";
+                es.display_mode = ERROR_DIALOG;
+            }
+        }
+        else if(IsFileExtension(argv[1], synth_ext)){
+            const char* filename = GetFileName(argv[1]);
+            strcpy(es.file_dialog_state_synth.fileNameText, filename);
+            memset(es.file_dialog_state_synth.dirPathText, 0 , sizeof(es.file_dialog_state_synth.dirPathText));
+            //for unix file system
+            if(argv[1][0] == '/'){
+                strncpy(es.file_dialog_state_synth.dirPathText, argv[1], strlen(argv[1]) - strlen(filename));
+            }
+            else {
+                const char* dir = GetDirectoryPath(argv[1]);
+                strcpy(es.file_dialog_state_synth.dirPathText, dir);
+            }
+
+            if(!SaveLoadSynth(&es.tones_data.data->synth, &es.file_dialog_state_synth, false)){
+                es.dialog_message = "Failed to load synth";
+                es.display_mode = ERROR_DIALOG;
+            }
+        }
+        else {
+            es.dialog_message = "Invalid file type.";
+            es.display_mode = ERROR_DIALOG;
+        }
+    }
 
     //--------------------------------------------------------------------------------------
     const int margin = 3;
@@ -238,10 +311,10 @@ int main()
     SetTextureFilter(keyscale_left_images, FILTER_BILINEAR);
     SetTextureFilter(keyscale_right_images, FILTER_BILINEAR);
 
-    file_dialog_state = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, file_dialog_state.dirPathText, false);
-    strcpy(file_dialog_state.filterExt, tone_list_ext);
-    file_dialog_state_synth = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, file_dialog_state_synth.dirPathText, false);
-    strcpy(file_dialog_state_synth.filterExt, synth_ext);
+    es.file_dialog_state= InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, es.file_dialog_state.dirPathText, false);
+    strcpy(es.file_dialog_state.filterExt,  tone_list_ext);
+    es.file_dialog_state_synth = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, es.file_dialog_state_synth.dirPathText, false);
+    strcpy(es.file_dialog_state_synth.filterExt, synth_ext);
 
 
     // Main game loop
@@ -249,62 +322,66 @@ int main()
     {
         // Update
         //----------------------------------------------------------------------------------
-        if(IsAudioStreamProcessed(audiostream)){
-            if(midiin != NULL){
-                score.length = 0;
+        if(IsAudioStreamProcessed(es.audiostream)){
+#ifdef PLATFORM_DESKTOP
+            if(es.midiin != NULL){
+                es.score.length = 0;
 
-                while(score.data[score_state->current_event].delta != 0xffffffff){
-                    score.data[score.length] = score.data[score_state->current_event];
-                    score.length ++;
-                    score_state->current_event++;
+                while(es.score.data[es.score_state->current_event].delta != 0xffffffff){
+                    es.score.data[es.score.length] = es.score.data[es.score_state->current_event];
+                    es.score.length ++;
+                    es.score_state->current_event++;
                 }
 
-                score_state->current_event = 0;
+                es.score_state->current_event = 0;
 
 
                 size_t size;
                 do{
                     unsigned char message[4];
                     size = 4;
-                    double stamp = rtmidi_in_get_message(midiin, message, &size);
+                    double stamp = rtmidi_in_get_message(es.midiin, message, &size);
                     if(size != 0){
-                        u64 pre_time = time*MIDIIN_RESOLUTION*2;
-                        time += stamp;
+                        u64 pre_time = es.time*MIDIIN_RESOLUTION*2;
+                        es.time += stamp;
 
-                        if(score.length >= (sizeof(events)/ sizeof(events[0])) - 1) continue;
+                        if(es.score.length >= (sizeof(es.events)/ sizeof(es.events[0])) - 1) continue;
                         if((message[0] == 0xff && message[1] != 0x51) || (message[0] >=0x80 && message[0] < 0xf0)){
-                            score.data[score.length].delta = (u32)((time)*MIDIIN_RESOLUTION*2) - pre_time;
-                            score.data[score.length].status = message[0];
-                            memcpy(score.data[score.length].data, message + 1, 3);
-                            score.length ++;
+                            es.score.data[es.score.length].delta = (u32)((es.time)*MIDIIN_RESOLUTION*2) - pre_time;
+                            es.score.data[es.score.length].status = message[0];
+                            memcpy(es.score.data[es.score.length].data, message + 1, 3);
+                            es.score.length ++;
                         }
                     }
                 }while(size != 0);
 
-                score.data[score.length].delta = 0xffffffff;
-                score.data[score.length].status = 0xff;
-                score.data[score.length].data[0] = 0x2f;
-                score.length ++;
+                es.score.data[es.score.length].delta = 0xffffffff;
+                es.score.data[es.score.length].status = 0xff;
+                es.score.data[es.score.length].data[0] = 0x2f;
+                es.score.length ++;
 
-                ks_score_data_render(&score, SAMPLING_RATE, score_state, tones, buf, BUFFER_LENGTH_PER_UPDATE);
+                ks_score_data_render(&es.score, SAMPLING_RATE, es.score_state, es.tones, es.buf, BUFFER_LENGTH_PER_UPDATE);
             } else {
-                memset(buf, 0, BUFFER_LENGTH_PER_UPDATE*sizeof(i16));
+                memset(es.buf, 0, BUFFER_LENGTH_PER_UPDATE*sizeof(i16));
             }
+#else
+            memset(es.buf, 0, BUFFER_LENGTH_PER_UPDATE*sizeof(i16));
+#endif
 
             i16 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
             memset(tmpbuf, 0, sizeof(tmpbuf));
-            ks_synth_render(&synth, &note, ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+            ks_synth_render(&es.synth, &es.note, ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
             for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
-                buf[i] += tmpbuf[i];
+                es.buf[i] += tmpbuf[i];
             }
-            UpdateAudioStream(audiostream, buf, BUFFER_LENGTH_PER_UPDATE);
+            UpdateAudioStream(es.audiostream, es.buf, BUFFER_LENGTH_PER_UPDATE);
         }
 
-        if(state == EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
-            if(memcmp(&tones_data.data[current].synth, &temp, sizeof(ks_synth_data)) != 0 ){
-                if(!dirty){
-                    mark_dirty(&dirty, &file_dialog_state);
-                    temp = tones_data.data[current].synth;
+        if(es.display_mode== EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
+            if(memcmp(&es.tones_data.data[es.current_tone_index].synth, &es.temp_synth, sizeof(ks_synth_data)) != 0 ){
+                if(!es.dirty){
+                    mark_dirty(&es.dirty, &es.file_dialog_state);
+                    es.temp_synth = es.tones_data.data[es.current_tone_index].synth;
                 }
             }
         }
@@ -314,7 +391,7 @@ int main()
         BeginDrawing();
             ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-            if(state == EDIT) GuiEnable();
+            if(es.display_mode== EDIT) GuiEnable();
             else GuiDisable();
 
             Rectangle x_pos = base_pos;
@@ -328,55 +405,54 @@ int main()
 
                 float step_x = pos2.width + margin;
                 if(GuiLabelButton(pos2, "#8#New")){
-                    state = CONFIRM_NEW;
+                    es.display_mode= CONFIRM_NEW;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#1#Open")){
-                    state = LOAD_DIALOG;
-                    strcpy(file_dialog_state.titleText, "Load Tone List");
-                    file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
+                    es.display_mode= LOAD_DIALOG;
+                    strcpy(es.file_dialog_state.titleText, "Load Tone List");
+                    es.file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#2#Save")){
-                    if(strcmp(file_dialog_state.fileNameText, "") == 0){
-                        strcpy(file_dialog_state.titleText, "Save Tone List");
-                        file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
-                        strcpy(file_dialog_state.filterExt, tone_list_ext);
-                        state = SAVE_DIALOG;
+                    if(strcmp(es.file_dialog_state.fileNameText, "") == 0){
+                        strcpy(es.file_dialog_state.titleText, "Save Tone List");
+                        es.file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
+                        es.display_mode= SAVE_DIALOG;
                     } else {
-                        if(SaveLoadToneList(&tones_data, &file_dialog_state, true)){
-                            unmark_dirty(&dirty, &file_dialog_state);
-                            update_tone_list(&tones, &tones_data, score_state);
+                        if(SaveLoadToneList(&es.tones_data, &es.file_dialog_state, true)){
+                            unmark_dirty(&es.dirty, &es.file_dialog_state);
+                            update_tone_list(&es.tones, &es.tones_data, es.score_state);
                         }
                     }
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#3#Save As")){
-                    strcpy(file_dialog_state.titleText, "Save Tone List");
-                    file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
-                    state = SAVE_DIALOG;
+                    strcpy(es.file_dialog_state.titleText, "Save Tone List");
+                    es.file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
+                    es.display_mode= SAVE_DIALOG;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#6#LoadSynth")){
-                    strcpy(file_dialog_state.titleText, "Load Synth");
-                    file_dialog_state_synth.fileDialogActiveState = DIALOG_ACTIVE;
-                    state = IMPORT_SYNTH_DIALOG;
+                    strcpy(es.file_dialog_state.titleText, "Load Synth");
+                    es.file_dialog_state_synth.fileDialogActiveState = DIALOG_ACTIVE;
+                    es.display_mode= IMPORT_SYNTH_DIALOG;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#7#SaveSynth")){
-                    strcpy(file_dialog_state.titleText, "Save Synth");
-                    file_dialog_state_synth.fileDialogActiveState = DIALOG_ACTIVE;
-                    state = EXPORT_SYNTH_DIALOG;
+                    strcpy(es.file_dialog_state.titleText, "Save Synth");
+                    es.file_dialog_state_synth.fileDialogActiveState = DIALOG_ACTIVE;
+                    es.display_mode= EXPORT_SYNTH_DIALOG;
                 }
                 pos2.x += step_x;
 
                 if(GuiLabelButton(pos2, "#141#Settings")){
-                    state = SETTINGS;
+                    es.display_mode= SETTINGS;
                 }
 
                 pos2.x += step_x;
@@ -395,34 +471,34 @@ int main()
                 pos2 = pos;
                 pos2.width = base_width*2;
                 pos2.height = 300;
-                char str[tones_data.length][40];
+                char str[es.tones_data.length][40];
                 int start, end;
 
-                GuiListViewGetInfo(pos2, tones_data.length, tone_list_scroll, &start, &end);
+                GuiListViewGetInfo(pos2, es.tones_data.length, es.tone_list_scroll, &start, &end);
 
-                const char *ptr[tones_data.length];
+                const char *ptr[es.tones_data.length];
                 for(i32 i=start; i< end; i++){
-                    if(tones_data.data[i].note == KS_NOTENUMBER_ALL){
-                        snprintf(str[i], 48, "0x%02x%02x%4d%4s%20s", tones_data.data[i].msb, tones_data.data[i].lsb, tones_data.data[i].program, "    ", tones_data.data[i].name);
+                    if(es.tones_data.data[i].note == KS_NOTENUMBER_ALL){
+                        snprintf(str[i], 48, "0x%02x%02x%4d%4s%20s", es.tones_data.data[i].msb, es.tones_data.data[i].lsb, es.tones_data.data[i].program, "    ", es.tones_data.data[i].name);
                     } else {
-                        snprintf(str[i], 48, "0x%02x%02x%4d%4d%20s", tones_data.data[i].msb, tones_data.data[i].lsb, tones_data.data[i].program, tones_data.data[i].note, tones_data.data[i].name);
+                        snprintf(str[i], 48, "0x%02x%02x%4d%4d%20s", es.tones_data.data[i].msb, es.tones_data.data[i].lsb, es.tones_data.data[i].program, es.tones_data.data[i].note, es.tones_data.data[i].name);
                     }
                 }
 
-                for(u32 i=0; i<tones_data.length; i++){
+                for(u32 i=0; i<es.tones_data.length; i++){
                     ptr[i] = str[i];
                 }
                 {
 
-                    const i32 new_select= GuiListViewEx(pos2, ptr, tones_data.length, NULL, &tone_list_scroll, current);
-                    if(new_select  != current && new_select >= 0 && (u32)new_select < tones_data.length){
-                        current = new_select;
-                        temp = tones_data.data[current].synth;
-                        update_tone_list(&tones, &tones_data, score_state);
+                    const i32 new_select= GuiListViewEx(pos2, ptr, es.tones_data.length, NULL, &es.tone_list_scroll, es.current_tone_index);
+                    if(new_select  != es.current_tone_index && new_select >= 0 && (u32)new_select < es.tones_data.length){
+                        es.current_tone_index = new_select;
+                        es.temp_synth = es.tones_data.data[es.current_tone_index].synth;
+                        update_tone_list(&es.tones, &es.tones_data, es.score_state);
                     }
                 }
-                if(current < 0 || (u32)current >= tones_data.length){
-                    current = 0;
+                if(es.current_tone_index < 0 || (u32)es.current_tone_index >= es.tones_data.length){
+                    es.current_tone_index = 0;
                 }
 
                 pos.y += pos2.height + margin;
@@ -431,30 +507,30 @@ int main()
                 pos2.width = base_width-margin;
                 pos2.height *= 2.0f;
 
-                if(tones_data.length >= 128*128*128) {
+                if(es.tones_data.length >= 128*128*128) {
                     GuiDisable();
                 }
                 if(GuiButton(pos2, "Add")){
-                    ks_tone_list_insert_empty(&tones_data, &current);
-                    program_number_increment(&tones_data.data[current].msb, &tones_data.data[current].lsb, &tones_data.data[current].program, &tones_data.data[current].note);
-                    mark_dirty(&dirty, &file_dialog_state);
+                    ks_tone_list_insert_empty(&es.tones_data, &es.current_tone_index);
+                    program_number_increment(&es.tones_data.data[es.current_tone_index].msb, &es.tones_data.data[es.current_tone_index].lsb, &es.tones_data.data[es.current_tone_index].program, &es.tones_data.data[es.current_tone_index].note);
+                    mark_dirty(&es.dirty, &es.file_dialog_state);
                 }
-                if(tones_data.length >= 128*128*128 && state == EDIT){
+                if(es.tones_data.length >= 128*128*128 && es.display_mode== EDIT){
                     GuiEnable();
                 }
 
                 pos2.x += base_width;
 
-                if(tones_data.length == 1) {
+                if(es.tones_data.length == 1) {
                     GuiDisable();
                 }
                 if(GuiButton(pos2, "Remove")){
-                    ks_vector_remove(&tones_data, current);
-                    current --;
-                    if(current < 0) current = 0;
-                    mark_dirty(&dirty, &file_dialog_state);
+                    ks_vector_remove(&es.tones_data, es.current_tone_index);
+                    es.current_tone_index --;
+                    if(es.current_tone_index < 0) es.current_tone_index = 0;
+                    mark_dirty(&es.dirty, &es.file_dialog_state);
                 }
-                if(tones_data.length == 1 && state == EDIT){
+                if(es.tones_data.length == 1 && es.display_mode== EDIT){
                     GuiEnable();
                 }
 
@@ -463,14 +539,14 @@ int main()
                  pos2.x = pos.x;
 
                  if(GuiButton(pos2, "Copy")){
-                     ks_tone_list_insert(&tones_data, tones_data.data[current], &current);
-                     mark_dirty(&dirty, &file_dialog_state);
+                     ks_tone_list_insert(&es.tones_data, es.tones_data.data[es.current_tone_index], &es.current_tone_index);
+                     mark_dirty(&es.dirty, &es.file_dialog_state);
                  }
 
                 pos2.x += base_width;
                 if(GuiButton(pos2, "Sort")){
-                    ks_tone_list_sort(&tones_data, &current);
-                    mark_dirty(&dirty, &file_dialog_state);
+                    ks_tone_list_sort(&es.tones_data, &es.current_tone_index);
+                    mark_dirty(&es.dirty, &es.file_dialog_state);
                 }
 
                 pos.y += pos2.height + margin;
@@ -485,7 +561,7 @@ int main()
                     GuiAlignedLabel("Name", pos2, GUI_TEXT_ALIGN_RIGHT);
                     pos2.x += base_width*0.75f;
                     pos2.width = pos.width * 1.25f;
-                    if(GuiTextBox(pos2, tones_data.data[current].name, sizeof(tones_data.data[current].name), textbox_focus == id)){
+                    if(GuiTextBox(pos2, es.tones_data.data[es.current_tone_index].name, sizeof(es.tones_data.data[es.current_tone_index].name), es.texsbox_focus == id)){
                         if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                     }
                     id++;
@@ -494,54 +570,54 @@ int main()
                 pos2.y += pos2.height + margin;
                 pos2.x += pos.width*0.75f;
                 {
-                    int tmp_val = tones_data.data[current].msb;
-                    if(GuiValueBox(pos2, "MSB", &tmp_val, 0, 127, textbox_focus == id)){
+                    int tmp_val = es.tones_data.data[es.current_tone_index].msb;
+                    if(GuiValueBox(pos2, "MSB", &tmp_val, 0, 127, es.texsbox_focus == id)){
                         if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                     }
-                    tones_data.data[current].msb = tmp_val & 0x7f;
+                    es.tones_data.data[es.current_tone_index].msb = tmp_val & 0x7f;
                     id++;
                 }
                 pos2.y += pos2.height + margin;
                 {
-                    int tmp_val = tones_data.data[current].lsb;
-                    if(GuiValueBox(pos2, "LSB", &tmp_val, 0, 127, textbox_focus == id)){
+                    int tmp_val = es.tones_data.data[es.current_tone_index].lsb;
+                    if(GuiValueBox(pos2, "LSB", &tmp_val, 0, 127, es.texsbox_focus == id)){
                         if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                     }
-                    tones_data.data[current].lsb = tmp_val & 0x7f;
+                    es.tones_data.data[es.current_tone_index].lsb = tmp_val & 0x7f;
                     id++;
                 }
                 pos2.y += pos2.height + margin;
                 {
-                    int tmp_val = tones_data.data[current].program;
-                    if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, textbox_focus == id)){
+                    int tmp_val = es.tones_data.data[es.current_tone_index].program;
+                    if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, es.texsbox_focus == id)){
                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2))  tmp_focus = id;
                     }
-                    tones_data.data[current].program = tmp_val & 0x7f;
+                    es.tones_data.data[es.current_tone_index].program = tmp_val & 0x7f;
                     id++;
                 }
                 pos2.y += pos2.height + margin;
                 {
-                    bool tmp = tones_data.data[current].note != KS_NOTENUMBER_ALL;
+                    bool tmp = es.tones_data.data[es.current_tone_index].note != KS_NOTENUMBER_ALL;
                     tmp = GuiCheckBox((Rectangle){pos2.x, pos2.y, base_pos.height, base_pos.height}, "Is Percussion", tmp);
                     if(!tmp) {
-                        tones_data.data[current].note = KS_NOTENUMBER_ALL;
+                        es.tones_data.data[es.current_tone_index].note = KS_NOTENUMBER_ALL;
                     } else {
-                        tones_data.data[current].note &= 0x7f;
+                        es.tones_data.data[es.current_tone_index].note &= 0x7f;
                     }
                 }
                 pos2.y += step;
 
-                if(tones_data.data[current].note != KS_NOTENUMBER_ALL){
-                    int tmp_val = tones_data.data[current].note;
-                    if(GuiValueBox(pos2, "Note Number", &tmp_val, 0, 127, textbox_focus == id)){
+                if(es.tones_data.data[es.current_tone_index].note != KS_NOTENUMBER_ALL){
+                    int tmp_val = es.tones_data.data[es.current_tone_index].note;
+                    if(GuiValueBox(pos2, "Note Number", &tmp_val, 0, 127, es.texsbox_focus == id)){
                         if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                     }
-                    tones_data.data[current].note = tmp_val & 0x7f;
+                    es.tones_data.data[es.current_tone_index].note = tmp_val & 0x7f;
                     id++;
                 }
 
                 if(mouse_button_pressed){
-                    textbox_focus = tmp_focus;
+                    es.texsbox_focus = tmp_focus;
                 }
 
                 pos.y = x_pos.y;
@@ -560,7 +636,7 @@ int main()
                     pos2.height = step * 4;
                     GuiAlignedLabel("Algorithm", pos2, GUI_TEXT_ALIGN_RIGHT);
                     pos2.x += step_x;
-                    tones_data.data[current].synth.algorithm = PropertyIntImage(pos2, algorithm_images, tones_data.data[current].synth.algorithm, 0, 10, 1);
+                    es.tones_data.data[es.current_tone_index].synth.algorithm = PropertyIntImage(pos2, algorithm_images, es.tones_data.data[es.current_tone_index].synth.algorithm, 0, 10, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += pos2.height + margin;
@@ -569,8 +645,8 @@ int main()
                     GuiAlignedLabel("Feedback", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f PI", 2.0f *calc_feedback_level(tones_data.data[current].synth.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
-                    tones_data.data[current].synth.feedback_level = PropertyInt(pos, text, tones_data.data[current].synth.feedback_level, 0, 255, 1);
+                    text = FormatText("%.3f PI", 2.0f *calc_feedback_level(es.tones_data.data[es.current_tone_index].synth.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
+                    es.tones_data.data[es.current_tone_index].synth.feedback_level = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.feedback_level, 0, 255, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -579,8 +655,8 @@ int main()
                     GuiAlignedLabel("Panpot", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f", 2.0f * calc_panpot(tones_data.data[current].synth.panpot) / ks_1(KS_PANPOT_BITS) - 1.0f);
-                    tones_data.data[current].synth.panpot = PropertyInt(pos, text, tones_data.data[current].synth.panpot, 0, 127, 1);
+                    text = FormatText("%.3f", 2.0f * calc_panpot(es.tones_data.data[es.current_tone_index].synth.panpot) / ks_1(KS_PANPOT_BITS) - 1.0f);
+                    es.tones_data.data[es.current_tone_index].synth.panpot = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.panpot, 0, 127, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -592,7 +668,7 @@ int main()
                     pos2.x += step_x;
 
 
-                    tones_data.data[current].synth.lfo_wave_type = PropertyIntImage(pos2, lfo_wave_images, tones_data.data[current].synth.lfo_wave_type, 0, KS_LFO_NUM_WAVES-1, 1);
+                    es.tones_data.data[es.current_tone_index].synth.lfo_wave_type = PropertyIntImage(pos2, lfo_wave_images, es.tones_data.data[es.current_tone_index].synth.lfo_wave_type, 0, KS_LFO_NUM_WAVES-1, 1);
 
                 }
                 pos.x = x_pos.x;
@@ -602,7 +678,7 @@ int main()
                     GuiAlignedLabel("LFO Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    float hz = calc_lfo_freq(tones_data.data[current].synth.lfo_freq) / (float)ks_1(KS_FREQUENCY_BITS);
+                    float hz = calc_lfo_freq(es.tones_data.data[es.current_tone_index].synth.lfo_freq) / (float)ks_1(KS_FREQUENCY_BITS);
                     if(hz >= 1.0f){
                         text = FormatText("%.1f Hz", hz);
                     }
@@ -614,7 +690,7 @@ int main()
                     }
 
 
-                    tones_data.data[current].synth.lfo_freq = PropertyInt(pos, text, tones_data.data[current].synth.lfo_freq, 0, 255, 1);
+                    es.tones_data.data[es.current_tone_index].synth.lfo_freq = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.lfo_freq, 0, 255, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -623,8 +699,8 @@ int main()
                     GuiAlignedLabel("LFO Initial Phase", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.1f deg", 360.0f *calc_lfo_det(tones_data.data[current].synth.lfo_det) / (float)ks_1(KS_PHASE_MAX_BITS));
-                    tones_data.data[current].synth.lfo_det = PropertyInt(pos, text, tones_data.data[current].synth.lfo_det, 0, 255, 1);
+                    text = FormatText("%.1f deg", 360.0f *calc_lfo_det(es.tones_data.data[es.current_tone_index].synth.lfo_det) / (float)ks_1(KS_PHASE_MAX_BITS));
+                    es.tones_data.data[es.current_tone_index].synth.lfo_det = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.lfo_det, 0, 255, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -633,8 +709,8 @@ int main()
                     GuiAlignedLabel("LFO FMS", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f %%", 100.0f *calc_lfo_fms_depth(tones_data.data[current].synth.lfo_fms_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
-                    tones_data.data[current].synth.lfo_fms_depth= PropertyInt(pos, text, tones_data.data[current].synth.lfo_fms_depth, 0, 240, 1);
+                    text = FormatText("%.3f %%", 100.0f *calc_lfo_fms_depth(es.tones_data.data[es.current_tone_index].synth.lfo_fms_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
+                    es.tones_data.data[es.current_tone_index].synth.lfo_fms_depth= PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.lfo_fms_depth, 0, 240, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -652,20 +728,20 @@ int main()
                 float env_mul = wave_rec.height / ks_1(KS_ENVELOPE_BITS);
 
                 for(unsigned i=0; i<KS_NUM_OPERATORS; i++){
-                    float w = env_mul*note.envelope_now_amps[i];
+                    float w = env_mul* es.note.envelope_now_amps[i];
                     Rectangle rec ={env_x + env_step*i, env_y - w, env_width, w};
                     DrawRectangleRec(rec, BLUE);
                     const char *text;
-                    if(note.envelope_states[i] == KS_ENVELOPE_RELEASED){
+                    if(es.note.envelope_states[i] == KS_ENVELOPE_RELEASED){
                         text = "Released";
                     }
-                    else if(note.envelope_states[i] == KS_ENVELOPE_OFF) {
+                    else if(es.note.envelope_states[i] == KS_ENVELOPE_OFF) {
                         text = "Off";
                     }
                     else{
-                        text = FormatText(note.envelope_now_points[i] == 0 ?
-                                              "Attack" : note.envelope_now_points[i] == 1 ?
-                                                  "Decay" : "Sustain %d", note.envelope_now_points[i]-1);
+                        text = FormatText(es.note.envelope_now_points[i] == 0 ?
+                                              "Attack" : es.note.envelope_now_points[i] == 1 ?
+                                                  "Decay" : "Sustain %d", es.note.envelope_now_points[i]-1);
                     }
 
                     DrawText(text, rec.x+ 1, env_y -  11, 10, YELLOW);
@@ -680,11 +756,11 @@ int main()
                 for(int i=0; i<samp; i+=2){
                     float base_x = wave_rec.x + x;
 
-                    DrawLineV((Vector2){base_x, y - ((i32)buf[i] + buf[i+1])*amp}, (Vector2){base_x+dx, y - ((i32)buf[i+2] + buf[i+3])*amp}, GREEN);
+                    DrawLineV((Vector2){base_x, y - ((i32)es.buf[i] + es.buf[i+1])*amp}, (Vector2){base_x+dx, y - ((i32)es.buf[i+2] + es.buf[i+3])*amp}, GREEN);
                     x+= dx;
                 }
 
-                if(state != EDIT ){
+                if(es.display_mode!= EDIT ){
                     DrawRectangleRec(wave_rec, (Color){200,200,200,128});
                 }
             }
@@ -708,7 +784,7 @@ int main()
                 GuiAlignedLabel("Fixed Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    tones_data.data[current].synth.phase_coarses.st[i].fixed_frequency = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "", tones_data.data[current].synth.phase_coarses.st[i].fixed_frequency);
+                    es.tones_data.data[es.current_tone_index].synth.phase_coarses.st[i].fixed_frequency = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "", es.tones_data.data[es.current_tone_index].synth.phase_coarses.st[i].fixed_frequency);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -717,13 +793,13 @@ int main()
                 GuiAlignedLabel("Phase Coarse", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    if(tones_data.data[current].synth.phase_coarses.st[i].fixed_frequency){
-                        text = FormatText("%.1f Hz", ks_notefreq(tones_data.data[current].synth.phase_coarses.st[i].value) / (float)ks_1(KS_FREQUENCY_BITS));
+                    if(es.tones_data.data[es.current_tone_index].synth.phase_coarses.st[i].fixed_frequency){
+                        text = FormatText("%.1f Hz", ks_notefreq(es.tones_data.data[es.current_tone_index].synth.phase_coarses.st[i].value) / (float)ks_1(KS_FREQUENCY_BITS));
                     }
                     else {
-                        text = FormatText("%.1f", calc_phase_coarses(tones_data.data[current].synth.phase_coarses.st[i].value) / 2.0f);
+                        text = FormatText("%.1f", calc_phase_coarses(es.tones_data.data[es.current_tone_index].synth.phase_coarses.st[i].value) / 2.0f);
                     }
-                    tones_data.data[current].synth.phase_coarses.st[i].value = PropertyInt(pos, text, tones_data.data[current].synth.phase_coarses.st[i].value, 0, 127, 1);
+                    es.tones_data.data[es.current_tone_index].synth.phase_coarses.st[i].value = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.phase_coarses.st[i].value, 0, 127, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -732,8 +808,8 @@ int main()
                 GuiAlignedLabel("Phase Tune", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%d", (tones_data.data[current].synth.phase_tunes[i] - 127));
-                    tones_data.data[current].synth.phase_tunes[i] = PropertyInt(pos, text, tones_data.data[current].synth.phase_tunes[i], 0, 255, 1);
+                    text = FormatText("%d", (es.tones_data.data[es.current_tone_index].synth.phase_tunes[i] - 127));
+                    es.tones_data.data[es.current_tone_index].synth.phase_tunes[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.phase_tunes[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                  pos.x = x_pos.x; pos.y += step;
@@ -742,13 +818,13 @@ int main()
                 GuiAlignedLabel("Phase Fine", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    if(tones_data.data[current].synth.phase_coarses.st[i].fixed_frequency){
-                        text = FormatText("%.1f cent", calc_phase_fines(tones_data.data[current].synth.phase_fines[i]) * 100.0f / (float)ks_1(KS_PHASE_FINE_BITS));
+                    if(es.tones_data.data[es.current_tone_index].synth.phase_coarses.st[i].fixed_frequency){
+                        text = FormatText("%.1f cent", calc_phase_fines(es.tones_data.data[es.current_tone_index].synth.phase_fines[i]) * 100.0f / (float)ks_1(KS_PHASE_FINE_BITS));
                     }
                     else {
-                        text = FormatText("x %.3f", calc_phase_fines(tones_data.data[current].synth.phase_fines[i]) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
+                        text = FormatText("x %.3f", calc_phase_fines(es.tones_data.data[es.current_tone_index].synth.phase_fines[i]) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
                     }
-                    tones_data.data[current].synth.phase_fines[i] = PropertyInt(pos, text, tones_data.data[current].synth.phase_fines[i], 0, 255, 1);
+                    es.tones_data.data[es.current_tone_index].synth.phase_fines[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.phase_fines[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                  pos.x = x_pos.x; pos.y += step;
@@ -757,8 +833,8 @@ int main()
                  GuiAlignedLabel("Inital Phase", pos, GUI_TEXT_ALIGN_RIGHT);
                  pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.1f deg", 360.0*calc_phase_dets(tones_data.data[current].synth.phase_dets[i]) / (float)ks_1(KS_PHASE_MAX_BITS));
-                    tones_data.data[current].synth.phase_dets[i] = PropertyInt(pos, text, tones_data.data[current].synth.phase_dets[i], 0, 255, 1);
+                    text = FormatText("%.1f deg", 360.0*calc_phase_dets(es.tones_data.data[es.current_tone_index].synth.phase_dets[i]) / (float)ks_1(KS_PHASE_MAX_BITS));
+                    es.tones_data.data[es.current_tone_index].synth.phase_dets[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.phase_dets[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -773,11 +849,11 @@ int main()
                     pos2 = pos;
                     pos2.width /= 2.0f;
                     for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                        text = FormatText("%.3f", calc_envelope_points(tones_data.data[current].synth.envelope_points[e][i]) / (float)ks_1(KS_ENVELOPE_BITS));
-                        tones_data.data[current].synth.envelope_points[e][i] = PropertyInt(pos2, text, tones_data.data[current].synth.envelope_points[e][i], 0, 255, 1);
+                        text = FormatText("%.3f", calc_envelope_points(es.tones_data.data[es.current_tone_index].synth.envelope_points[e][i]) / (float)ks_1(KS_ENVELOPE_BITS));
+                        es.tones_data.data[es.current_tone_index].synth.envelope_points[e][i] = PropertyInt(pos2, text, es.tones_data.data[es.current_tone_index].synth.envelope_points[e][i], 0, 255, 1);
                         pos2.x += step_x / 2.0f;
 
-                        float sec = ks_calc_envelope_times(tones_data.data[current].synth.envelope_times[e][i]) / (float)ks_1(16);
+                        float sec = ks_calc_envelope_times(es.tones_data.data[es.current_tone_index].synth.envelope_times[e][i]) / (float)ks_1(16);
                         if(sec >= 1.0f){
                             text = FormatText("%.1f s", sec);
                         }
@@ -788,7 +864,7 @@ int main()
                             text = FormatText("%.3f ms", sec*1000.0f);
                         }
 
-                        tones_data.data[current].synth.envelope_times[e][i] = PropertyInt(pos2, text, tones_data.data[current].synth.envelope_times[e][i], 0, 255, 1);
+                        es.tones_data.data[es.current_tone_index].synth.envelope_times[e][i] = PropertyInt(pos2, text, es.tones_data.data[es.current_tone_index].synth.envelope_times[e][i], 0, 255, 1);
                         pos2.x += step_x / 2.0f;
                     }
                     pos.x = x_pos.x; pos.y += step;
@@ -798,7 +874,7 @@ int main()
                 GuiAlignedLabel("Release Time", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    float sec = ks_calc_envelope_times(tones_data.data[current].synth.envelope_release_times[i]) / (float)ks_1(16);
+                    float sec = ks_calc_envelope_times(es.tones_data.data[es.current_tone_index].synth.envelope_release_times[i]) / (float)ks_1(16);
                     if(sec >= 1.0f){
                         text = FormatText("%.1f s", sec);
                     }
@@ -809,7 +885,7 @@ int main()
                         text = FormatText("%.3f ms", sec*1000.0f);
                     }
 
-                    tones_data.data[current].synth.envelope_release_times[i] = PropertyInt(pos, text, tones_data.data[current].synth.envelope_release_times[i], 0, 255, 1);
+                    es.tones_data.data[es.current_tone_index].synth.envelope_release_times[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.envelope_release_times[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -818,8 +894,8 @@ int main()
                GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
                pos.x += step_x;
                for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                   text = FormatText("%.1f %%", 100.0*calc_ratescales(tones_data.data[current].synth.ratescales[i]) / (float)ks_1(KS_RATESCALE_BITS));
-                   tones_data.data[current].synth.ratescales[i] = PropertyInt(pos, text, tones_data.data[current].synth.ratescales[i], 0, 255, 1);
+                   text = FormatText("%.1f %%", 100.0*calc_ratescales(es.tones_data.data[es.current_tone_index].synth.ratescales[i]) / (float)ks_1(KS_RATESCALE_BITS));
+                   es.tones_data.data[es.current_tone_index].synth.ratescales[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.ratescales[i], 0, 255, 1);
                    pos.x += step_x;
                }
                pos.x = x_pos.x; pos.y += step;
@@ -828,8 +904,8 @@ int main()
                 GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.1f %%", 100*calc_velocity_sens(tones_data.data[current].synth.velocity_sens[i]) / (float)ks_1(KS_VELOCITY_SENS_BITS));
-                    tones_data.data[current].synth.velocity_sens[i] = PropertyInt(pos, text, tones_data.data[current].synth.velocity_sens[i], 0, 255, 1);
+                    text = FormatText("%.1f %%", 100*calc_velocity_sens(es.tones_data.data[es.current_tone_index].synth.velocity_sens[i]) / (float)ks_1(KS_VELOCITY_SENS_BITS));
+                    es.tones_data.data[es.current_tone_index].synth.velocity_sens[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.velocity_sens[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -841,9 +917,9 @@ int main()
                 pos2.width = (base_width - margin)/ 2.0;
                 pos2.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    tones_data.data[current].synth.keyscale_curve_types.st[i].left = PropertyIntImage(pos2, keyscale_left_images, tones_data.data[current].synth.keyscale_curve_types.st[i].left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
+                    es.tones_data.data[es.current_tone_index].synth.keyscale_curve_types.st[i].left = PropertyIntImage(pos2, keyscale_left_images, es.tones_data.data[es.current_tone_index].synth.keyscale_curve_types.st[i].left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
                     pos2.x += pos2.width  +margin;
-                    tones_data.data[current].synth.keyscale_curve_types.st[i].right = PropertyIntImage(pos2, keyscale_right_images, tones_data.data[current].synth.keyscale_curve_types.st[i].right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
+                    es.tones_data.data[es.current_tone_index].synth.keyscale_curve_types.st[i].right = PropertyIntImage(pos2, keyscale_right_images, es.tones_data.data[es.current_tone_index].synth.keyscale_curve_types.st[i].right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
                     pos2.x +=  pos2.width +margin;
                 }
                 pos.x = x_pos.x; pos.y += (pos2.height + margin);
@@ -856,13 +932,13 @@ int main()
                 pos2.width /=2.0f;
 
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(tones_data.data[current].synth.keyscale_low_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
-                    tones_data.data[current].synth.keyscale_low_depths[i] = PropertyInt(pos2, text, tones_data.data[current].synth.keyscale_low_depths[i], 0, 255, 1);
+                    text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(es.tones_data.data[es.current_tone_index].synth.keyscale_low_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
+                    es.tones_data.data[es.current_tone_index].synth.keyscale_low_depths[i] = PropertyInt(pos2, text, es.tones_data.data[es.current_tone_index].synth.keyscale_low_depths[i], 0, 255, 1);
 
                     pos2.x += step_x/2.0f;
 
-                    text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(tones_data.data[current].synth.keyscale_high_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
-                    tones_data.data[current].synth.keyscale_high_depths[i] = PropertyInt(pos2, text, tones_data.data[current].synth.keyscale_high_depths[i], 0, 255, 1);
+                    text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(es.tones_data.data[es.current_tone_index].synth.keyscale_high_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
+                    es.tones_data.data[es.current_tone_index].synth.keyscale_high_depths[i] = PropertyInt(pos2, text, es.tones_data.data[es.current_tone_index].synth.keyscale_high_depths[i], 0, 255, 1);
                     pos2.x += step_x / 2.0f;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -872,8 +948,8 @@ int main()
                 GuiAlignedLabel("Keyscale Mid Key", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%d", calc_keyscale_mid_points(tones_data.data[current].synth.keyscale_mid_points[i]));
-                    tones_data.data[current].synth.keyscale_mid_points[i] = PropertyInt(pos, text, tones_data.data[current].synth.keyscale_mid_points[i], 0, 127, 1);
+                    text = FormatText("%d", calc_keyscale_mid_points(es.tones_data.data[es.current_tone_index].synth.keyscale_mid_points[i]));
+                    es.tones_data.data[es.current_tone_index].synth.keyscale_mid_points[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.keyscale_mid_points[i], 0, 127, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -882,8 +958,8 @@ int main()
                 GuiAlignedLabel("LFO AMS", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    text = FormatText("%.1f %%", 100*calc_lfo_ams_depths(tones_data.data[current].synth.lfo_ams_depths[i]) / (float)ks_1(KS_LFO_DEPTH_BITS));
-                    tones_data.data[current].synth.lfo_ams_depths[i] = PropertyInt(pos, text, tones_data.data[current].synth.lfo_ams_depths[i], 0, 255, 1);
+                    text = FormatText("%.1f %%", 100*calc_lfo_ams_depths(es.tones_data.data[es.current_tone_index].synth.lfo_ams_depths[i]) / (float)ks_1(KS_LFO_DEPTH_BITS));
+                    es.tones_data.data[es.current_tone_index].synth.lfo_ams_depths[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.lfo_ams_depths[i], 0, 255, 1);
                     pos.x += step_x;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -922,14 +998,14 @@ int main()
                         Rectangle rec = recs[whites[k]] = (Rectangle){x2, y, white.x, white.y};
                         i8 n = whites[k]+ offset;
 
-                        if(n == noteon_number){
+                        if(n == es.noteon_number){
                             noteon_rec = rec;
                             DrawRectangleRec(rec, SKYBLUE);
-                            DrawRectangleLinesEx(rec, 1, state != EDIT ? LIGHTGRAY : GRAY);
+                            DrawRectangleLinesEx(rec, 1, es.display_mode!= EDIT ? LIGHTGRAY : GRAY);
                         }
                         else {
                             DrawRectangleRec(rec, RAYWHITE);
-                            DrawRectangleLinesEx(rec, 1, state != EDIT ? LIGHTGRAY : GRAY);
+                            DrawRectangleLinesEx(rec, 1, es.display_mode!= EDIT ? LIGHTGRAY : GRAY);
                         }
 
                         x2 += white.x;
@@ -942,11 +1018,11 @@ int main()
                         i8 n = blacks[k]+ offset;
 
 
-                        if(n == noteon_number){
+                        if(n == es.noteon_number){
                             noteon_rec = rec;
                             DrawRectangleRec(rec, DARKBLUE);
                         } else {
-                            DrawRectangleRec(rec, state != EDIT ? LIGHTGRAY : DARKGRAY);
+                            DrawRectangleRec(rec, es.display_mode!= EDIT ? LIGHTGRAY : DARKGRAY);
                         }
 
 
@@ -954,7 +1030,7 @@ int main()
                     }
 
 
-                    if(state ==EDIT){
+                    if(es.display_mode==EDIT){
                         for(int i=0; i<7; i++){
                             i8 n = offset + whites[i];
                             Vector2 mouse = GetMousePosition();
@@ -982,41 +1058,41 @@ int main()
 
 
 
-                if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && noteon_number != -1){
-                    ks_synth_note_off(&note);
-                    noteon_number = -1;
+                if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && es.noteon_number != -1){
+                    ks_synth_note_off(&es.note);
+                    es.noteon_number = -1;
                 }
 
                 if(noteonb != -1){
-                    if(noteonb != noteon_number){
-                        ks_synth_set(&synth, SAMPLING_RATE, &tones_data.data[current].synth);
-                        ks_synth_note_on(&note, &synth, SAMPLING_RATE, noteonb, velocity);
-                        noteon_number = noteonb;
+                    if(noteonb != es.noteon_number){
+                        ks_synth_set(&es.synth, SAMPLING_RATE, &es.tones_data.data[es.current_tone_index].synth);
+                        ks_synth_note_on(&es.note, &es.synth, SAMPLING_RATE, noteonb, velocity);
+                        es.noteon_number = noteonb;
                     }
                 } else if(noteonw != -1){
-                    if(noteonw != noteon_number){
-                        ks_synth_set(&synth, SAMPLING_RATE, &tones_data.data[current].synth);
-                        ks_synth_note_on(&note, &synth, SAMPLING_RATE, noteonw, velocity);
-                        noteon_number = noteonw;
+                    if(noteonw != es.noteon_number){
+                        ks_synth_set(&es.synth, SAMPLING_RATE, &es.tones_data.data[es.current_tone_index].synth);
+                        ks_synth_note_on(&es.note, &es.synth, SAMPLING_RATE, noteonw, velocity);
+                        es.noteon_number = noteonw;
                     }
                 }
             }
 
             GuiEnable();
 
-            switch (state) {
+            switch (es.display_mode) {
 
             case CONFIRM_NEW:{
-                bool run_new = !dirty;
+                bool run_new = !es.dirty;
 
-                if(dirty){
+                if(es.dirty){
                     Rectangle rec={0,0, 200, 100};
                     rec.x = (SCREEN_WIDTH - rec.width)/ 2;
                     rec.y = (SCREEN_HEIGHT - rec.height) / 2;
-                    int res = GuiMessageBox(rec, "Confirm", "Clear current and Create new ?" , "Yes;No");
+                    int res = GuiMessageBox(rec, "Confirm", "Clear es.current_tone_index and Create new ?" , "Yes;No");
 
                     if(res == 0 || res ==2){
-                        state = EDIT;
+                        es.display_mode= EDIT;
                     }
                     else if(res == 1) {
                         run_new = true;
@@ -1024,110 +1100,120 @@ int main()
                 }
 
                 if(run_new){
-                    strcpy(file_dialog_state.fileNameText, "");
-                    unmark_dirty(&dirty, &file_dialog_state);
-                    state = EDIT;
-                    ks_vector_clear(&tones_data);
-                    ks_tone_list_insert_empty(&tones_data, &current);
-                    current = 0;
-                    temp = tones_data.data[current].synth;
+                    strcpy(es.file_dialog_state.fileNameText, "");
+                    unmark_dirty(&es.dirty, &es.file_dialog_state);
+                    es.display_mode= EDIT;
+                    ks_vector_clear(&es.tones_data);
+                    ks_tone_list_insert_empty(&es.tones_data, &es.current_tone_index);
+                    es.current_tone_index = 0;
+                    es.temp_synth = es.tones_data.data[es.current_tone_index].synth;
                 }
                 break;
             }
             case LOAD_DIALOG:{
-                GuiFileDialog(&file_dialog_state, false);
-                if(file_dialog_state.fileDialogActiveState == DIALOG_DEACTIVE) {
-                    if(file_dialog_state.SelectFilePressed){
-                        if(strcmp(file_dialog_state.fileNameText, "") == 0){
-                            file_dialog_state.SelectFilePressed = false;
-                            file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
+                GuiFileDialog(&es.file_dialog_state, false);
+                if(es.file_dialog_state.fileDialogActiveState == DIALOG_DEACTIVE) {
+                    if(es.file_dialog_state.SelectFilePressed){
+                        if(strcmp(es.file_dialog_state.fileNameText, "") == 0){
+                            es.file_dialog_state.SelectFilePressed = false;
+                            es.file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
                             break;
                         }
 
                         ks_tone_list_data load;
-                        if(!SaveLoadToneList(&load,&file_dialog_state, false)){
+                        if(!SaveLoadToneList(&load,&es.file_dialog_state, false)){
                             ks_error("Failed to load synth");
 
                         }else {
-                            free(tones_data.data);
-                            tones_data = load;
-                            current = 0;
-                            temp = tones_data.data[current].synth;
-                            unmark_dirty(&dirty, &file_dialog_state);
-                            update_tone_list(&tones, &tones_data, score_state);
+                            free(es.tones_data.data);
+                            es.tones_data = load;
+                            es.current_tone_index = 0;
+                            es.temp_synth = es.tones_data.data[es.current_tone_index].synth;
+                            unmark_dirty(&es.dirty, &es.file_dialog_state);
+                            update_tone_list(&es.tones, &es.tones_data, es.score_state);
                         }
                     }
-                    state = EDIT;
+                    es.display_mode= EDIT;
                 }
                 break;
             }
             case SAVE_DIALOG:{
-                GuiFileDialog(&file_dialog_state, true);
-                if(file_dialog_state.fileDialogActiveState == DIALOG_DEACTIVE){
-                    if(file_dialog_state.SelectFilePressed){
-                        if(SaveLoadToneList(&tones_data ,&file_dialog_state, true)){
-                            unmark_dirty(&dirty, &file_dialog_state);
-                            update_tone_list(&tones, &tones_data, score_state);
+                GuiFileDialog(&es.file_dialog_state, true);
+                if(es.file_dialog_state.fileDialogActiveState == DIALOG_DEACTIVE){
+                    if(es.file_dialog_state.SelectFilePressed){
+                        if(SaveLoadToneList(&es.tones_data ,&es.file_dialog_state, true)){
+                            unmark_dirty(&es.dirty, &es.file_dialog_state);
+                            update_tone_list(&es.tones, &es.tones_data, es.score_state);
                         }
                     }
-                    state = EDIT;
+                    es.display_mode= EDIT;
                 }
                 break;
             }
             case IMPORT_SYNTH_DIALOG:{
-                GuiFileDialog(&file_dialog_state_synth, false);
-                if(file_dialog_state_synth.fileDialogActiveState == DIALOG_DEACTIVE){
-                    if(file_dialog_state_synth.SelectFilePressed){
+                GuiFileDialog(&es.file_dialog_state_synth, false);
+                if(es.file_dialog_state_synth.fileDialogActiveState == DIALOG_DEACTIVE){
+                    if(es.file_dialog_state_synth.SelectFilePressed){
                         ks_synth_data tmp;
-                        if(SaveLoadSynth(&tmp ,&file_dialog_state_synth, false)){
-                            mark_dirty(&dirty, &file_dialog_state);
-                            tones_data.data[current].synth = temp = tmp;
+                        if(SaveLoadSynth(&tmp ,&es.file_dialog_state_synth, false)){
+                            mark_dirty(&es.dirty, &es.file_dialog_state);
+                            es.tones_data.data[es.current_tone_index].synth = es.temp_synth = tmp;
                         }
                     }
-                    state = EDIT;
+                    es.display_mode= EDIT;
                 }
                 break;
             }
             case EXPORT_SYNTH_DIALOG:{
-                GuiFileDialog(&file_dialog_state_synth, true);
-                if(file_dialog_state_synth.fileDialogActiveState == DIALOG_DEACTIVE){
-                    if(file_dialog_state_synth.SelectFilePressed){
-                        SaveLoadSynth(&tones_data.data[current].synth ,&file_dialog_state_synth, true);
+                GuiFileDialog(&es.file_dialog_state_synth, true);
+                if(es.file_dialog_state_synth.fileDialogActiveState == DIALOG_DEACTIVE){
+                    if(es.file_dialog_state_synth.SelectFilePressed){
+                        SaveLoadSynth(&es.tones_data.data[es.current_tone_index].synth ,&es.file_dialog_state_synth, true);
                     }
-                    state = EDIT;
+                    es.display_mode= EDIT;
                 }
                 break;
             }
+            case ERROR_DIALOG:{
+                const float lr_margin =  SCREEN_WIDTH * 0.4f;
+                const float td_margin = SCREEN_HEIGHT * 0.4f;
+                Rectangle window ={ lr_margin, td_margin, SCREEN_WIDTH - lr_margin *2, SCREEN_HEIGHT - td_margin*2 };
+                if(GuiMessageBox(window, "Error", es.dialog_message, "OK") > 0){
+                    es.display_mode = EDIT;
+                }
+                break;
+                }
             case SETTINGS:{
                 const float lr_margin =  SCREEN_WIDTH * 0.3f;
                 const float td_margin = SCREEN_HEIGHT * 0.28f;
                 Rectangle window ={ lr_margin, td_margin, SCREEN_WIDTH - lr_margin *2, SCREEN_HEIGHT - td_margin*2 };
                 if(GuiWindowBox(window, "#141#Settings")){
-                    state = EDIT;
+                    es.display_mode= EDIT;
                 }
+#ifdef PLATFORM_DESKTOP
                 Rectangle cp = {window.x + margin*5, window.y + margin*2 + line_width*2, base_width, line_width};
-                if(midiin == NULL){
+                if(es.midiin == NULL){
                     GuiDisable();
                 }
-\
+
                 {
                     GuiLabel(cp, "Midi Input Port");
                     cp.y += step;
 
                     const Rectangle listrec = {cp.x, cp.y, window.width - margin*10, step *10};
-                    const u32 midiin_count = midiin == NULL ? 0 : rtmidi_get_port_count(midiin);
+                    const u32 midiin_count = es.midiin == NULL ? 0 : rtmidi_get_port_count(es.midiin);
                     const char *midiin_list[midiin_count];
                     for(u32 i=0; i< midiin_count; i++){
-                        midiin_list[i] = rtmidi_get_port_name(midiin, i);
+                        midiin_list[i] = rtmidi_get_port_name(es.midiin, i);
                     }
-                    const u32 new_midiin_port = GuiListViewEx(listrec, midiin_list, midiin_count, NULL, &midiin_list_scroll, midiin_port);
-                    if(new_midiin_port != midiin_port && new_midiin_port < midiin_count){
-                        midiin_port = new_midiin_port;
-                        rtmidi_close_port(midiin);
-                        rtmidi_open_port(midiin, midiin_port, midiin_list[midiin_port]);
+                    const u32 new_midiin_port = GuiListViewEx(listrec, midiin_list, midiin_count, NULL, &es.midiin_list_scroll, es.midiin_port);
+                    if(new_midiin_port != es.midiin_port && new_midiin_port < midiin_count){
+                        es.midiin_port = new_midiin_port;
+                        rtmidi_close_port(es.midiin);
+                        rtmidi_open_port(es.midiin, es.midiin_port, midiin_list[es.midiin_port]);
                     }
                 }
-                if(midiin == NULL){
+                if(es.midiin == NULL){
                     GuiEnable();
                 }
                 cp.y += step*10 + margin;
@@ -1135,10 +1221,12 @@ int main()
                 {
                     const Rectangle button_rec = {window.x + window.width - margin*5 - cp.width, cp.y, cp.width, cp.height*2};
                     if(GuiButton(button_rec, "Done")){
-                        state = EDIT;
+                        es.display_mode= EDIT;
                     }
                 }
+#endif
             }
+
             default:
                 break;
         }
@@ -1158,14 +1246,15 @@ int main()
     CloseWindow();
     CloseAudioDevice();
 
-    ks_score_state_free(score_state);
-    if(midiin != NULL){
-        rtmidi_close_port(midiin);
-        rtmidi_in_free(midiin);
+    ks_score_state_free(es.score_state);
+#ifdef PLATFORM_DESKTOP
+    if(es.midiin != NULL){
+        rtmidi_close_port(es.midiin);
+        rtmidi_in_free(es.midiin);
     }
-
-    free(buf);
-    free(tones_data.data);
+#endif
+    free(es.buf);
+    free(es.tones_data.data);
 
     return 0;
 }
