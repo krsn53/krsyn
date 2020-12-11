@@ -23,7 +23,6 @@ ks_io_begin_custom_func(ks_synth_data)
     ks_arr_u8(envelope_times[2]);
     ks_arr_u8(envelope_times[3]);
 
-    ks_arr_u8(envelope_release_times);
     ks_arr_u8(velocity_sens);
     ks_arr_u8(ratescales);
     ks_arr_u8(keyscale_low_depths);
@@ -74,14 +73,12 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->envelope_times[0][i] = 0;
         data->envelope_times[1][i] = UINT8_MAX;
         data->envelope_times[2][i] = UINT8_MAX;
-        data->envelope_times[3][i] = UINT8_MAX;
+        data->envelope_times[3][i] = 128;
 
         data->envelope_points[0][i] = UINT8_MAX;
         data->envelope_points[1][i] = UINT8_MAX;
         data->envelope_points[2][i] = UINT8_MAX;
-        data->envelope_points[3][i] = UINT8_MAX;
-
-        data->envelope_release_times[i] = 128;
+        data->envelope_points[3][i] = 0;
 
         data->velocity_sens[i] = UINT8_MAX;
 
@@ -197,8 +194,6 @@ static inline void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_syn
             synth->envelope_points[e][i] = calc_envelope_points(data->envelope_points[e][i]);
             synth->envelope_samples[e][i] = calc_envelope_samples(sampling_rate, data->envelope_times[e][i]);
         }
-
-        synth->envelope_release_samples[i] =  calc_envelope_samples(sampling_rate, data->envelope_release_times[i]);
 
         synth->velocity_sens[i] = calc_velocity_sens(data->velocity_sens[i]);
 
@@ -392,12 +387,6 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
             note->envelope_samples[j][i] = MAX((u32)frame, 1u);
         }
 
-        u64 frame = (synth->envelope_release_samples[i]);
-        frame *= ratescales;
-        frame >>= KS_RATESCALE_BITS;
-        frame >>= KS_SAMPLE_PER_FRAMES_BITS;
-        note->envelope_release_samples[i] = MAX((u32)frame, 1u);
-
         note->envelope_deltas[0][i] = note->envelope_points[0][i] / (note->envelope_samples[0][i] << KS_SAMPLE_PER_FRAMES_BITS);
         for(u32 j=1; j < KS_ENVELOPE_NUM_POINTS; j++)
         {
@@ -420,8 +409,8 @@ void ks_synth_note_off (ks_synth_note* note)
     for(u32 i=0; i< KS_NUM_OPERATORS; i++)
     {
         note->envelope_states[i] = KS_ENVELOPE_RELEASED;
-        note->envelope_now_times[i] = note->envelope_release_samples[i];
-        note->envelope_now_deltas[i] = - note->envelope_now_amps[i] / ((i32)note->envelope_now_times[i] << KS_SAMPLE_PER_FRAMES_BITS);
+        note->envelope_now_times[i] = note->envelope_samples[KS_ENVELOPE_RELEASE_INDEX][i];
+        note->envelope_now_deltas[i] =  (note->envelope_points[KS_ENVELOPE_RELEASE_INDEX][i] - note->envelope_now_amps[i]) / ((i32)note->envelope_now_times[i] << KS_SAMPLE_PER_FRAMES_BITS);
     }
 }
 
@@ -437,8 +426,8 @@ static inline i32 envelope_apply(u32 amp, i32 in)
 
 static inline i32 output_mod(u32 phase, i32 mod, u32 envelope)
 {
-    // mod<<(KS_TABLE_BITS + 1) = double table length = 4pi
-    i32 out = ks_sin(phase + (mod<<(KS_TABLE_BITS + 1)), true);
+    // mod<<(KS_TABLE_BITS + 2) = double table length = 4pi
+    i32 out = ks_sin(phase + (mod<<(KS_TABLE_BITS + 2)), true);
     return envelope_apply(envelope, out);
 }
 
@@ -634,7 +623,7 @@ static inline i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 alg
     }
     note->feedback_log = feedback;
 
-    return out >> 2; //
+    return out >> 2;
 }
 
 static inline void envelope_next(ks_synth_note* note)
@@ -648,16 +637,12 @@ static inline void envelope_next(ks_synth_note* note)
             case KS_ENVELOPE_ON:
                 note->envelope_now_amps[i] = note->envelope_points[note->envelope_now_points[i]][i];
                 note->envelope_now_points[i] ++;
-                if(note->envelope_now_points[i] == KS_ENVELOPE_NUM_POINTS)
+                if(note->envelope_now_points[i] == KS_ENVELOPE_RELEASE_INDEX)
                 {
-                    note->envelope_states[i] = KS_ENVELOPE_SUSTAINED;
-                    note->envelope_now_deltas[i] = 0;
+                    note->envelope_states[i] = KS_ENVELOPE_RELEASED;
                 }
-                else
-                {
-                    note->envelope_now_deltas[i] = note->envelope_deltas[note->envelope_now_points[i]][i];
-                    note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
-                }
+                note->envelope_now_deltas[i] = note->envelope_deltas[note->envelope_now_points[i]][i];
+                note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
                 break;
             case KS_ENVELOPE_RELEASED:
                 note->envelope_now_amps[i] = 0;

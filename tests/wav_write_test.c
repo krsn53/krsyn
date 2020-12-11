@@ -112,12 +112,6 @@ int main( void )
                           202,
                       },
                       .envelope_times[3]={
-                          0,
-                          0,
-                          0,
-                          0,
-                      },
-                      .envelope_release_times={
                           128,
                           128,
                           128,

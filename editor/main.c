@@ -645,7 +645,7 @@ int main(int argc, char** argv)
                     GuiAlignedLabel("Feedback", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f PI", 2.0f *calc_feedback_level(es.tones_data.data[es.current_tone_index].synth.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
+                    text = FormatText("%.3f PI", 4.0f *calc_feedback_level(es.tones_data.data[es.current_tone_index].synth.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
                     es.tones_data.data[es.current_tone_index].synth.feedback_level = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.feedback_level, 0, 255, 1);
                 }
                 pos.x = x_pos.x;
@@ -842,7 +842,13 @@ int main(int argc, char** argv)
 
                 // envelope points and times
                 for(unsigned e =0; e< KS_ENVELOPE_NUM_POINTS; e++){
-                    text = FormatText( e == 0 ? "Attack" : e == 1 ? "Decay" : "Sustain %d", e-1);
+                    const char* texts [KS_ENVELOPE_NUM_POINTS] = {
+                        "Attack",
+                        "Decay",
+                        "Sustain",
+                        "Release",
+                    };
+                    text = texts[e];
                     GuiAlignedLabel(text, pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
@@ -869,27 +875,6 @@ int main(int argc, char** argv)
                     }
                     pos.x = x_pos.x; pos.y += step;
                 }
-
-                // envelope release time
-                GuiAlignedLabel("Release Time", pos, GUI_TEXT_ALIGN_RIGHT);
-                pos.x += step_x;
-                for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                    float sec = ks_calc_envelope_times(es.tones_data.data[es.current_tone_index].synth.envelope_release_times[i]) / (float)ks_1(16);
-                    if(sec >= 1.0f){
-                        text = FormatText("%.1f s", sec);
-                    }
-                    else if(sec< 1.0f && sec>= 0.01f){
-                        text = FormatText("%.1f ms", sec*1000.0f);
-                    }
-                    else {
-                        text = FormatText("%.3f ms", sec*1000.0f);
-                    }
-
-                    es.tones_data.data[es.current_tone_index].synth.envelope_release_times[i] = PropertyInt(pos, text, es.tones_data.data[es.current_tone_index].synth.envelope_release_times[i], 0, 255, 1);
-                    pos.x += step_x;
-                }
-                pos.x = x_pos.x; pos.y += step;
-
                 // rate scale
                GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
                pos.x += step_x;

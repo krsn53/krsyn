@@ -17,6 +17,7 @@
 
 #define KS_ENVELOPE_BITS                30u
 #define KS_ENVELOPE_NUM_POINTS          4u
+#define KS_ENVELOPE_RELEASE_INDEX       3u
 
 #define KS_VELOCITY_SENS_BITS           16u
 
@@ -58,7 +59,6 @@ typedef enum ks_envelope_state
 {
     KS_ENVELOPE_OFF = 0,
     KS_ENVELOPE_ON,
-    KS_ENVELOPE_SUSTAINED,
     KS_ENVELOPE_RELEASED = 0x80,
 }ks_synth_envelope_state;
 
@@ -124,10 +124,6 @@ typedef struct ks_synth_data
     //! Time until becoming envelop_points. i.e. Attack Time and Sustain Time.
     u8                      envelope_times          [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
-    //! Release time. Time until amplitude becoming zero from note off.
-    u8                      envelope_release_times  [KS_NUM_OPERATORS];
-
-
     //! Volume change degree by velocity.
     u8                      velocity_sens           [KS_NUM_OPERATORS];
 
@@ -190,7 +186,6 @@ typedef struct ks_synth
 
     i32         envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
     u32         envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32         envelope_release_samples    [KS_NUM_OPERATORS];
 
     u32         velocity_sens               [KS_NUM_OPERATORS];
     u32         lfo_ams_depths              [KS_NUM_OPERATORS];
@@ -226,22 +221,21 @@ typedef  struct ks_synth_note
 {
     i32     output_log                  [KS_NUM_OPERATORS];
 
-    u32    phases                       [KS_NUM_OPERATORS];
-    u32    phase_deltas                 [KS_NUM_OPERATORS];
+    u32     phases                      [KS_NUM_OPERATORS];
+    u32     phase_deltas                [KS_NUM_OPERATORS];
 
     i32     envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32    envelope_samples             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u32     envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
     i32     envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32    envelope_release_samples     [KS_NUM_OPERATORS];
 
     i32     envelope_now_deltas         [KS_NUM_OPERATORS];
     i32     envelope_now_times          [KS_NUM_OPERATORS];
     i32     envelope_now_amps           [KS_NUM_OPERATORS];
-    u8     envelope_states              [KS_NUM_OPERATORS];
-    u8     envelope_now_points          [KS_NUM_OPERATORS];
+    u8      envelope_states             [KS_NUM_OPERATORS];
+    u8      envelope_now_points         [KS_NUM_OPERATORS];
 
-    u32    lfo_phase;
-    u32    lfo_delta;
+    u32     lfo_phase;
+    u32     lfo_delta;
     i32     lfo_log;
     i32     feedback_log;
 
@@ -287,7 +281,6 @@ i16                         ks_apply_panpot                 (i16 in, i16 pan);
 #define calc_phase_dets(value)                          ks_linear_u(value, 0, ks_1(KS_PHASE_MAX_BITS))
 #define calc_envelope_points(value)                     ks_linear2_i(value, 0, 1 << KS_ENVELOPE_BITS)
 #define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, value)
-#define calc_envelope_release_samples(smp_freq, value)  calc_envelope_samples(smp_ferq,value)
 #define calc_velocity_sens(value)                       ks_linear2_u(value, 0, 1 << KS_VELOCITY_SENS_BITS)
 #define calc_ratescales(value)                          ks_linear2_u(value, 0, 1 << KS_RATESCALE_BITS)
 #define calc_keyscale_low_depths(value)                 ks_linear2_u(value, 0, 1 << KS_KEYSCALE_DEPTH_BITS)
@@ -297,7 +290,7 @@ i16                         ks_apply_panpot                 (i16 in, i16 pan);
 #define calc_keyscale_curve_types_right(value)          (value)
 #define calc_lfo_ams_depths(value)                      ks_linear2_u(value, 0, 1 << KS_LFO_DEPTH_BITS)
 #define calc_algorithm(value)                           (value)
-#define calc_feedback_level(value)                      ks_linear_u(value, 0, 2<<KS_FEEDBACK_LEVEL_BITS)
+#define calc_feedback_level(value)                      ks_linear_u(value, 0, 1<<KS_FEEDBACK_LEVEL_BITS)
 #define calc_panpot(value)                              (value)
 #define calc_lfo_wave_type(value)                      (value)
 #define calc_lfo_fms_depth(value)                       ks_exp_u(value, 1 << (KS_LFO_DEPTH_BITS-12), 4)
