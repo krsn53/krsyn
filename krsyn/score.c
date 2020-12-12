@@ -238,10 +238,31 @@ bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const
     return true;
 }
 
+static inline void set_channel_volume_cache(ks_score_channel* ch){
+    ch->volume_cache = (u16)ch->volume * ch->expression;
+}
+
+
+inline bool ks_score_channel_set_volume(ks_score_channel* ch, u8 value){
+    ch->volume = value;
+    set_channel_volume_cache(ch);
+    return true;
+}
+
+inline bool ks_score_channel_set_expression(ks_score_channel* ch, u8 value){
+    ch->expression = value;
+    set_channel_volume_cache(ch);
+    return true;
+}
+
 bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* tones, ks_score_channel* channel, u8 type, u8 value){
     switch (type) {
     case 0x00:
         return ks_score_state_bank_select_msb(state, tones, channel, value);
+    case 0x07:
+        return ks_score_channel_set_volume(channel, value);
+    case 0x0b:
+        return ks_score_channel_set_expression(channel, value);
     case 0x20:
         return ks_score_state_bank_select_lsb(state, tones, channel, value);
     case 0x10:
@@ -270,7 +291,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
             //if(channel->bank->programs[channel->program_number] == NULL) continue;
             ks_synth* synth = channel->program;
             ks_synth_note* note = &state->notes[p].note;
-            ks_synth_render(synth, note, channel->pitchbend, tmpbuf, frame);
+            ks_synth_render(synth, note, channel->volume_cache, channel->pitchbend, tmpbuf, frame);
 
             for(u32 b =0; b< frame; b+=2){
                 buf[(i + b)] += ks_apply_panpot(tmpbuf[b], channel->panpot_left);
@@ -376,6 +397,9 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones
         ks_score_channel_set_panpot(&state->channels[i], 64);
         ks_score_channel_set_picthbend(&state->channels[i], 0, 0);
         ks_score_state_bank_select(state, tones, &state->channels[i], 0, 0);
+        state->channels[i].volume= 100;
+        state->channels[i].expression= 127;
+        set_channel_volume_cache(&state->channels[i]);
     }
 }
 

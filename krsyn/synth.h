@@ -32,6 +32,7 @@
 #define KS_SAMPLE_PER_FRAMES_BITS       5u
 
 #define KS_PANPOT_BITS          7u
+#define KS_VOLUME_BITS          13u
 
 
 /**
@@ -250,7 +251,7 @@ ks_synth*                   ks_synth_array_new              (u32 length, ks_synt
 void                        ks_synth_free                   (ks_synth* synth);
 void                        ks_synth_data_set_default       (ks_synth_data* data);
 void                        ks_synth_set                    (ks_synth* synth, u32 sampling_rate, const ks_synth_data* data);
-void                        ks_synth_render                 (const ks_synth *synth, ks_synth_note* note, u32 pitchbend, i16 *buf, u32 len);
+void                        ks_synth_render                 (const ks_synth *synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16 *buf, u32 len);
 void                        ks_synth_note_on                (ks_synth_note* note, const ks_synth *synth, u32 sampling_rate,  u8 notenum, u8 velocity);
 void                        ks_synth_note_off               (ks_synth_note* note);
 bool                        ks_synth_note_is_enabled        (const ks_synth_note* note);

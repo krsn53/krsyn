@@ -10,8 +10,9 @@
 #define KS_NUM_CHANNELS         16u
 
 #define KS_PITCH_BEND_BITS      13u
-
 #define KS_QUARTER_TIME_BITS    8u
+
+
 
 typedef         struct ks_tone_list         ks_tone_list;
 typedef         struct ks_tone_list_bank    ks_tone_list_bank;
@@ -29,6 +30,10 @@ typedef struct ks_score_channel{
     i16                 panpot_left;
     i16                 panpot_right;
     i32                 pitchbend;
+
+    u8                  volume;
+    u8                  expression;
+    u16                 volume_cache;
 }ks_score_channel;
 
 /**
@@ -109,6 +114,8 @@ bool                ks_score_state_tempo_change     (ks_score_state* state, u32 
 bool                ks_score_state_control_change   (ks_score_state* state, const ks_tone_list* tones, ks_score_channel* channel, u8 type, u8 value);
 bool                ks_score_channel_set_panpot     (ks_score_channel* ch, u8 value);
 bool                ks_score_channel_set_picthbend  (ks_score_channel* ch, u8 msb, u8 lsb);
+bool                ks_score_channel_set_volume     (ks_score_channel* ch, u8 value);
+bool                ks_score_channel_set_expression (ks_score_channel* ch, u8 value);
 bool                ks_score_state_bank_select      (ks_score_state* state, const ks_tone_list* tones,  ks_score_channel* channel, u8 msb, u8 lsb);
 bool                ks_score_state_bank_select_msb  (ks_score_state* state, const ks_tone_list* tones, ks_score_channel* channel, u8 msb);
 bool                ks_score_state_bank_select_lsb  (ks_score_state* state, const ks_tone_list* tones, ks_score_channel* channel, u8 lsb);

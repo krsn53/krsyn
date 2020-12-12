@@ -728,14 +728,16 @@ static inline void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 del
     }
 }
 
-static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 pitchbend, i16* buf, u32 len,
+static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len,
                                     u8 algorithm, u8 lfo_type, bool ams, bool fms)
 {
     u32 delta[KS_NUM_OPERATORS];
 
     for(u32 i=0; i<len; i+=2)
     {
-        buf[i] = buf[i+1] = synth_frame(synth, note, algorithm);
+        u32 out = synth_frame(synth, note, algorithm) * volume;
+        out >>= KS_VOLUME_BITS;
+        buf[i] = buf[i+1] = out;
         buf[i]= ks_apply_panpot(buf[i], synth->panpot_left);
         buf[i+1]= ks_apply_panpot(buf[i+1], synth->panpot_right);
         lfo_frame(synth, note, delta, lfo_type, ams, fms);
@@ -764,17 +766,17 @@ static inline void ks_synth_process(const ks_synth* synth, ks_synth_note* note, 
 #define _algorithm_list _(0) _(1) _(2) _(3) _(4) _(5) _(6) _(7) _(8) _(9) _(10)
 
 #define ks_synth_define_synth_render_aw(algorithm, wave) \
-void ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, u32 pitchbend, i16* buf, u32 len){ \
-    ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, false, false); \
+void ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len){ \
+    ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, false, false); \
 } \
-void ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, u32 pitchbend, i16* buf, u32 len) {\
-    ks_synth_process(synth, note,pitchbend,  buf, len, algorithm, wave, false, true); \
+void ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len) {\
+    ks_synth_process(synth, note, volume, pitchbend,  buf, len, algorithm, wave, false, true); \
 } \
-void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, u32 pitchbend, i16* buf, u32 len) {\
-    ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, false); \
+void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len) {\
+    ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, true, false); \
 } \
-    void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, u32 pitchbend, i16* buf, u32 len){ \
-    ks_synth_process(synth, note, pitchbend, buf, len, algorithm, wave, true, true); \
+    void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len){ \
+    ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, true, true); \
 }
 
 #define ks_synth_define_synth_render(algorithm) \
@@ -798,22 +800,22 @@ _algorithm_list
     { \
         if(synth->lfo_fms_enabled) \
         { \
-            ks_synth_render_ ## algorithm ## _ ## wave ## _1_1 (synth, note, pitchbend,  buf, len); \
+            ks_synth_render_ ## algorithm ## _ ## wave ## _1_1 (synth, note, volume, pitchbend,  buf, len); \
         } \
         else \
         { \
-            ks_synth_render_ ## algorithm ## _ ## wave ## _1_0 (synth, note, pitchbend, buf, len); \
+            ks_synth_render_ ## algorithm ## _ ## wave ## _1_0 (synth, note, volume, pitchbend, buf, len); \
         } \
     } \
     else \
     { \
         if(synth->lfo_fms_enabled) \
         { \
-            ks_synth_render_ ## algorithm ## _ ## wave ## _0_1 (synth, note, pitchbend, buf, len); \
+            ks_synth_render_ ## algorithm ## _ ## wave ## _0_1 (synth, note, volume, pitchbend, buf, len); \
         } \
         else \
         { \
-            ks_synth_render_ ## algorithm ## _ ## wave ## _0_0 (synth, note, pitchbend, buf, len); \
+            ks_synth_render_ ## algorithm ## _ ## wave ## _0_0 (synth, note, volume, pitchbend, buf, len); \
         } \
     }
 
@@ -834,7 +836,7 @@ _algorithm_list
 #undef _
 #define _(x) case x : ks_synth_render_branch(x) break;
 
-void ks_synth_render(const ks_synth* synth, ks_synth_note* note, u32 pitchbend, i16 *buf, u32 len)
+void ks_synth_render(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16 *buf, u32 len)
 {
     if(*(u32*)note->envelope_states != 0){
         switch(synth->algorithm)

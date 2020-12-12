@@ -372,7 +372,7 @@ int main(int argc, char** argv)
 
             i16 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
             memset(tmpbuf, 0, sizeof(tmpbuf));
-            ks_synth_render(&es.synth, &es.note, ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+            ks_synth_render(&es.synth, &es.note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
             for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
                 es.buf[i] += tmpbuf[i];
             }
