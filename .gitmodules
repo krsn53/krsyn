@@ -1,6 +1,3 @@
-[submodule "editor/raylib"]
-	path = editor/raylib
-	url = https://github.com/raysan5/raylib.git
 [submodule "editor/raygui"]
 	path = editor/raygui
 	url = https://github.com/raysan5/raygui.git
@@ -10,3 +7,6 @@
 [submodule "ksio"]
 	path = ksio
 	url = git@github.com:krsn53/ksio.git
+[submodule "editor/raylib"]
+	path = editor/raylib
+	url = https://github.com/raysan5/raylib.git
