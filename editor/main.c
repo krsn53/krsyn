@@ -264,6 +264,8 @@ int main(int argc, char** argv)
             if(!SaveLoadToneList(&es.tones_data, &es.file_dialog_state, false)){
                 es.dialog_message = "Failed to load tone list";
                 es.display_mode = ERROR_DIALOG;
+            } else {
+                unmark_dirty(&es.dirty, &es.file_dialog_state);
             }
         }
         else if(IsFileExtension(argv[1], synth_ext)){

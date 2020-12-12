@@ -57,10 +57,11 @@ typedef struct ks_score_note{
 typedef struct ks_score_state{
     u16            quater_time;
     u16            frames_per_event;
-    u16            current_frame;
+    u16            remaining_frame;
     u16            polyphony_bits;
 
     u32            current_event;
+    u32            passed_tick;
     u32            current_tick;
 
     ks_score_channel    channels        [KS_NUM_CHANNELS];

@@ -255,7 +255,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
     u32 i=0;
     memset(buf, 0, sizeof(i16)*len);
     do{
-        u32 frame = MIN(len-i, state->current_frame*2);
+        u32 frame = MIN(len-i, state->remaining_frame*2);
         i16 tmpbuf[frame];
 
         for(u32 p=0; p<ks_1(state->polyphony_bits); p++){
@@ -278,19 +278,20 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
             }
         }
 
-        state->current_frame -= frame >> 1;
+        state->remaining_frame -= frame >> 1;
 
-        if(state->current_frame == 0){
-            if(state->current_tick >= score->data[state->current_event].delta){
-                state->current_tick -= score->data[state->current_event].delta;
+        if(state->remaining_frame == 0){
+            if(state->passed_tick >= score->data[state->current_event].delta){
+                state->passed_tick -= score->data[state->current_event].delta;
                 if(ks_score_data_event_run(score, sampling_rate, state, tones)){
-                    state->current_tick = -1;
+                    state->passed_tick = -1;
                 }
             } else {
-                state->current_tick ++;
+                state->passed_tick ++;
             }
+            state->current_tick ++;
 
-            state->current_frame += state->frames_per_event;
+            state->remaining_frame += state->frames_per_event;
         }
 
         i+= frame;
@@ -363,10 +364,10 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
 
 void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones, u32 sampling_rate, u32 resolution){
     state->quater_time = ks_1(KS_QUARTER_TIME_BITS - 1); // 0.5
-    state->current_frame = 0;
+    state->remaining_frame = 0;
     state->current_event = 0;
     state->frames_per_event = calc_frames_per_event(sampling_rate, state->quater_time, resolution);
-    state->current_tick = 0;
+    state->passed_tick = 0;
     for(u32 i=0; i<ks_1(state->polyphony_bits); i++) {
         memset(&state->notes[i], 0 , sizeof(ks_score_note));
     }
