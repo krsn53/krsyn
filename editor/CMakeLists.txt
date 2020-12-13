@@ -15,7 +15,7 @@ add_subdirectory(raygui/projects/CMake)
 
 if(NOT ${PLATFORM} STREQUAL Web)
 add_subdirectory(rtmidi)
-target_link_libraries(krsyn_raygui_edior rtmidi)
+target_link_libraries(krsyn_raygui_editor rtmidi)
 endif()
 target_link_libraries(krsyn_raygui_editor raylib raygui krsyn)
 
