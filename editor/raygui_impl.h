@@ -1,7 +1,6 @@
 #pragma once
 
 #include "raygui.h"
-#include "ricons.h"
 #include "gui_file_dialog.h"
 #include "../krsyn.h"
 

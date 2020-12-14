@@ -635,7 +635,7 @@ static const u16 keyscale_curves[4][128] = {
 
 
 // liniar interpolution
-static inline i16 ks_table_value_li(const i16* table, u32 phase, u32 mask)
+static KS_INLINE i16 ks_table_value_li(const i16* table, u32 phase, u32 mask)
 {
     u32 index_m = phase >> KS_PHASE_BITS;
     u32 index_b = (index_m + 1);
@@ -651,39 +651,39 @@ static inline i16 ks_table_value_li(const i16* table, u32 phase, u32 mask)
 }
 
 // sin table value
-inline i16 ks_sin(u32 phase, bool linear_interpolution)
+KS_INLINE i16 ks_sin(u32 phase, bool linear_interpolution)
 {
     return linear_interpolution ? ks_table_value_li(sin_table, phase,  ks_m(KS_TABLE_BITS)) :
                                   sin_table[ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
 }
 
-inline i16 ks_saw(u32 phase)
+KS_INLINE i16 ks_saw(u32 phase)
 {
     return saw_table[ks_mask((phase >> KS_PHASE_BITS), KS_TABLE_BITS)];
 }
 
-inline i16 ks_triangle(u32 phase)
+KS_INLINE i16 ks_triangle(u32 phase)
 {
     return triangle_table[ks_mask((phase >> KS_PHASE_BITS), KS_TABLE_BITS)];
 }
 
-inline i16 ks_fake_triangle(u32 phase, u32 shift)
+KS_INLINE i16 ks_fake_triangle(u32 phase, u32 shift)
 {
     return triangle_table[ks_mask((phase >> (KS_PHASE_BITS +shift) << (shift)), KS_TABLE_BITS)];
 }
 
-inline i16 ks_noise(u32 phase, u32 begin){
+KS_INLINE i16 ks_noise(u32 phase, u32 begin){
     return noise_table[ks_mask((begin + ((phase >> KS_NOISE_PHASE_BITS))), KS_TABLE_BITS)];
 }
 
-inline u32 ks_notefreq(u8 notenumber){
+KS_INLINE u32 ks_notefreq(u8 notenumber){
     return note_freq[notenumber];
 }
 
-inline i32 ks_ratescale(u8 notenumber){
+KS_INLINE i32 ks_ratescale(u8 notenumber){
     return ratescale[notenumber];
 }
 
-inline u16 ks_keyscale_curves(u8 type, u8 index){
+KS_INLINE u16 ks_keyscale_curves(u8 type, u8 index){
     return keyscale_curves[type][index];
 }

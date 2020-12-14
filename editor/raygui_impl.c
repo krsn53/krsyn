@@ -1,14 +1,19 @@
+#define RAYGUI_IMPLEMENTATION
+#define RAYGUI_SUPPORT_ICONS
+#include "raygui.h"
+#undef RAYGUI_IMPLEMENTATION
+#undef RAYGUI_SUPPORT_ICONS
+
 #include "raygui_impl.h"
+
+#define GUI_FILE_DIALOG_IMPLEMENTATION
+#include "gui_file_dialog.h"
+
+
 
 #include "raylib.h"
 #include "raymath.h"
 
-#define RAYGUI_IMPLEMENTATION
-#define RAYGUI_SUPPORT_ICONS
-#include "raygui.h"
-
-#define GUI_FILE_DIALOG_IMPLEMENTATION
-#include "gui_file_dialog.h"
 
 static Vector2 dragBeginPos = {-1.0f, 1.0f};
 
