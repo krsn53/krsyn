@@ -22,7 +22,8 @@
 
 //------------------------------------------------------------------------------------
 
-static const int update_per_events = MIDIIN_RESOLUTION / 0.5f * SAMPLES_PER_UPDATE / SAMPLING_RATE;
+#define EVENTS_PER_UPDATE           (unsigned)(MIDIIN_RESOLUTION / 0.5f * SAMPLES_PER_UPDATE / SAMPLING_RATE)
+#define MIDIIN_MAX_EVENTS           (KS_NUM_CHANNELS*2*EVENTS_PER_UPDATE)
 static const char* tone_list_ext=".kstb;.kstc";
 static const char* synth_ext = ".ksyb;.ksyc";
 
@@ -31,7 +32,7 @@ static const int base_width = 100;
 static const float line_width = 12;
 static const float step_x = base_width + margin;
 static const float step = line_width+ margin;
-static const Rectangle base_pos = (Rectangle) { margin, margin, base_width,  line_width };
+static const Rectangle base_pos = { margin, margin, base_width,  line_width };
 
 typedef struct editor_state{
     ks_tone_list_data tones_data;
@@ -47,7 +48,7 @@ typedef struct editor_state{
     ks_score_state* score_state;
 
     double  time;
-    ks_score_event events[KS_NUM_CHANNELS * 2 * update_per_events];
+    ks_score_event events[MIDIIN_MAX_EVENTS];
     const char* dialog_message;
     i8 noteon_number;
     bool dirty;
@@ -1258,7 +1259,7 @@ int main(int argc, char** argv)
     //--------------------------------------------------------------------------------------
     // editor state
 
-    editor_state es;
+    editor_state es = { 0 };
 
     //--------------------------------------------------------------------------------------
     // editor init
