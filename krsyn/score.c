@@ -5,6 +5,7 @@
 #include "midi.h"
 
 #include <stdlib.h>
+#include <malloc.h>
 
 ks_io_begin_custom_func(ks_score_event)
     ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
@@ -277,7 +278,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
     memset(buf, 0, sizeof(i16)*len);
     do{
         u32 frame = MIN(len-i, state->remaining_frame*2);
-        i16 tmpbuf[frame];
+        i16* tmpbuf = malloc(sizeof(i16)*frame);
 
         for(u32 p=0; p<ks_1(state->polyphony_bits); p++){
             if(!ks_score_note_is_enabled(&state->notes[p])) {
@@ -298,6 +299,8 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
                 buf[(i + b) + 1] += ks_apply_panpot(tmpbuf[b+1], channel->panpot_right);
             }
         }
+
+        free(tmpbuf);
 
         state->remaining_frame -= frame >> 1;
 

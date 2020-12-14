@@ -30,9 +30,9 @@ static const char* synth_ext = ".ksyb;.ksyc";
 static const int margin = 3;
 static const int base_width = 100;
 static const float line_width = 12;
-static const float step_x = base_width + margin;
-static const float step = line_width+ margin;
-static const Rectangle base_pos = { margin, margin, base_width,  line_width };
+#define step_x  (float)(base_width + margin)
+#define step    (float)(line_width+ margin)
+#define base_pos (Rectangle){ margin, margin, base_width,  line_width }
 
 typedef struct editor_state{
     ks_tone_list_data tones_data;
@@ -167,9 +167,8 @@ bool SaveLoadToneList(ks_tone_list_data* bin, editor_state* es, bool serialize){
 
     ks_io_free(io);
 
-    if(!serialize){
-        unmark_dirty(&es->dirty, &es->file_dialog_state);
-    }
+
+    unmark_dirty(&es->dirty, &es->file_dialog_state);
 
     return ret;
 }
@@ -296,11 +295,11 @@ void EditorUpdate(void* ptr){
             pos2.height *= 2;
             pos.y += step *2;
 
-            float step_x = pos2.width + margin;
+            float step_x2 = pos2.width + margin;
             if(GuiLabelButton(pos2, "#8#New")){
                 es->display_mode= CONFIRM_NEW;
             }
-            pos2.x += step_x;
+            pos2.x += step_x2;
             if(GuiLabelButton(pos2, "#1#Open")){
 #ifdef PLATFORM_WEB
                 es->dialog_message = "Just drag and drop your .kstc or .krtb file";
@@ -312,7 +311,7 @@ void EditorUpdate(void* ptr){
                 es->file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
 #endif
             }
-            pos2.x += step_x;
+            pos2.x += step_x2;
 
             if(GuiLabelButton(pos2, "#2#Save")){
 #ifdef PLATFORM_WEB
@@ -335,14 +334,14 @@ void EditorUpdate(void* ptr){
                 }
 #endif
             }
-            pos2.x += step_x;
+            pos2.x += step_x2;
 
             if(GuiLabelButton(pos2, "#3#Save As")){
                 strcpy(es->file_dialog_state.titleText, "Save Tone List");
                 es->file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
                 es->display_mode= SAVE_DIALOG;
             }
-            pos2.x += step_x;
+            pos2.x += step_x2;
 
             if(GuiLabelButton(pos2, "#6#LoadSynth")){
 #ifdef PLATFORM_WEB
@@ -354,19 +353,19 @@ void EditorUpdate(void* ptr){
                 es->display_mode= IMPORT_SYNTH_DIALOG;
 #endif
             }
-            pos2.x += step_x;
+            pos2.x += step_x2;
             if(GuiLabelButton(pos2, "#7#SaveSynth")){
                 strcpy(es->file_dialog_state.titleText, "Save Synth");
                 es->file_dialog_state_synth.fileDialogActiveState = DIALOG_ACTIVE;
                 es->display_mode= EXPORT_SYNTH_DIALOG;
             }
-            pos2.x += step_x;
+            pos2.x += step_x2;
 
             if(GuiLabelButton(pos2, "#141#Settings")){
                 es->display_mode= SETTINGS;
             }
 
-            pos2.x += step_x;
+            pos2.x += step_x2;
 
             if(GuiLabelButton(pos2, "#159#Exit")){
 #ifdef PLATFORM_DESKTOP
@@ -419,32 +418,30 @@ void EditorUpdate(void* ptr){
             pos2 = pos;
             pos2.width = base_width*2;
             pos2.height = 300;
-            char str[es->tones_data.length][40];
             int start, end;
 
             GuiListViewGetInfo(pos2, es->tones_data.length, es->tone_list_scroll, &start, &end);
-
-            const char *ptr[es->tones_data.length];
+            char *buf = calloc(es->tones_data.length, 48);
+            char **ptr = malloc(sizeof(char**)*es->tones_data.length);
             for(i32 i=start; i< end; i++){
                 if(es->tones_data.data[i].note == KS_NOTENUMBER_ALL){
-                    snprintf(str[i], 48, "0x%02x%02x%4d%4s%20s", es->tones_data.data[i].msb, es->tones_data.data[i].lsb, es->tones_data.data[i].program, "    ", es->tones_data.data[i].name);
+                    snprintf(ptr[i] = buf + 48*i, 48, "0x%02x%02x%4d%4s%20s", es->tones_data.data[i].msb, es->tones_data.data[i].lsb, es->tones_data.data[i].program, "    ", es->tones_data.data[i].name);
                 } else {
-                    snprintf(str[i], 48, "0x%02x%02x%4d%4d%20s", es->tones_data.data[i].msb, es->tones_data.data[i].lsb, es->tones_data.data[i].program, es->tones_data.data[i].note, es->tones_data.data[i].name);
+                    snprintf(ptr[i] = buf + 48*i, 48, "0x%02x%02x%4d%4d%20s", es->tones_data.data[i].msb, es->tones_data.data[i].lsb, es->tones_data.data[i].program, es->tones_data.data[i].note, es->tones_data.data[i].name);
                 }
-            }
-
-            for(u32 i=0; i<es->tones_data.length; i++){
-                ptr[i] = str[i];
             }
             {
 
-                const i32 new_select= GuiListViewEx(pos2, ptr, es->tones_data.length, NULL, &es->tone_list_scroll, es->current_tone_index);
+                const i32 new_select= GuiListViewEx(pos2, (const char**)ptr, es->tones_data.length, NULL, &es->tone_list_scroll, es->current_tone_index);
                 if(new_select  != es->current_tone_index && new_select >= 0 && (u32)new_select < es->tones_data.length){
                     es->current_tone_index = new_select;
                     es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                     update_tone_list(&es->tones, &es->tones_data, es->score_state);
                 }
             }
+            free(buf);
+            free(ptr);
+
             if(es->current_tone_index < 0 || (u32)es->current_tone_index >= es->tones_data.length){
                 es->current_tone_index = 0;
             }
@@ -1220,7 +1217,7 @@ void EditorUpdate(void* ptr){
 
                 const Rectangle listrec = {cp.x, cp.y, window.width - margin*10, step *10};
                 const u32 midiin_count = es->midiin == NULL ? 0 : rtmidi_get_port_count(es->midiin);
-                const char *midiin_list[midiin_count];
+                const char **midiin_list = malloc(sizeof(char*)*midiin_count);
                 for(u32 i=0; i< midiin_count; i++){
                     midiin_list[i] = rtmidi_get_port_name(es->midiin, i);
                 }
@@ -1230,6 +1227,7 @@ void EditorUpdate(void* ptr){
                     rtmidi_close_port(es->midiin);
                     rtmidi_open_port(es->midiin, es->midiin_port, midiin_list[es->midiin_port]);
                 }
+                free(midiin_list);
             }
             if(es->midiin == NULL){
                 GuiEnable();
