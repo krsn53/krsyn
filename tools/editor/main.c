@@ -1,6 +1,6 @@
 #include "raygui_impl.h"
 #ifdef PLATFORM_DESKTOP
-#include "rtmidi/rtmidi_c.h"
+#include "../rtmidi/rtmidi_c.h"
 #endif
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -17,7 +17,7 @@
 #define MIDIIN_RESOLUTION           480
 #define MIDIIN_POLYPHONY_BITS       6
 
-#include "../krsyn.h"
+#include "krsyn.h"
 #include <ksio/vector.h>
 
 //------------------------------------------------------------------------------------
@@ -325,6 +325,7 @@ void EditorUpdate(void* ptr){
                     es->display_mode= SAVE_DIALOG;
                 } else {
                     if(SaveLoadToneList(&es->tones_data, es, true)){
+                        es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                         update_tone_list(&es->tones, &es->tones_data, es->score_state);
                     }
                     else {
@@ -404,6 +405,8 @@ void EditorUpdate(void* ptr){
                         if(!SaveLoadSynth(&es->tones_data.data[es->current_tone_index].synth, es, false)){
                             es->dialog_message = "Failed to load synth";
                             es->display_mode = ERROR_DIALOG;
+                        } else {
+                             update_tone_list(&es->tones, &es->tones_data, es->score_state);
                         }
                     }
                 }
@@ -1079,6 +1082,7 @@ void EditorUpdate(void* ptr){
             if(msgbox_res == 1){
                 if(SaveLoadToneList(&es->tones_data, es, true)){
                     update_tone_list(&es->tones, &es->tones_data, es->score_state);
+                    es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                     es->display_mode= EDIT;
                 }
                 else {
@@ -1099,6 +1103,7 @@ void EditorUpdate(void* ptr){
                 if(es->file_dialog_state.SelectFilePressed){
                     if(SaveLoadToneList(&es->tones_data, es, true)){
                         update_tone_list(&es->tones, &es->tones_data, es->score_state);
+                        es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                         es->display_mode= EDIT;
                     }
                     else {
@@ -1256,7 +1261,6 @@ int main(int argc, char** argv)
 {
     //--------------------------------------------------------------------------------------
     // editor state
-
     editor_state es = { 0 };
 
     //--------------------------------------------------------------------------------------
@@ -1350,6 +1354,10 @@ int main(int argc, char** argv)
             if(!SaveLoadToneList(&es.tones_data, &es, false)){
                 es.dialog_message = "Failed to load tone list";
                 es.display_mode = ERROR_DIALOG;
+            } else {
+                es.current_tone_index = 0;
+                es.temp_synth = es.tones_data.data[es.current_tone_index].synth;
+                update_tone_list(&es.tones, &es.tones_data, es.score_state);
             }
         }
         else if(IsFileExtension(argv[1], synth_ext)){
@@ -1368,6 +1376,8 @@ int main(int argc, char** argv)
             if(!SaveLoadSynth(&es.tones_data.data->synth, &es, false)){
                 es.dialog_message = "Failed to load synth";
                 es.display_mode = ERROR_DIALOG;
+            } else{
+                update_tone_list(&es.tones, &es.tones_data, es.score_state);
             }
         }
         else {
@@ -1409,6 +1419,7 @@ int main(int argc, char** argv)
 #endif
     free(es.buf);
     free(es.tones_data.data);
+    ks_tone_list_free(es.tones);
 
     return 0;
 }

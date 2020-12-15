@@ -34,6 +34,8 @@ typedef struct ks_score_channel{
     u8                  volume;
     u8                  expression;
     u16                 volume_cache;
+
+    i16                 *output_log;
 }ks_score_channel;
 
 /**

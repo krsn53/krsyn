@@ -1,12 +1,12 @@
 [submodule "editor/raygui"]
-	path = editor/raygui
+	path = tools/raygui
 	url = https://github.com/raysan5/raygui.git
 [submodule "editor/rtmidi"]
-	path = editor/rtmidi
+	path = tools/rtmidi
 	url = https://github.com/thestk/rtmidi.git
 [submodule "ksio"]
 	path = ksio
 	url = git@github.com:krsn53/ksio.git
 [submodule "editor/raylib"]
-	path = editor/raylib
+	path = tools/raylib
 	url = https://github.com/raysan5/raylib.git

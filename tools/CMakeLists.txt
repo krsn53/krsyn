@@ -1,25 +1,24 @@
-project(krsyn_raygui_editor)
+project(krsyn_tools)
 
-option(PROJECT_BINARY_DIR "${CMAKE_BINARY_DIR}/editor")
+option(PROJECT_BINARY_DIR "${CMAKE_BINARY_DIR}/tools")
 
-
-option(BUILD_RAYGUI_GAMES OFF)
 option(BUILD_RAYGUI_EXAMPLES OFF)
+option(BUILD_GAMES OFF)
 option(BUILD_EXAMPLES OFF)
 
-file(GLOB editor_src *.h *.c)
-add_executable(krsyn_raygui_editor ${editor_src})
+file(GLOB editor_src editor/*.h editor/*.c)
+add_executable(krsyn_editor ${editor_src})
+
+if(NOT ${PLATFORM} STREQUAL Web)
+    add_subdirectory(rtmidi)
+    target_link_libraries(krsyn_editor rtmidi)
+endif()
 
 add_subdirectory(raylib)
 add_subdirectory(raygui/projects/CMake)
+target_link_libraries(krsyn_editor raylib raygui krsyn)
 
-if(NOT ${PLATFORM} STREQUAL Web)
-add_subdirectory(rtmidi)
-target_link_libraries(krsyn_raygui_editor rtmidi)
-endif()
-target_link_libraries(krsyn_raygui_editor raylib raygui krsyn)
-
-set_property(TARGET krsyn_raygui_editor PROPERTY C_STANDARD 11)
+set_property(TARGET krsyn_editor PROPERTY C_STANDARD 11)
 
 if(${PLATFORM} MATCHES "Web")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY")
@@ -34,13 +33,13 @@ if(${PLATFORM} MATCHES "Web")
   string(REPLACE "-rdynamic" "" CMAKE_SHARED_LIBRARY_LINK_C_FLAGS ${CMAKE_SHARED_LIBRARY_LINK_C_FLAGS})
 
   set_target_properties(
-       krsyn_raygui_editor
+       krsyn_editor
        PROPERTIES
-           OUTPUT_NAME "krsyn_raygui_editor"
+           OUTPUT_NAME "krsyn_editor"
            SUFFIX ".html"
    )
 
 else()
-    add_resources(krsyn_raygui_editor resources)
+    add_resources(krsyn_editor resources)
 endif()
 

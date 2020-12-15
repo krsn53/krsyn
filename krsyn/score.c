@@ -89,13 +89,18 @@ static inline u32 calc_frames_per_event(u32 sampling_rate, u16 quater_time, u16 
 }
 
 ks_score_state* ks_score_state_new(u32 polyphony_bits){
-    ks_score_state* ret = malloc(sizeof(ks_score_state) + ks_1(polyphony_bits)* sizeof(ks_score_note));
+    ks_score_state* ret = calloc(1, sizeof(ks_score_state) + ks_1(polyphony_bits)* sizeof(ks_score_note));
     ret->polyphony_bits = polyphony_bits;
 
     return ret;
 }
 
 void ks_score_state_free(ks_score_state* state){
+    for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
+        if(state->channels[i].output_log != NULL){
+            free(state->channels[i].output_log);
+        }
+    }
     free(state);
 }
 
@@ -236,6 +241,9 @@ bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const
     const u32 quarter = data[1] + ks_v(data[2], KS_QUARTER_TIME_BITS);
     state->quater_time = quarter;
     state->frames_per_event= calc_frames_per_event(sampling_rate, state->quater_time, score->resolution);
+    for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
+        state->channels[i].output_log = realloc(state->channels[i].output_log, state->frames_per_event * 2 * sizeof(i16));
+    }
     return true;
 }
 
@@ -280,12 +288,19 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
         u32 frame = MIN(len-i, state->remaining_frame*2);
         i16* tmpbuf = malloc(sizeof(i16)*frame);
 
+        bool channel_enabled[KS_NUM_CHANNELS];
+        memset(channel_enabled, false, sizeof(channel_enabled)); // all false
+
         for(u32 p=0; p<ks_1(state->polyphony_bits); p++){
             if(!ks_score_note_is_enabled(&state->notes[p])) {
                 continue;
             }
 
             ks_score_channel* channel = &state->channels[state->notes[p].info.channel];
+            if(channel_enabled[state->notes[p].info.channel] == false){
+                memset(channel->output_log, 0, frame* sizeof(i16));
+                channel_enabled[state->notes[p].info.channel]= true;
+            }
 
             // when note on, already checked,
             //if(channel->bank == NULL) continue;
@@ -295,8 +310,17 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
             ks_synth_render(synth, note, channel->volume_cache, channel->pitchbend, tmpbuf, frame);
 
             for(u32 b =0; b< frame; b+=2){
-                buf[(i + b)] += ks_apply_panpot(tmpbuf[b], channel->panpot_left);
-                buf[(i + b) + 1] += ks_apply_panpot(tmpbuf[b+1], channel->panpot_right);
+                channel->output_log[b] += tmpbuf[b];
+                channel->output_log[b + 1] += tmpbuf[b+1];
+            }
+        }
+        for(u32 c=0; c<KS_NUM_CHANNELS; c++){
+            if(!channel_enabled[c]) continue;
+            ks_score_channel* channel = &state->channels[c];
+
+            for(u32 b =0; b< frame; b+=2){
+                buf[(i + b)] += ks_apply_panpot(channel->output_log[b], channel->panpot_left);
+                buf[(i + b) + 1] += ks_apply_panpot(channel->output_log[b+1], channel->panpot_right);
             }
         }
 
@@ -315,7 +339,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
             }
             state->current_tick ++;
 
-            state->remaining_frame += state->frames_per_event;
+            state->remaining_frame = state->frames_per_event;
         }
 
         i+= frame;
@@ -396,6 +420,10 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones
         memset(&state->notes[i], 0 , sizeof(ks_score_note));
     }
     for(u32 i =0; i<KS_NUM_CHANNELS; i++){
+        if( state->channels[i].output_log != NULL) {
+            free( state->channels[i].output_log );
+        }
+
         memset(&state->channels[i], 0 , sizeof(ks_score_channel));
         ks_score_channel_set_panpot(&state->channels[i], 64);
         ks_score_channel_set_picthbend(&state->channels[i], 0, 0);
@@ -403,6 +431,8 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones
         state->channels[i].volume= 100;
         state->channels[i].expression= 127;
         set_channel_volume_cache(&state->channels[i]);
+
+        state->channels[i].output_log = malloc(state->frames_per_event * 2 * sizeof(i16));
     }
 }
 
