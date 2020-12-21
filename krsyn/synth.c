@@ -639,10 +639,14 @@ static KS_INLINE void envelope_next(ks_synth_note* note)
                 note->envelope_now_points[i] ++;
                 if(note->envelope_now_points[i] == KS_ENVELOPE_RELEASE_INDEX)
                 {
-                    note->envelope_states[i] = KS_ENVELOPE_RELEASED;
+                    note->envelope_states[i] = KS_ENVELOPE_SUSTAINED;
+                    note->envelope_now_deltas[i] = 0;
+                    note->envelope_now_times[i] = -1;
+                } else{
+                    note->envelope_now_deltas[i] = note->envelope_deltas[note->envelope_now_points[i]][i];
+                    note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
                 }
-                note->envelope_now_deltas[i] = note->envelope_deltas[note->envelope_now_points[i]][i];
-                note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
+
                 break;
             case KS_ENVELOPE_RELEASED:
                 note->envelope_now_amps[i] = 0;

@@ -60,6 +60,7 @@ typedef enum ks_envelope_state
 {
     KS_ENVELOPE_OFF = 0,
     KS_ENVELOPE_ON,
+    KS_ENVELOPE_SUSTAINED,
     KS_ENVELOPE_RELEASED = 0x80,
 }ks_synth_envelope_state;
 
