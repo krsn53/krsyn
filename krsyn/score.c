@@ -1,11 +1,14 @@
-#include <ksio/logger.h>
 #include "score.h"
 #include "tone_list.h"
 #include "math.h"
 #include "midi.h"
 
+#include <ksio/logger.h>
+#include <ksio/vector.h>
+
 #include <stdlib.h>
 #include <malloc.h>
+
 
 ks_io_begin_custom_func(ks_score_event)
     ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
@@ -90,12 +93,14 @@ static inline u32 calc_frames_per_event(u32 sampling_rate, u16 quater_time, u16 
 
 ks_score_state* ks_score_state_new(u32 polyphony_bits){
     ks_score_state* ret = calloc(1, sizeof(ks_score_state) + ks_1(polyphony_bits)* sizeof(ks_score_note));
+    ks_vector_init(&ret->effects);
     ret->polyphony_bits = polyphony_bits;
 
     return ret;
 }
 
 void ks_score_state_free(ks_score_state* state){
+    ks_vector_free(&state->effects);
     for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
         if(state->channels[i].output_log != NULL){
             free(state->channels[i].output_log);
@@ -291,6 +296,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
         bool channel_enabled[KS_NUM_CHANNELS];
         memset(channel_enabled, false, sizeof(channel_enabled)); // all false
 
+        //render each notes to channels
         for(u32 p=0; p<ks_1(state->polyphony_bits); p++){
             if(!ks_score_note_is_enabled(&state->notes[p])) {
                 continue;
@@ -314,6 +320,8 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
                 channel->output_log[b + 1] += tmpbuf[b+1];
             }
         }
+
+        // mix to buffer
         for(u32 c=0; c<KS_NUM_CHANNELS; c++){
             if(!channel_enabled[c]) continue;
             ks_score_channel* channel = &state->channels[c];
@@ -321,6 +329,15 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
             for(u32 b =0; b< frame; b+=2){
                 buf[(i + b)] += ks_apply_panpot(channel->output_log[b], channel->panpot_left);
                 buf[(i + b) + 1] += ks_apply_panpot(channel->output_log[b+1], channel->panpot_right);
+            }
+        }
+
+        // apply post effect
+        for(u32 e=0; e<state->effects.length; e++){
+            switch (state->effects.data[e].type) {
+            case KS_EFFECT_VOLUME_ANALIZER:
+                ks_effect_volume_analize(&state->effects.data[e], state, frame);
+                break;
             }
         }
 
@@ -497,4 +514,38 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
     ret->data = events;
 
     return ret;
+}
+
+void ks_state_add_effect (ks_score_state* state, ks_effect_type type){
+    switch (type) {
+    case KS_EFFECT_VOLUME_ANALIZER:{
+        ks_effect e = {
+            .type = type,
+            .data ={
+                .volume_analizer={
+                    .length = 0,
+                    .volume = { 0 },
+                }
+            }
+        };
+
+        ks_vector_push(&state->effects, e);
+        break;
+    }
+    }
+}
+
+void ks_effect_volume_analize  (ks_effect* effect, ks_score_state* state, u32 len){
+    ks_volume_analizer* dat = &effect->data.volume_analizer;
+    for(u32 c=0; c<KS_NUM_CHANNELS; c++){
+        ks_score_channel* channel = &state->channels[c];
+        u64 out = 0;
+        for(u32 i=0; i<len; i++){
+            out +=  labs(channel->output_log[i]);
+        }
+        out += dat->volume[c]* dat->length;
+        out /= len + dat->length;
+        dat->length = len;
+        dat->volume[c] = out;
+    }
 }

@@ -57,19 +57,51 @@ typedef struct ks_score_note{
     ks_synth                *synth;
 }ks_score_note;
 
+typedef enum ks_effect_type{
+    KS_EFFECT_VOLUME_ANALIZER,
+}ks_effect_type;
+
+typedef struct ks_volume_analizer{
+    u32         length;
+    u32         volume          [KS_NUM_CHANNELS];
+}ks_volume_analizer;
+
+/**
+  * @struct ks_effect
+  * @brief
+*/
+typedef struct ks_effect{
+    ks_effect_type type;
+    union{
+        ks_volume_analizer volume_analizer;
+    }data;
+}ks_effect;
+
+/**
+  * @struct ks_effect_list
+  * @brief
+*/
+typedef struct ks_effect_list{
+    u32                     length;
+    u32                     capacity;
+    ks_effect               *data;
+}ks_effect_list;
+
 /**
   * @struct ks_score_state
   * @brief
 */
 typedef struct ks_score_state{
-    u16            quater_time;
-    u16            frames_per_event;
-    u16            remaining_frame;
-    u16            polyphony_bits;
+    u16                 quater_time;
+    u16                 frames_per_event;
+    u16                 remaining_frame;
+    u16                 polyphony_bits;
 
-    u32            current_event;
-    u32            passed_tick;
-    u32            current_tick;
+    u32                 current_event;
+    u32                 passed_tick;
+    u32                 current_tick;
+
+    ks_effect_list      effects;
 
     ks_score_channel    channels        [KS_NUM_CHANNELS];
     ks_score_note       notes           [];
@@ -137,5 +169,5 @@ bool                ks_score_note_info_equals       (ks_score_note_info i1, ks_s
 i16                 ks_score_note_info_hash         (ks_score_note_info id);
 ks_score_note_info  ks_score_note_info_of           (u8 note_number, u8 channel);
 
-
-
+void                ks_state_add_effect            (ks_score_state* state, ks_effect_type type);
+void                ks_effect_volume_analize        (ks_effect* effect, ks_score_state* state, u32 len);
