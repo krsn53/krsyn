@@ -100,12 +100,12 @@ ks_score_state* ks_score_state_new(u32 polyphony_bits){
 }
 
 void ks_score_state_free(ks_score_state* state){
-    ks_vector_free(&state->effects);
     for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
         if(state->channels[i].output_log != NULL){
             free(state->channels[i].output_log);
         }
     }
+    ks_effect_list_data_free(state->effects.length, state->effects.data);
     free(state);
 }
 
@@ -516,36 +516,79 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
     return ret;
 }
 
-void ks_state_add_effect (ks_score_state* state, ks_effect_type type){
-    switch (type) {
-    case KS_EFFECT_VOLUME_ANALIZER:{
-        ks_effect e = {
-            .type = type,
-            .data ={
-                .volume_analizer={
-                    .length = 0,
-                    .volume = { 0 },
-                }
-            }
-        };
+void ks_score_state_add_volume_analizer (ks_score_state* state, u32 sampling_rate, u32 duration){
+    u64 frame = (u64)duration * sampling_rate;
+    frame >>= KS_TIME_BITS;
+    frame *= 2; // channel
 
-        ks_vector_push(&state->effects, e);
-        break;
-    }
+    ks_effect e = {
+        .type = KS_EFFECT_VOLUME_ANALIZER,
+        .data ={
+            .volume_analizer={
+                .length = frame,
+                .volume = { 0 },
+                .log = { 0 },
+                .seek = 0,
+            }
+        }
+    };
+
+    ks_vector_push(&state->effects, e);
+    ks_effect* effect = &state->effects.data[state->effects.length-1];
+
+    for(u32 c=0; c<KS_NUM_CHANNELS; c++){
+        effect->data.volume_analizer.log[c] = calloc(frame, sizeof(i16));
     }
 }
 
 void ks_effect_volume_analize  (ks_effect* effect, ks_score_state* state, u32 len){
     ks_volume_analizer* dat = &effect->data.volume_analizer;
-    for(u32 c=0; c<KS_NUM_CHANNELS; c++){
-        ks_score_channel* channel = &state->channels[c];
-        u64 out = 0;
-        for(u32 i=0; i<len; i++){
-            out +=  labs(channel->output_log[i]);
+
+
+    u32 i= 0;
+    do{
+        u32 f;
+        if(dat->seek + len - i > dat->length){
+            f = dat->length - dat->seek;
         }
-        out += dat->volume[c]* dat->length;
-        out /= len + dat->length;
-        dat->length = len;
-        dat->volume[c] = out;
+        else {
+            f = len - i;
+        }
+        for(u32 c=0; c<KS_NUM_CHANNELS; c++){
+            ks_score_channel* channel = &state->channels[c];
+            for(u32 s = dat->seek, j=i; j<f; s++, j++){
+                u32 o = channel->output_log[j] > 0 ? channel->output_log[j] : - channel->output_log[j];
+                dat->log[c][s] = o;
+            }
+        }
+        dat->seek = dat->seek + f;
+        dat->seek %= dat->length;
+        i+= f;
+    }while(i<len);
+}
+
+void ks_effect_list_data_free(u32 length, ks_effect* data){
+    for(u32 i=0; i<length; i++){
+        switch (data[i].type) {
+        case KS_EFFECT_VOLUME_ANALIZER:
+            for(u32 c=0;c<KS_NUM_CHANNELS;c++){
+                free(data[i].data.volume_analizer.log[c]);
+            }
+            break;
+        }
     }
+    free(data);
+}
+
+const u16*  ks_effect_calc_volume(ks_effect* effect){
+    ks_volume_analizer* a = &effect->data.volume_analizer;
+    for(u32 c =0; c<KS_NUM_CHANNELS; c++){
+        u32 out= 0;
+        for(u32 i=0; i< a->length; i++){
+            out += a->log[c][i];
+        }
+        out /= a->length;
+        a->volume[c] = out;
+    }
+    return a->volume;
 }

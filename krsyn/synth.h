@@ -34,6 +34,7 @@
 #define KS_PANPOT_BITS          7u
 #define KS_VOLUME_BITS          13u
 
+#define KS_TIME_BITS            16u
 
 /**
  * @enum ks_synth_keyscale_t

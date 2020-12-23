@@ -127,7 +127,7 @@ KS_INLINE u32 ks_exp_u(u8 val, u32 base, int num_v_bit)
 
 KS_INLINE u32 ks_calc_envelope_times(u32 val)
 {
-    return ks_exp_u(val, 1<<(16-8), 4);// 2^8 <= x < 2^16
+    return ks_exp_u(val, 1<<(KS_TIME_BITS-8), 4);// 2^8 <= x < 2^16
 }
 
 KS_INLINE u32 ks_calc_envelope_samples(u32 smp_freq, u8 val)
@@ -135,7 +135,7 @@ KS_INLINE u32 ks_calc_envelope_samples(u32 smp_freq, u8 val)
     u32 time = ks_calc_envelope_times(val);
     u64 samples = time;
     samples *= smp_freq;
-    samples >>= 16;
+    samples >>= KS_TIME_BITS;
     samples = MAX(1u, samples);  // note : maybe dont need this line
     return (u32)samples;
 }

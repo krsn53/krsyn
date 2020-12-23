@@ -669,10 +669,10 @@ void EditorUpdate(void* ptr){
             Rectangle wave_rec ={x_pos.x + step_x * 2 + margin, x_pos.y, step_x*3 - margin, pos.y - x_pos.y };
             DrawRectangleRec(wave_rec, DARKGRAY);
 
-            float env_width =wave_rec.width*0.6f / 4.0f;
-            float env_x = wave_rec.width*0.2f / 4.0f + wave_rec.x;
+            float env_width =wave_rec.width*0.6f / KS_NUM_OPERATORS;
+            float env_x = wave_rec.width*0.2f / KS_NUM_OPERATORS + wave_rec.x;
             float env_y = wave_rec.y + wave_rec.height;
-            float env_step = wave_rec.width / 4.0f;
+            float env_step = wave_rec.width / KS_NUM_OPERATORS;
             float env_mul = wave_rec.height / ks_1(KS_ENVELOPE_BITS);
 
             for(unsigned i=0; i<KS_NUM_OPERATORS; i++){

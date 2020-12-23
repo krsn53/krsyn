@@ -57,13 +57,17 @@ typedef struct ks_score_note{
     ks_synth                *synth;
 }ks_score_note;
 
+
 typedef enum ks_effect_type{
     KS_EFFECT_VOLUME_ANALIZER,
 }ks_effect_type;
 
+
 typedef struct ks_volume_analizer{
     u32         length;
-    u32         volume          [KS_NUM_CHANNELS];
+    u32         seek;
+    i16         *log            [KS_NUM_CHANNELS];
+    u16         volume          [KS_NUM_CHANNELS];
 }ks_volume_analizer;
 
 /**
@@ -169,5 +173,8 @@ bool                ks_score_note_info_equals       (ks_score_note_info i1, ks_s
 i16                 ks_score_note_info_hash         (ks_score_note_info id);
 ks_score_note_info  ks_score_note_info_of           (u8 note_number, u8 channel);
 
-void                ks_state_add_effect            (ks_score_state* state, ks_effect_type type);
-void                ks_effect_volume_analize        (ks_effect* effect, ks_score_state* state, u32 len);
+void                ks_score_state_add_volume_analizer      (ks_score_state* state, u32 sampling_rate, u32 duration);
+
+void                ks_effect_volume_analize                (ks_effect* effect, ks_score_state* state, u32 len);
+void                ks_effect_list_data_free                (u32 length, ks_effect* data);
+const u16*          ks_effect_calc_volume                   (ks_effect* effect);
