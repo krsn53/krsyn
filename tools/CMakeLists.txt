@@ -6,6 +6,14 @@ option(BUILD_RAYGUI_EXAMPLES OFF)
 option(BUILD_GAMES OFF)
 option(BUILD_EXAMPLES OFF)
 
+add_subdirectory(raylib)
+add_subdirectory(raygui/projects/CMake)
+
+file(GLOB raygui_impl_src raygui_impl/*.h raygui_impl/*.c)
+add_library(raygui_impl ${raygui_impl_src})
+target_link_libraries(raygui_impl raylib raygui)
+target_include_directories(raygui_impl PUBLIC raygui_impl)
+
 file(GLOB editor_src editor/*.h editor/*.c)
 add_executable(krsyn_editor ${editor_src})
 
@@ -14,9 +22,12 @@ if(NOT ${PLATFORM} STREQUAL Web)
     target_link_libraries(krsyn_editor rtmidi)
 endif()
 
-add_subdirectory(raylib)
-add_subdirectory(raygui/projects/CMake)
-target_link_libraries(krsyn_editor raylib raygui krsyn)
+
+target_link_libraries(krsyn_editor raygui_impl krsyn)
+
+file(GLOB player_src player/*.h player/*.c)
+add_executable(krsyn_player ${player_src})
+target_link_libraries(krsyn_player raygui_impl krsyn)
 
 set_property(TARGET krsyn_editor PROPERTY C_STANDARD 11)
 
