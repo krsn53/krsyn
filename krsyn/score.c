@@ -1,10 +1,10 @@
 #include "score.h"
 #include "tone_list.h"
 #include "math.h"
-#include "midi.h"
 
 #include <ksio/logger.h>
 #include <ksio/vector.h>
+#include <ksio/midi.h>
 
 #include <stdlib.h>
 #include <malloc.h>

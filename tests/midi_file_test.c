@@ -1,4 +1,4 @@
-#include "../krsyn/midi.h"
+#include "ksio/midi.h"
 #include <stdio.h>
 
 int main(int argc, char** argv) {
