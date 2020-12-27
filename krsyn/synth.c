@@ -172,7 +172,7 @@ KS_INLINE void ks_calc_panpot(i16* left, i16 * right, u8 val){
     *right = ks_sin(ks_v(val + ks_v(0, KS_PANPOT_BITS - 1), KS_PHASE_MAX_BITS - KS_PANPOT_BITS - 2 ), false);
 }
 
-KS_INLINE i16 ks_apply_panpot(i16 in, i16 pan){
+KS_INLINE i32 ks_apply_panpot(i32 in, i16 pan){
     i32 out = in;
     out *= pan;
     out >>= KS_OUTPUT_BITS;
@@ -256,7 +256,7 @@ static KS_INLINE u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 fin
 
 static KS_INLINE u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 fine)
 {
-    u32 freq = ks_notefreq(notenum);
+    u32 freq = ks_notefreq(notenum); // heltz << KS_FREQUENCY_BITS
     u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
 
     u32 freq_rate = (coarse * (ks_1(KS_FREQUENCY_BITS) + fine)) >> KS_PHASE_COARSE_BITS;
@@ -587,8 +587,8 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
             output[3] =(i32)ks_saw(p3)+ks_saw(p4);
         }
 
-        out =  envelope_apply(note->envelope_now_amps[0], (output[0]+output[1]) >> 2) -
-                envelope_apply(note->envelope_now_amps[2], (output[2]+output[3]) >> 2);
+        out =  envelope_apply(note->envelope_now_amps[0], (output[0]+output[1]) >> 1) -
+                envelope_apply(note->envelope_now_amps[2], (output[2]+output[3]) >> 1);
     }
     if(algorithm ==9)
     {
@@ -602,7 +602,7 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
             output[1] =(i32)ks_fake_triangle(p3, synth->phase_coarses[3])+ks_fake_triangle( p4, synth->phase_coarses[3]);
         }
 
-        out =  envelope_apply(note->envelope_now_amps[0], (output[0]+output[1]) >> 2);
+        out =  envelope_apply(note->envelope_now_amps[0], (output[0]+output[1]) >> 1);
     }
     if(algorithm ==10)
     {
@@ -613,7 +613,7 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         } else {
             output[1] = note->output_log[1];
         }
-        output[0] = envelope_apply(note->envelope_now_amps[0], ks_noise(note->phases[0], output[1]));
+        output[0] = envelope_apply(note->envelope_now_amps[0], ks_noise(note->phases[0], output[1]) );
         out = output[0];
     }
 
@@ -732,14 +732,14 @@ static KS_INLINE void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 
     }
 }
 
-static KS_INLINE void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len,
+static KS_INLINE void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len,
                                     u8 algorithm, u8 lfo_type, bool ams, bool fms)
 {
     u32 delta[KS_NUM_OPERATORS];
 
     for(u32 i=0; i<len; i+=2)
     {
-        u32 out = synth_frame(synth, note, algorithm) * volume;
+        i32 out = synth_frame(synth, note, algorithm) * volume;
         out >>= KS_VOLUME_BITS;
         buf[i] = buf[i+1] = out;
         buf[i]= ks_apply_panpot(buf[i], synth->panpot_left);
@@ -750,7 +750,7 @@ static KS_INLINE void ks_synth_process(const ks_synth* synth, ks_synth_note* not
         {
             u64 d = delta[j];
             d*= pitchbend;
-            d >>= KS_LFO_DEPTH_BITS;
+            d >>= KS_OUTPUT_BITS;
 
             note->phases[j] = note->phases[j] + d;
         }
@@ -770,16 +770,16 @@ static KS_INLINE void ks_synth_process(const ks_synth* synth, ks_synth_note* not
 #define _algorithm_list _(0) _(1) _(2) _(3) _(4) _(5) _(6) _(7) _(8) _(9) _(10)
 
 #define ks_synth_define_synth_render_aw(algorithm, wave) \
-void ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len){ \
+void ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
     ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, false, false); \
 } \
-void ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len) {\
+void ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
     ks_synth_process(synth, note, volume, pitchbend,  buf, len, algorithm, wave, false, true); \
 } \
-void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len) {\
+void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
     ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, true, false); \
 } \
-    void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16* buf, u32 len){ \
+    void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
     ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, true, true); \
 }
 
@@ -840,7 +840,7 @@ _algorithm_list
 #undef _
 #define _(x) case x : ks_synth_render_branch(x) break;
 
-void ks_synth_render(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16 *buf, u32 len)
+void ks_synth_render(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32 *buf, u32 len)
 {
     if(*(u32*)note->envelope_states != 0){
         switch(synth->algorithm)
@@ -848,7 +848,7 @@ void ks_synth_render(const ks_synth* synth, ks_synth_note* note, u32 volume, u32
             _algorithm_list
         }
     } else {
-        memset(buf, 0, len*sizeof(i16));
+        memset(buf, 0, len*sizeof(i32));
     }
 }
 

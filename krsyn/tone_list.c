@@ -22,8 +22,18 @@ ks_io_begin_custom_func(ks_tone_list_data)
     if(!__SERIALIZE) ks_access(capacity) = ks_access(length);
 ks_io_end_custom_func(ks_tone_list_data)
 
+ks_tone_list_data* ks_tone_list_data_new(){
+    ks_tone_list_data* ret = malloc(sizeof(ks_tone_list_data));
+    ks_vector_init(ret);
+    return ret;
+}
 
-inline u32 ks_tone_list_bank_number_hash(ks_tone_list_bank_number bank_number){
+void ks_tone_list_data_free(ks_tone_list_data* d){
+    ks_vector_free(d);
+    free(d);
+}
+
+KS_INLINE u32 ks_tone_list_bank_number_hash(ks_tone_list_bank_number bank_number){
     return ks_v(bank_number.msb, 7) +  bank_number.lsb;
 
 }
@@ -32,16 +42,16 @@ bool ks_tone_list_bank_number_equals(ks_tone_list_bank_number b1, ks_tone_list_b
     return *(u16*)(&b1) == *(u16*)(&b2);
 }
 
-inline bool ks_tone_list_bank_is_empty(const ks_tone_list_bank* bank){
+KS_INLINE bool ks_tone_list_bank_is_empty(const ks_tone_list_bank* bank){
     return !bank->bank_number.enabled;
 }
 
 // XG like ???
-inline ks_tone_list_bank_number ks_tone_list_bank_number_of(u8 msb, u8 lsb){
+KS_INLINE ks_tone_list_bank_number ks_tone_list_bank_number_of(u8 msb, u8 lsb){
     return (ks_tone_list_bank_number){
         .msb = msb,
         .lsb = lsb,
-        .percussion = (lsb==127 ? 1: 0),
+        .percussion = (msb==127 ? 1: 0),
         .enabled = 1,
     };
 }
@@ -176,23 +186,20 @@ ks_tone_list_bank ks_tone_list_bank_of(u8 msb, u8 lsb, ks_synth *programs[KS_NUM
     return ret;
 }
 
-int ks_tone_data_compare1(const ks_tone_data* t1, const ks_tone_data* t2){
-    int ret = t1->program - t2->program;
+static int ks_tone_data_compare1(const ks_tone_data* t1, const ks_tone_data* t2){
+    int ret = t1->note - t2->note;
+    if(ret != 0) return -ret;
+    ret = t1->program - t2->program;
     if(ret != 0) return ret;
     ret = t1->lsb - t1->lsb;
     if(ret != 0) return ret;
     ret = t1->msb - t2->msb;
-    return ret;
+    return strcmp(t1->name, t2->name);
 }
 
 
-int ks_tone_data_compare2(const void* v1, const void* v2){
-    const ks_tone_data* t1 = v1, *t2 = v2;
-    int ret = ks_tone_data_compare1(t1, t2);
-    if(ret != 0) return ret;
-    ret = t1->note - t2->note;
-    if(ret != 0) return ret;
-    return strcmp(t1->name, t2->name);
+static int ks_tone_data_compare2(const void* v1, const void* v2){
+    return ks_tone_data_compare1(v1, v2);
 }
 
 void ks_tone_list_sort(ks_tone_list_data* v, i32* current){

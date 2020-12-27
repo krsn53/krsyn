@@ -46,7 +46,7 @@ typedef struct editor_state{
 
     ks_score_data score;
     ks_score_state* score_state;
-
+    double  begin_time;
     double  time;
     ks_score_event events[MIDIIN_MAX_EVENTS];
     const char* dialog_message;
@@ -66,7 +66,7 @@ typedef struct editor_state{
     }display_mode;
 
     AudioStream audiostream;
-    i16 *buf;
+    float *buf;
 #ifdef PLATFORM_DESKTOP
     RtMidiInPtr midiin;
     u32 midiin_port;
@@ -232,18 +232,21 @@ void EditorUpdate(void* ptr){
             do{
                 unsigned char message[4];
                 size = 4;
+                if(es->begin_time == 0){
+                    es->begin_time = GetTime();
+                }
                 double stamp = rtmidi_in_get_message(es->midiin, message, &size);
                 if(size != 0){
-                    u64 pre_time = es->time*MIDIIN_RESOLUTION*2;
-                    es->time += stamp;
-
                     if(es->score.length >= (sizeof(es->events)/ sizeof(es->events[0])) - 1) continue;
                     if((message[0] == 0xff && message[1] != 0x51) || (message[0] >=0x80 && message[0] < 0xf0)){
-                        es->score.data[es->score.length].delta = (u32)((es->time)*MIDIIN_RESOLUTION*2) - pre_time;
+                        es->score.data[es->score.length].delta = (-(GetTime() - es->begin_time - es->time) + stamp)*MIDIIN_RESOLUTION;
                         es->score.data[es->score.length].status = message[0];
                         memcpy(es->score.data[es->score.length].data, message + 1, 3);
                         es->score.length ++;
                     }
+
+
+                    es->time += stamp;
                 }
             }while(size != 0);
 
@@ -251,20 +254,25 @@ void EditorUpdate(void* ptr){
             es->score.data[es->score.length].status = 0xff;
             es->score.data[es->score.length].data[0] = 0x2f;
             es->score.length ++;
+           i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
+           memset(tmpbuf, 0, sizeof(tmpbuf));
+            ks_score_data_render(&es->score, SAMPLING_RATE, es->score_state, es->tones, tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+            for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
+                es->buf[i] = tmpbuf[i] / (float)INT16_MAX;
+            }
 
-            ks_score_data_render(&es->score, SAMPLING_RATE, es->score_state, es->tones, es->buf, BUFFER_LENGTH_PER_UPDATE);
         } else {
-            memset(es->buf, 0, BUFFER_LENGTH_PER_UPDATE*sizeof(i16));
+            memset(es->buf, 0, BUFFER_LENGTH_PER_UPDATE*sizeof(float));
         }
 #else
-        memset(es->buf, 0, BUFFER_LENGTH_PER_UPDATE*sizeof(i16));
+        memset(es->buf, 0, BUFFER_LENGTH_PER_UPDATE*sizeof(float));
 #endif
 
-        i16 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
+        i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
         memset(tmpbuf, 0, sizeof(tmpbuf));
         ks_synth_render(&es->synth, &es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
         for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
-            es->buf[i] += tmpbuf[i];
+            es->buf[i] += tmpbuf[i] / (float)INT16_MAX;
         }
         UpdateAudioStream(es->audiostream, es->buf, BUFFER_LENGTH_PER_UPDATE);
     }
@@ -410,6 +418,7 @@ void EditorUpdate(void* ptr){
                         }
                     }
                 }
+                ClearDroppedFiles();
             }
         }
 
@@ -1263,8 +1272,8 @@ void init(editor_state* es){
     es->dirty = false;
     es->display_mode= EDIT;
 
-    es->audiostream = InitAudioStream(SAMPLING_RATE, 16, NUM_CHANNELS);
-    es->buf = malloc(sizeof(i16)*BUFFER_LENGTH_PER_UPDATE);
+    es->audiostream = InitAudioStream(SAMPLING_RATE, 32, NUM_CHANNELS);
+    es->buf = malloc(sizeof(float)*BUFFER_LENGTH_PER_UPDATE);
 
     ks_vector_init(&es->tones_data);
     ks_tone_list_insert_empty(&es->tones_data, &es->current_tone_index);
@@ -1278,6 +1287,7 @@ void init(editor_state* es){
 
     es->score_state= ks_score_state_new(MIDIIN_POLYPHONY_BITS);
     es->time = 0;
+    es->begin_time = 0;
 
     update_tone_list(&es->tones, &es->tones_data, es->score_state);
 
@@ -1311,7 +1321,7 @@ void init(editor_state* es){
     strcpy(es->file_dialog_state_synth.filterExt, synth_ext);
 
     es->algorithm_images = LoadTexture("resources/images/algorithms.png");
-    es->lfo_wave_images= LoadTexture("resources/images/lfo_waves->png");
+    es->lfo_wave_images= LoadTexture("resources/images/lfo_waves.png");
     es->keyscale_left_images = LoadTexture("resources/images/keyscale_curves_l.png");
     es->keyscale_right_images =  LoadTexture("resources/images/keyscale_curves_r.png");
 

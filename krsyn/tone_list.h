@@ -45,6 +45,9 @@ typedef struct ks_tone_list{
 ks_io_decl_custom_func(ks_tone_data);
 ks_io_decl_custom_func(ks_tone_list_data);
 
+ks_tone_list_data*          ks_tone_list_data_new               ();
+void                        ks_tone_list_data_free              (ks_tone_list_data* d);
+
 ks_tone_list*               ks_tone_list_new_from_data          (u32 sampling_rate, const ks_tone_list_data *bin);
 ks_tone_list*               ks_tone_list_new                    ();
 void                        ks_tone_list_free                   (ks_tone_list* tones);
@@ -64,8 +67,6 @@ bool                        ks_tone_list_bank_is_empty          (const ks_tone_l
 // XG like ???
 ks_tone_list_bank_number    ks_tone_list_bank_number_of         (u8 msb, u8 lsb);
 
-int                         ks_tone_data_compare1               (const ks_tone_data* t1, const ks_tone_data* t2);
-int                         ks_tone_data_compare2               (const void* v1, const void* v2);
 void                        ks_tone_list_sort                   (ks_tone_list_data* v, i32* current);
 void                        ks_tone_list_insert                 (ks_tone_list_data* v, ks_tone_data d, i32 *current);
 void                        ks_tone_list_insert_empty           (ks_tone_list_data*v, i32 *current);

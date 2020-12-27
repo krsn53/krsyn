@@ -36,7 +36,8 @@ int main( void )
 
   i32 buf_len = OUTPUT_LENGTH;
   i32 buf_size = sizeof(i16) * buf_len;
-  i16 *buf = malloc(buf_size);
+  i32 *buf =   malloc(sizeof(i32) * buf_len);
+  i16 *writebuf = malloc( buf_size );
 
 
   {
@@ -329,6 +330,10 @@ int main( void )
 
       ks_score_data_render(&song, SAMPLING_RATE, state, tones, buf, buf_len);
 
+      for(i32 i=0; i<buf_len; i++){
+          writebuf[i] = buf[i];
+      }
+
       ks_tone_list_free(tones);
       ks_score_state_free(state);
   }
@@ -355,10 +360,11 @@ int main( void )
 
     // リトルエンディアン環境でない場合、以下の書き方だと動かないかもしれない。
     fwrite(&head, 1, sizeof(head), fp);
-    fwrite(buf, 1, buf_size, fp);
+    fwrite(writebuf, 1, buf_size, fp);
 
     fclose(fp);
   }
 
   free (buf);
+  free(writebuf);
 }

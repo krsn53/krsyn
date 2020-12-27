@@ -35,7 +35,7 @@ typedef struct ks_score_channel{
     u8                  expression;
     u16                 volume_cache;
 
-    i16                 *output_log;
+    i32                *output_log;
 }ks_score_channel;
 
 /**
@@ -66,8 +66,9 @@ typedef enum ks_effect_type{
 typedef struct ks_volume_analizer{
     u32         length;
     u32         seek;
-    i16         *log            [KS_NUM_CHANNELS];
-    u16         volume          [KS_NUM_CHANNELS];
+    i32         *log            [KS_NUM_CHANNELS + 1];
+    u32         volume          [KS_NUM_CHANNELS];
+    u32         volume_l,        volume_r;
 }ks_volume_analizer;
 
 /**
@@ -102,7 +103,7 @@ typedef struct ks_score_state{
     u16                 polyphony_bits;
 
     u32                 current_event;
-    u32                 passed_tick;
+    i32                 passed_tick;
     u32                 current_tick;
 
     ks_effect_list      effects;
@@ -158,7 +159,7 @@ bool                ks_score_state_bank_select      (ks_score_state* state, cons
 bool                ks_score_state_bank_select_msb  (ks_score_state* state, const ks_tone_list* tones, ks_score_channel* channel, u8 msb);
 bool                ks_score_state_bank_select_lsb  (ks_score_state* state, const ks_tone_list* tones, ks_score_channel* channel, u8 lsb);
 
-void                ks_score_data_render            (const ks_score_data* score, u32 sampling_rate, ks_score_state *state, const ks_tone_list *tones, i16 *buf, u32 len);
+void                ks_score_data_render            (const ks_score_data* score, u32 sampling_rate, ks_score_state *state, const ks_tone_list *tones, i32 *buf, u32 len);
 bool                ks_score_data_event_run         (const ks_score_data* score, u32 sampling_rate, ks_score_state* state,  const ks_tone_list* tones);
 
 void                ks_score_state_set_default      (ks_score_state *state, const ks_tone_list *tones, u32 sampling_rate, u32 resolution);
@@ -175,6 +176,9 @@ ks_score_note_info  ks_score_note_info_of           (u8 note_number, u8 channel)
 
 void                ks_score_state_add_volume_analizer      (ks_score_state* state, u32 sampling_rate, u32 duration);
 
-void                ks_effect_volume_analize                (ks_effect* effect, ks_score_state* state, u32 len);
+void                ks_effect_volume_analize                (ks_effect* effect, ks_score_state* state, i32 *buf, u32 len, bool channels_enabled[]);
 void                ks_effect_list_data_free                (u32 length, ks_effect* data);
-const u16*          ks_effect_calc_volume                   (ks_effect* effect);
+void                ks_effect_list_data_free                (u32 length, ks_effect* data);
+void                ks_effect_list_data_free                (u32 length, ks_effect* data);
+void                ks_effect_volume_analizer_clear         (ks_effect* effect);
+const u32 *         ks_effect_calc_volume                   (ks_effect* effect);

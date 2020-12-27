@@ -135,7 +135,9 @@ bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel
             return false;
         }
     }
-
+    if(channel->bank->bank_number.percussion) {
+        synth += note_number;
+    }
     state->notes[index].synth = synth;
     state->notes[index].info = id;
     ks_synth_note_on(&state->notes[index].note, synth, sampling_rate, note_number, velocity);
@@ -247,7 +249,7 @@ bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const
     state->quater_time = quarter;
     state->frames_per_event= calc_frames_per_event(sampling_rate, state->quater_time, score->resolution);
     for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
-        state->channels[i].output_log = realloc(state->channels[i].output_log, state->frames_per_event * 2 * sizeof(i16));
+        state->channels[i].output_log = realloc(state->channels[i].output_log, state->frames_per_event * 2 * sizeof(i32));
     }
     return true;
 }
@@ -279,19 +281,19 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* to
         return ks_score_channel_set_expression(channel, value);
     case 0x20:
         return ks_score_state_bank_select_lsb(state, tones, channel, value);
-    case 0x10:
+    case 0x0a:
         return ks_score_channel_set_panpot(channel, value);
     }
     return true;
 }
 
 
-void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_score_state* state, const ks_tone_list*tones, i16* buf, u32 len){
+void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_score_state* state, const ks_tone_list*tones, i32* buf, u32 len){
     u32 i=0;
-    memset(buf, 0, sizeof(i16)*len);
+    memset(buf, 0, sizeof(i32)*len);
     do{
         u32 frame = MIN(len-i, state->remaining_frame*2);
-        i16* tmpbuf = malloc(sizeof(i16)*frame);
+        i32* tmpbuf = malloc(sizeof(i32)*frame);
 
         bool channel_enabled[KS_NUM_CHANNELS];
         memset(channel_enabled, false, sizeof(channel_enabled)); // all false
@@ -304,14 +306,14 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
 
             ks_score_channel* channel = &state->channels[state->notes[p].info.channel];
             if(channel_enabled[state->notes[p].info.channel] == false){
-                memset(channel->output_log, 0, frame* sizeof(i16));
+                memset(channel->output_log, 0, frame* sizeof(i32));
                 channel_enabled[state->notes[p].info.channel]= true;
             }
 
             // when note on, already checked,
             //if(channel->bank == NULL) continue;
             //if(channel->bank->programs[channel->program_number] == NULL) continue;
-            ks_synth* synth = channel->program;
+            ks_synth* synth = state->notes[p].synth;
             ks_synth_note* note = &state->notes[p].note;
             ks_synth_render(synth, note, channel->volume_cache, channel->pitchbend, tmpbuf, frame);
 
@@ -327,8 +329,8 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
             ks_score_channel* channel = &state->channels[c];
 
             for(u32 b =0; b< frame; b+=2){
-                buf[(i + b)] += ks_apply_panpot(channel->output_log[b], channel->panpot_left);
-                buf[(i + b) + 1] += ks_apply_panpot(channel->output_log[b+1], channel->panpot_right);
+                buf[(i + b)] += channel->output_log[b] = ks_apply_panpot(channel->output_log[b], channel->panpot_left);
+                buf[(i + b) + 1] +=channel->output_log[b+1] =  ks_apply_panpot(channel->output_log[b+1], channel->panpot_right);
             }
         }
 
@@ -336,7 +338,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
         for(u32 e=0; e<state->effects.length; e++){
             switch (state->effects.data[e].type) {
             case KS_EFFECT_VOLUME_ANALIZER:
-                ks_effect_volume_analize(&state->effects.data[e], state, frame);
+                ks_effect_volume_analize(&state->effects.data[e], state, buf + i, frame, channel_enabled);
                 break;
             }
         }
@@ -346,7 +348,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
         state->remaining_frame -= frame >> 1;
 
         if(state->remaining_frame == 0){
-            if(state->passed_tick >= score->data[state->current_event].delta){
+            if(state->passed_tick >= (i32)score->data[state->current_event].delta){
                 state->passed_tick -= score->data[state->current_event].delta;
                 if(ks_score_data_event_run(score, sampling_rate, state, tones)){
                     state->passed_tick = -1;
@@ -449,20 +451,20 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones
         state->channels[i].expression= 127;
         set_channel_volume_cache(&state->channels[i]);
 
-        state->channels[i].output_log = malloc(state->frames_per_event * 2 * sizeof(i16));
+        state->channels[i].output_log = malloc(state->frames_per_event * 2 * sizeof(i32));
     }
 }
 
 ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
     const ks_midi_file* conbined = file->format == 0 ? file : ks_midi_file_conbine_tracks(file);
 
-    ks_score_data* ret = ks_score_data_new(file->resolution, 0, NULL);
-    ks_score_event* events = calloc(file->tracks[0].num_events, sizeof(ks_score_event));
+    ks_score_data* ret = ks_score_data_new(conbined->resolution, 0, NULL);
+    ks_score_event* events = calloc(conbined->tracks[0].num_events, sizeof(ks_score_event));
 
 
     u64 time=0;
-    for(u32 i=0; i< file->tracks[0].num_events; i++){
-        ks_midi_event* msg = &file->tracks[0].events[i];
+    for(u32 i=0; i< conbined->tracks[0].num_events; i++){
+        ks_midi_event* msg = &conbined->tracks[0].events[i];
         switch (msg->status) {
         case 0xff:
             // tempo
@@ -480,8 +482,8 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
                 events[ret->length].data[1] = ks_mask(quarter_fp8, KS_QUARTER_TIME_BITS);
                 events[ret->length].data[2] = quarter_fp8 >> KS_QUARTER_TIME_BITS;
 
-                ret->length++;
                 events[ret->length].delta = msg->time - time;
+                ret->length++;
                 time = msg->time;
             }
             // end of track
@@ -490,8 +492,8 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
                 events[ret->length].data[0] = 0x2f;
                 events[ret->length].data[1] = 0x00;
 
-                ret->length++;
                 events[ret->length].delta = msg->time - time;
+                ret->length++;
                 time = msg->time;
             }
             break;
@@ -502,8 +504,8 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
                 events[ret->length].data[0] = msg->message.data[0];
                 events[ret->length].data[1] = msg->message.data[1];
 
-                ret->length++;
                 events[ret->length].delta = msg->time - time;
+                ret->length++;
                 time = msg->time;
             }
             break;
@@ -536,14 +538,13 @@ void ks_score_state_add_volume_analizer (ks_score_state* state, u32 sampling_rat
     ks_vector_push(&state->effects, e);
     ks_effect* effect = &state->effects.data[state->effects.length-1];
 
-    for(u32 c=0; c<KS_NUM_CHANNELS; c++){
-        effect->data.volume_analizer.log[c] = calloc(frame, sizeof(i16));
+    for(u32 c=0; c<KS_NUM_CHANNELS+1; c++){
+        effect->data.volume_analizer.log[c] = calloc(frame, sizeof(i32));
     }
 }
 
-void ks_effect_volume_analize  (ks_effect* effect, ks_score_state* state, u32 len){
+void ks_effect_volume_analize  (ks_effect* effect, ks_score_state* state, i32* buf, u32 len, bool channels_enabled[]){
     ks_volume_analizer* dat = &effect->data.volume_analizer;
-
 
     u32 i= 0;
     do{
@@ -554,12 +555,22 @@ void ks_effect_volume_analize  (ks_effect* effect, ks_score_state* state, u32 le
         else {
             f = len - i;
         }
+        u32 e = i+f;
         for(u32 c=0; c<KS_NUM_CHANNELS; c++){
             ks_score_channel* channel = &state->channels[c];
-            for(u32 s = dat->seek, j=i; j<f; s++, j++){
-                u32 o = channel->output_log[j] > 0 ? channel->output_log[j] : - channel->output_log[j];
-                dat->log[c][s] = o;
+            if(channels_enabled[c]){
+                for(u32 s = dat->seek, j=i; j<e; s++, j++){
+                    u32 o = channel->output_log[j] > 0 ? channel->output_log[j] : - channel->output_log[j];
+                    dat->log[c][s] = o;
+                }
             }
+            else{
+                memset(&dat->log[c][dat->seek], 0, sizeof(i32)*f);
+            }
+        }
+        for(u32 s = dat->seek, j=i; j<e; s++, j++){
+            u32 o = buf[j] > 0 ? buf[j] : - buf[j];
+            dat->log[KS_NUM_CHANNELS][s] = o;
         }
         dat->seek = dat->seek + f;
         dat->seek %= dat->length;
@@ -567,11 +578,22 @@ void ks_effect_volume_analize  (ks_effect* effect, ks_score_state* state, u32 le
     }while(i<len);
 }
 
+void ks_effect_volume_analizer_clear(ks_effect* effect){
+    ks_volume_analizer* a = &effect->data.volume_analizer;
+    a->seek = 0;
+    for(u32 c =0; c<KS_NUM_CHANNELS+1; c++){
+        for(u32 i=0; i< a->length; i++){
+            a->log[c][i] = 0;
+        }
+        a->volume[c] = 0;
+    }
+}
+
 void ks_effect_list_data_free(u32 length, ks_effect* data){
     for(u32 i=0; i<length; i++){
         switch (data[i].type) {
         case KS_EFFECT_VOLUME_ANALIZER:
-            for(u32 c=0;c<KS_NUM_CHANNELS;c++){
+            for(u32 c=0;c<KS_NUM_CHANNELS+1;c++){
                 free(data[i].data.volume_analizer.log[c]);
             }
             break;
@@ -580,15 +602,25 @@ void ks_effect_list_data_free(u32 length, ks_effect* data){
     free(data);
 }
 
-const u16*  ks_effect_calc_volume(ks_effect* effect){
+const u32*  ks_effect_calc_volume(ks_effect* effect){
     ks_volume_analizer* a = &effect->data.volume_analizer;
     for(u32 c =0; c<KS_NUM_CHANNELS; c++){
-        u32 out= 0;
+        u32 out=0;
         for(u32 i=0; i< a->length; i++){
             out += a->log[c][i];
         }
         out /= a->length;
         a->volume[c] = out;
     }
+    u32 out_l=0, out_r=0;
+    for(u32 i=0; i< a->length; i+=2){
+        out_l += a->log[KS_NUM_CHANNELS][i];
+        out_r += a->log[KS_NUM_CHANNELS][i+1];
+    }
+    out_l /= a->length/2;
+    out_r /= a->length/2;
+    a->volume_l = out_l;
+    a->volume_r = out_r;
+
     return a->volume;
 }

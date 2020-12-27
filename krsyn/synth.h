@@ -253,7 +253,7 @@ ks_synth*                   ks_synth_array_new              (u32 length, ks_synt
 void                        ks_synth_free                   (ks_synth* synth);
 void                        ks_synth_data_set_default       (ks_synth_data* data);
 void                        ks_synth_set                    (ks_synth* synth, u32 sampling_rate, const ks_synth_data* data);
-void                        ks_synth_render                 (const ks_synth *synth, ks_synth_note* note, u32 volume, u32 pitchbend, i16 *buf, u32 len);
+void                        ks_synth_render                 (const ks_synth *synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32 *buf, u32 len);
 void                        ks_synth_note_on                (ks_synth_note* note, const ks_synth *synth, u32 sampling_rate,  u8 notenum, u8 velocity);
 void                        ks_synth_note_off               (ks_synth_note* note);
 bool                        ks_synth_note_is_enabled        (const ks_synth_note* note);
@@ -269,7 +269,7 @@ i64                         ks_linear2                      (u8 val, i32 MIN, i3
 u32                         ks_fms_depth                    (i32 depth);
 
 void                        ks_calc_panpot                  (i16* left, i16* right, u8 val);
-i16                         ks_apply_panpot                 (i16 in, i16 pan);
+i32                         ks_apply_panpot                 (i32 in, i16 pan);
 
 #define ks_linear_i         (i32)ks_linear
 #define ks_linear_u         (u32)ks_linear
