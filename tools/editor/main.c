@@ -92,7 +92,7 @@ static void unmark_dirty(bool* dirty, GuiFileDialogState* file_dialog_state){
                        "noname" : file_dialog_state->fileNameText));
 }
 
-bool SaveLoadSynth(ks_synth_data* bin, editor_state* es, bool serialize){
+bool save_load_synth(ks_synth_data* bin, editor_state* es, bool serialize){
     ks_io * io = ks_io_new();
     bool text_format = false;
     if(IsFileExtension(es->file_dialog_state_synth.fileNameText, ".ksyc")){
@@ -133,7 +133,7 @@ bool SaveLoadSynth(ks_synth_data* bin, editor_state* es, bool serialize){
     return ret;
 }
 
-bool SaveLoadToneList(ks_tone_list_data* bin, editor_state* es, bool serialize){
+bool save_load_tone_list(ks_tone_list_data* bin, editor_state* es, bool serialize){
     ks_io * io = ks_io_new();
     bool text_format = false;
     if(IsFileExtension(es->file_dialog_state.fileNameText, ".kstc")){
@@ -324,7 +324,7 @@ void EditorUpdate(void* ptr){
                     es->file_dialog_state.fileDialogActiveState = DIALOG_ACTIVE;
                     es->display_mode= SAVE_DIALOG;
                 } else {
-                    if(SaveLoadToneList(&es->tones_data, es, true)){
+                    if(save_load_tone_list(&es->tones_data, es, true)){
                         es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                         update_tone_list(&es->tones, &es->tones_data, es->score_state);
                     }
@@ -392,7 +392,7 @@ void EditorUpdate(void* ptr){
                         memset(es->file_dialog_state.dirPathText, 0 , sizeof(es->file_dialog_state.dirPathText));
                         strncpy(es->file_dialog_state.dirPathText, *files, strlen(*files) - strlen(es->file_dialog_state.fileNameText));
 
-                        if(!SaveLoadToneList(&es->tones_data , es, false)){
+                        if(!save_load_tone_list(&es->tones_data , es, false)){
                             es->dialog_message = "Failed to load tone list";
                             es->display_mode = ERROR_DIALOG;
                         }
@@ -402,7 +402,7 @@ void EditorUpdate(void* ptr){
                         memset(es->file_dialog_state_synth.dirPathText, 0 , sizeof(es->file_dialog_state_synth.dirPathText));
                         strncpy(es->file_dialog_state_synth.dirPathText, *files, strlen(*files) - strlen(es->file_dialog_state_synth.fileNameText));
 
-                        if(!SaveLoadSynth(&es->tones_data.data[es->current_tone_index].synth, es, false)){
+                        if(!save_load_synth(&es->tones_data.data[es->current_tone_index].synth, es, false)){
                             es->dialog_message = "Failed to load synth";
                             es->display_mode = ERROR_DIALOG;
                         } else {
@@ -1054,7 +1054,7 @@ void EditorUpdate(void* ptr){
                     }
 
                     ks_tone_list_data load;
-                    if(!SaveLoadToneList(&load, es, false)){
+                    if(!save_load_tone_list(&load, es, false)){
                         es->dialog_message = "Failed to load tone list";
                         es->display_mode = ERROR_DIALOG;
                     }else {
@@ -1080,7 +1080,7 @@ void EditorUpdate(void* ptr){
             const Rectangle window ={ lr_margin, td_margin, SCREEN_WIDTH - lr_margin *2, SCREEN_HEIGHT - td_margin*2 };
             const int msgbox_res = GuiMessageBox(window, "Save Tone List", "", "OK;Cancel");
             if(msgbox_res == 1){
-                if(SaveLoadToneList(&es->tones_data, es, true)){
+                if(save_load_tone_list(&es->tones_data, es, true)){
                     update_tone_list(&es->tones, &es->tones_data, es->score_state);
                     es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                     es->display_mode= EDIT;
@@ -1101,7 +1101,7 @@ void EditorUpdate(void* ptr){
             GuiFileDialog(&es->file_dialog_state, true);
             if(es->file_dialog_state.fileDialogActiveState == DIALOG_DEACTIVE){
                 if(es->file_dialog_state.SelectFilePressed){
-                    if(SaveLoadToneList(&es->tones_data, es, true)){
+                    if(save_load_tone_list(&es->tones_data, es, true)){
                         update_tone_list(&es->tones, &es->tones_data, es->score_state);
                         es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                         es->display_mode= EDIT;
@@ -1124,7 +1124,7 @@ void EditorUpdate(void* ptr){
             if(es->file_dialog_state_synth.fileDialogActiveState == DIALOG_DEACTIVE){
                 if(es->file_dialog_state_synth.SelectFilePressed){
                     ks_synth_data tmp;
-                    if(SaveLoadSynth(&tmp, es, false)){
+                    if(save_load_synth(&tmp, es, false)){
                         es->tones_data.data[es->current_tone_index].synth = es->temp_synth = tmp;
                         es->display_mode= EDIT;
                     }
@@ -1147,7 +1147,7 @@ void EditorUpdate(void* ptr){
             const Rectangle window ={ lr_margin, td_margin, SCREEN_WIDTH - lr_margin *2, SCREEN_HEIGHT - td_margin*2 };
             const int msgbox_res = GuiMessageBox(window, "Save Synth", "", "OK;Cancel");
             if(msgbox_res == 1){
-                if(!SaveLoadSynth(&es->tones_data.data[es->current_tone_index].synth, es, true)){
+                if(!save_load_synth(&es->tones_data.data[es->current_tone_index].synth, es, true)){
                     es->dialog_message = "Failed to save synth";
                     es->display_mode = ERROR_DIALOG;
                 }
@@ -1167,7 +1167,7 @@ void EditorUpdate(void* ptr){
             GuiFileDialog(&es->file_dialog_state_synth, true);
             if(es->file_dialog_state_synth.fileDialogActiveState == DIALOG_DEACTIVE){
                 if(es->file_dialog_state_synth.SelectFilePressed){
-                    if(!SaveLoadSynth(&es->tones_data.data[es->current_tone_index].synth, es, true)){
+                    if(!save_load_synth(&es->tones_data.data[es->current_tone_index].synth, es, true)){
                         es->dialog_message = "Failed to save synth";
                         es->display_mode = ERROR_DIALOG;
                     }
@@ -1254,6 +1254,96 @@ void EditorUpdate(void* ptr){
     EndDrawing();
 }
 
+void init(editor_state* es){
+    es->tone_list_scroll=0;
+    es->texsbox_focus = -1;
+    es->current_tone_index =-1;
+    memset(&es->note, 0, sizeof(es->note));
+    es->noteon_number = -1;
+    es->dirty = false;
+    es->display_mode= EDIT;
+
+    es->audiostream = InitAudioStream(SAMPLING_RATE, 16, NUM_CHANNELS);
+    es->buf = malloc(sizeof(i16)*BUFFER_LENGTH_PER_UPDATE);
+
+    ks_vector_init(&es->tones_data);
+    ks_tone_list_insert_empty(&es->tones_data, &es->current_tone_index);
+
+    es->events[0].delta = 0xffffffff;
+    es->events[0].status = 0xff;
+    es->events[0].data[0] = 0x2f;
+    es->score.data = es->events;
+    es->score.length = 0;
+    es->score.resolution = MIDIIN_RESOLUTION;
+
+    es->score_state= ks_score_state_new(MIDIIN_POLYPHONY_BITS);
+    es->time = 0;
+
+    update_tone_list(&es->tones, &es->tones_data, es->score_state);
+
+    PlayAudioStream(es->audiostream);
+
+    ks_synth_data_set_default(&es->tones_data.data[0].synth);
+    ks_synth_data_set_default(&es->temp_synth);
+
+    InitAudioDevice();
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn editor - noname");
+    SetTargetFPS(60);
+
+    GuiSetStyle(LISTVIEW, LIST_ITEMS_HEIGHT, 14);
+#ifdef PLATFORM_DESKTOP
+    enum RtMidiApi api;
+    if(rtmidi_get_compiled_api(&api, 1) != 0){
+        es->midiin = rtmidi_in_create(api, "C", sizeof(es->events) / sizeof(es->events[0]));
+        rtmidi_open_port(es->midiin, 0, rtmidi_get_port_name(es->midiin, 0));
+        es->midiin_port = 0;
+
+    } else {
+        es->midiin = NULL;
+        es->midiin_port = 0;
+    }
+    es->midiin_list_scroll =0;
+#endif
+
+    es->file_dialog_state= InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, es->file_dialog_state.dirPathText, false);
+    strcpy(es->file_dialog_state.filterExt,  tone_list_ext);
+    es->file_dialog_state_synth = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, es->file_dialog_state_synth.dirPathText, false);
+    strcpy(es->file_dialog_state_synth.filterExt, synth_ext);
+
+    es->algorithm_images = LoadTexture("resources/images/algorithms.png");
+    es->lfo_wave_images= LoadTexture("resources/images/lfo_waves->png");
+    es->keyscale_left_images = LoadTexture("resources/images/keyscale_curves_l.png");
+    es->keyscale_right_images =  LoadTexture("resources/images/keyscale_curves_r.png");
+
+    SetTextureFilter(es->algorithm_images, FILTER_BILINEAR);
+    SetTextureFilter(es->lfo_wave_images, FILTER_BILINEAR);
+    SetTextureFilter(es->keyscale_left_images, FILTER_BILINEAR);
+    SetTextureFilter(es->keyscale_right_images, FILTER_BILINEAR);
+}
+
+void deinit(editor_state* es){
+    //----------------------------------------------------------------------------------
+    // unload
+    UnloadTexture(es->algorithm_images);
+    UnloadTexture(es->lfo_wave_images);
+    UnloadTexture(es->keyscale_left_images);
+    UnloadTexture(es->keyscale_right_images);
+
+    CloseWindow();
+    CloseAudioDevice();
+
+    ks_score_state_free(es->score_state);
+#ifdef PLATFORM_DESKTOP
+    if(es->midiin != NULL){
+        rtmidi_close_port(es->midiin);
+        rtmidi_in_free(es->midiin);
+    }
+#endif
+    free(es->buf);
+    free(es->tones_data.data);
+    ks_tone_list_free(es->tones);
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -1265,71 +1355,8 @@ int main(int argc, char** argv)
 
     //--------------------------------------------------------------------------------------
     // editor init
+    init(&es);
 
-    es.tone_list_scroll=0;
-    es.texsbox_focus = -1;
-    es.current_tone_index =-1;
-    memset(&es.note, 0, sizeof(es.note));
-    es.noteon_number = -1;
-    es.dirty = false;
-    es.display_mode= EDIT;
-
-    es.audiostream = InitAudioStream(SAMPLING_RATE, 16, NUM_CHANNELS);
-    es.buf = malloc(sizeof(i16)*BUFFER_LENGTH_PER_UPDATE);
-
-    ks_vector_init(&es.tones_data);
-    ks_tone_list_insert_empty(&es.tones_data, &es.current_tone_index);
-
-    es.events[0].delta = 0xffffffff;
-    es.events[0].status = 0xff;
-    es.events[0].data[0] = 0x2f;
-    es.score.data = es.events;
-    es.score.length = 0;
-    es.score.resolution = MIDIIN_RESOLUTION;
-
-    es.score_state= ks_score_state_new(MIDIIN_POLYPHONY_BITS);
-    es.time = 0;
-
-    update_tone_list(&es.tones, &es.tones_data, es.score_state);
-
-    PlayAudioStream(es.audiostream);
-
-    ks_synth_data_set_default(&es.tones_data.data[0].synth);
-    ks_synth_data_set_default(&es.temp_synth);
-
-    InitAudioDevice();
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "krsyn editor - noname");
-    SetTargetFPS(60);
-
-    GuiSetStyle(LISTVIEW, LIST_ITEMS_HEIGHT, 14);
-#ifdef PLATFORM_DESKTOP
-    enum RtMidiApi api;
-    if(rtmidi_get_compiled_api(&api, 1) != 0){
-        es.midiin = rtmidi_in_create(api, "C", sizeof(es.events) / sizeof(es.events[0]));
-        rtmidi_open_port(es.midiin, 0, rtmidi_get_port_name(es.midiin, 0));
-        es.midiin_port = 0;
-
-    } else {
-        es.midiin = NULL;
-        es.midiin_port = 0;
-    }
-    es.midiin_list_scroll =0;
-#endif
-
-    es.file_dialog_state= InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, es.file_dialog_state.dirPathText, false);
-    strcpy(es.file_dialog_state.filterExt,  tone_list_ext);
-    es.file_dialog_state_synth = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, es.file_dialog_state_synth.dirPathText, false);
-    strcpy(es.file_dialog_state_synth.filterExt, synth_ext);
-
-    es.algorithm_images = LoadTexture("resources/images/algorithms.png");
-    es.lfo_wave_images= LoadTexture("resources/images/lfo_waves.png");
-    es.keyscale_left_images = LoadTexture("resources/images/keyscale_curves_l.png");
-    es.keyscale_right_images =  LoadTexture("resources/images/keyscale_curves_r.png");
-
-    SetTextureFilter(es.algorithm_images, FILTER_BILINEAR);
-    SetTextureFilter(es.lfo_wave_images, FILTER_BILINEAR);
-    SetTextureFilter(es.keyscale_left_images, FILTER_BILINEAR);
-    SetTextureFilter(es.keyscale_right_images, FILTER_BILINEAR);
 
     //--------------------------------------------------------------------------------------
     // argments
@@ -1351,7 +1378,7 @@ int main(int argc, char** argv)
                 strcpy(es.file_dialog_state.dirPathText, dir);
             }
 
-            if(!SaveLoadToneList(&es.tones_data, &es, false)){
+            if(!save_load_tone_list(&es.tones_data, &es, false)){
                 es.dialog_message = "Failed to load tone list";
                 es.display_mode = ERROR_DIALOG;
             } else {
@@ -1373,7 +1400,7 @@ int main(int argc, char** argv)
                 strcpy(es.file_dialog_state_synth.dirPathText, dir);
             }
 
-            if(!SaveLoadSynth(&es.tones_data.data->synth, &es, false)){
+            if(!save_load_synth(&es.tones_data.data->synth, &es, false)){
                 es.dialog_message = "Failed to load synth";
                 es.display_mode = ERROR_DIALOG;
             } else{
@@ -1400,26 +1427,7 @@ int main(int argc, char** argv)
 
 
 
-    //----------------------------------------------------------------------------------
-    // unload
-    UnloadTexture(es.algorithm_images);
-    UnloadTexture(es.lfo_wave_images);
-    UnloadTexture(es.keyscale_left_images);
-    UnloadTexture(es.keyscale_right_images);
-
-    CloseWindow();
-    CloseAudioDevice();
-
-    ks_score_state_free(es.score_state);
-#ifdef PLATFORM_DESKTOP
-    if(es.midiin != NULL){
-        rtmidi_close_port(es.midiin);
-        rtmidi_in_free(es.midiin);
-    }
-#endif
-    free(es.buf);
-    free(es.tones_data.data);
-    ks_tone_list_free(es.tones);
+   deinit(&es);
 
     return 0;
 }
