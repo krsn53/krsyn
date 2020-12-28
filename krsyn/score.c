@@ -10,6 +10,8 @@
 #include <malloc.h>
 
 
+#define     KS_DEFAULT_QUARTER_TIME     ks_1(KS_QUARTER_TIME_BITS - 1)
+
 ks_io_begin_custom_func(ks_score_event)
     ks_func_prop(ks_io_variable_length_number, ks_prop_u32(delta));
     ks_u8(status);
@@ -82,14 +84,41 @@ void ks_score_data_free(ks_score_data* song){
     free(song);
 }
 
+static inline u32 calc_quarter_time(const u8* data){
+    return data[1] + ks_v(data[2], KS_QUARTER_TIME_BITS);
+}
 
-static inline u32 calc_frames_per_event(u32 sampling_rate, u16 quater_time, u16 resolution){
+static inline u32 calc_frames_per_event(u32 sampling_rate, u16 quarter_time, u16 resolution){
     u64 ret = sampling_rate;
-    ret *= quater_time;
+    ret *= quarter_time;
     ret /= resolution;
     ret >>= KS_QUARTER_TIME_BITS;
     return (u32)ret;
 }
+
+
+float ks_score_data_calc_score_length(ks_score_data* score, u32 sampling_rate){
+    u16 quarter_time = KS_DEFAULT_QUARTER_TIME;
+    u32 frames_per_event = calc_frames_per_event(sampling_rate, quarter_time, score->resolution);
+
+    float time = 0;
+    u64 tick = 0;
+
+    for(u32 i=1; i< score->length; i++){
+        tick = tick+ score->data[i].delta;
+        const u64 delta_frame = (u64)score->data[i].delta* frames_per_event;
+        const double delta_time =  (double)delta_frame / sampling_rate;
+        time = time + delta_time;
+        // tempo change
+        if(score->data[i].status ==  0xff && score->data[i].data[0] == 0x51){
+            quarter_time = calc_quarter_time(score->data[i].data);
+            frames_per_event= calc_frames_per_event(sampling_rate, quarter_time, score->resolution);
+        }
+    }
+
+    return score->score_length = time;
+}
+
 
 ks_score_state* ks_score_state_new(u32 polyphony_bits){
     ks_score_state* ret = calloc(1, sizeof(ks_score_state) + ks_1(polyphony_bits)* sizeof(ks_score_note));
@@ -245,9 +274,8 @@ bool ks_score_channel_set_picthbend(ks_score_channel* channel, u8 msb, u8 lsb){
 }
 
 bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* data){
-    const u32 quarter = data[1] + ks_v(data[2], KS_QUARTER_TIME_BITS);
-    state->quater_time = quarter;
-    state->frames_per_event= calc_frames_per_event(sampling_rate, state->quater_time, score->resolution);
+    state->quarter_time = calc_quarter_time(data);
+    state->frames_per_event= calc_frames_per_event(sampling_rate, state->quarter_time, score->resolution);
     for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
         state->channels[i].output_log = realloc(state->channels[i].output_log, state->frames_per_event * 2 * sizeof(i32));
     }
@@ -430,11 +458,12 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
 
 
 void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones, u32 sampling_rate, u32 resolution){
-    state->quater_time = ks_1(KS_QUARTER_TIME_BITS - 1); // 0.5
+    state->quarter_time = KS_DEFAULT_QUARTER_TIME; // 0.5
     state->remaining_frame = 0;
     state->current_event = 0;
-    state->frames_per_event = calc_frames_per_event(sampling_rate, state->quater_time, resolution);
+    state->frames_per_event = calc_frames_per_event(sampling_rate, state->quarter_time, resolution);
     state->passed_tick = 0;
+    state->current_tick = 0;
     for(u32 i=0; i<ks_1(state->polyphony_bits); i++) {
         memset(&state->notes[i], 0 , sizeof(ks_score_note));
     }

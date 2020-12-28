@@ -29,6 +29,9 @@ typedef struct player_state{
 
     AudioStream     stream;
     i32*            buf;
+
+    u32             tick;
+    double          time;
 } player_state;
 
 static const int screenWidth = 250;
@@ -97,6 +100,7 @@ bool load_score(player_state* ps, const char* file){
     }
 
     if(ret) {
+        ks_score_data_calc_score_length(ps->score, SAMPILNG_RATE);
         ks_score_state_set_default(ps->score_state, ps->tones, SAMPILNG_RATE, ps->score->resolution);
         SetWindowTitle( GetFileName(file) );
     }
@@ -104,6 +108,14 @@ bool load_score(player_state* ps, const char* file){
 
 
     return ret;
+}
+
+void stop(player_state* ps){
+    ps->play_state = STOP;
+    ks_score_state_set_default(ps->score_state, ps->tones, SAMPILNG_RATE, ps->score->resolution);
+    ks_effect_volume_analizer_clear(ps->score_state->effects.data);
+    ps->time = 0;
+    ps->tick = 0;
 }
 
 void init(player_state* ps){
@@ -142,9 +154,7 @@ void update(void* ptr){
     if(IsAudioStreamProcessed(ps->stream)){
         if(ps->play_state == PLAY && ps->score != NULL){
             if(ps->score_state->passed_tick < 0) {
-                ps->play_state = STOP;
-                ks_score_state_set_default(ps->score_state, ps->tones, SAMPILNG_RATE, ps->score->resolution);
-                ks_effect_volume_analizer_clear(ps->score_state->effects.data);
+                stop(ps);
             } else {
                 ks_score_data_render(ps->score, SAMPILNG_RATE, ps->score_state, ps->tones, ps->buf, BUFFER_LENGTH_PER_UPDATE);
             }
@@ -182,9 +192,7 @@ void update(void* ptr){
     sr.x += step_x;
     // stop
     if(GuiToggle(sr, "#133#", false)){
-        ps->play_state = STOP;
-        ks_score_state_set_default(ps->score_state, ps->tones, SAMPILNG_RATE, ps->score->resolution);
-        ks_effect_volume_analizer_clear(ps->score_state->effects.data);
+        stop(ps);
     }
     sr.x += step_x;
 //        // next
@@ -192,15 +200,32 @@ void update(void* ptr){
 //        }
 //        sr.x += step_x;
 
-    // playback now position
+    sr.width = screenWidth - margin*2 - sr.x;
+    const u64 delta_frame = (ps->score_state->current_tick - ps->tick) * ps->score_state->frames_per_event;
+    const double delta_time = (double)delta_frame / SAMPILNG_RATE;
+    ps->tick = ps->score_state->current_tick;
 
-    //wave
+    ps->time += delta_time;
+
+    {
+        const int now_time = (int)ps->time;
+        const int now_min = now_time / 60;
+        const int now_sec = now_time % 60;
+
+        const int song_length = (int)ps->score->score_length;
+        const int song_min = song_length / 60;
+        const int song_sec = song_length % 60;
+
+        GuiLabel(sr, FormatText("%02d:%02d / %02d:%02d", now_min, now_sec, song_min, song_sec));
+    }
+
+    // wave
     sr.x = base_pos.x;
     sr.y += step_y;
     {
         Rectangle wr ={sr.x, sr.y, screenWidth - margin*2, step_y*5 };
 
-        const float channel_width = (screenWidth - margin * 2)/ (KS_NUM_CHANNELS+2.5);
+        const float channel_width = (screenWidth - margin * 4)/ (KS_NUM_CHANNELS+2.5);
 
         {
             Rectangle or = {sr.x+margin, sr.y+margin + step_y*4, channel_width, step_y*4};
@@ -211,7 +236,7 @@ void update(void* ptr){
             const float wid = or.width * 0.8f;
 
             for(u32 i =0; i<KS_NUM_CHANNELS; i++){
-                float hei = (float)channel_out[i]/ ks_1(KS_OUTPUT_BITS)*step_y*5;
+                float hei = (float)channel_out[i]/ ks_1(KS_OUTPUT_BITS)*step_y*10;
                 DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei}, (Color){ 100, 220, 255, 255 });
                 or.x += channel_width;
             }
@@ -251,6 +276,10 @@ void update(void* ptr){
            GuiLabel(cr, FormatText("%d", p));
         }
         DrawRectangleLinesEx(wr, 1, GRAY);
+        const int underline_y = wr.y + step_y*4;
+        const int separateline_x = wr.x + margin + channel_width*16.25;
+        DrawLine(wr.x + margin, underline_y, wr.x + wr.width - margin, underline_y, GRAY);
+        DrawLine(separateline_x, wr.y + margin, separateline_x, wr.y + wr.height - margin, GRAY);
 
         sr.y += wr.height + margin;
     }

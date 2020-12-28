@@ -708,7 +708,7 @@ void EditorUpdate(void* ptr){
             float dx = wave_rec.width * 2.0 / samp;
             float x = 0.0f;
             float y =  wave_rec.y + wave_rec.height/2.0f ;
-            float amp = wave_rec.height * 0.5f /2.0f / INT16_MAX;
+            float amp = wave_rec.height * 0.5f ;
 
             for(int i=0; i<samp; i+=2){
                 float base_x = wave_rec.x + x;

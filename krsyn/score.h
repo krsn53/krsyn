@@ -97,7 +97,7 @@ typedef struct ks_effect_list{
   * @brief
 */
 typedef struct ks_score_state{
-    u16                 quater_time;
+    u16                 quarter_time;
     u16                 frames_per_event;
     u16                 remaining_frame;
     u16                 polyphony_bits;
@@ -117,9 +117,9 @@ typedef struct ks_score_state{
   * @brief
 */
 typedef struct ks_score_event{
-    u32            delta;
-    u8             status;
-    u8             data           [3];
+    u32             delta;
+    u8              status;
+    u8              data           [3];
 }ks_score_event;
 
 /**
@@ -133,6 +133,7 @@ typedef struct ks_score_data{
     u16                 resolution;
     u32                 length;
     ks_score_event      *data;
+    float               score_length;
 }ks_score_data;
 
 ks_io_decl_custom_func(ks_score_event);
@@ -141,6 +142,8 @@ ks_io_decl_custom_func(ks_score_data);
 ks_score_data*      ks_score_data_new               (u32 resolution, u32 num_events, ks_score_event *events);
 ks_score_data*      ks_score_data_from_midi         (ks_midi_file *file);
 void                ks_score_data_free              (ks_score_data* song);
+
+float               ks_score_data_calc_score_length (ks_score_data* data, u32 sampling_rate);
 
 
 ks_score_state*     ks_score_state_new              (u32 polyphony_bits);
