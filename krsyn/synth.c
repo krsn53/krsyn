@@ -120,14 +120,13 @@ KS_INLINE u32 ks_exp_u(u8 val, u32 base, int num_v_bit)
 
     u64 ret = (u64)base * v;
     ret <<= e;
-    ret >>= (8 - num_v_bit - 1);
-    ret >>= num_v_bit;
+    ret >>= 7;
     return ret;
 }
 
 KS_INLINE u32 ks_calc_envelope_times(u32 val)
 {
-    return ks_exp_u(val, 1<<(KS_TIME_BITS-8), 4);// 2^8 <= x < 2^16
+    return ks_exp_u(val, 1<<(KS_TIME_BITS-8), 4);
 }
 
 KS_INLINE u32 ks_calc_envelope_samples(u32 smp_freq, u8 val)
@@ -186,7 +185,8 @@ static KS_INLINE void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
         synth->fixed_frequency[i] = calc_fixed_frequency(data->phase_coarses.st[i].fixed_frequency);
         synth->phase_coarses[i] = calc_phase_coarses(data->phase_coarses.st[i].value);
 
-        synth->phase_fines[i] = calc_phase_fines(data->phase_fines[i]) + calc_phase_tunes(data->phase_tunes[i]) ;
+        synth->phase_fines[i] = calc_phase_fines(data->phase_fines[i]);
+        synth->phase_tunes[i] = calc_phase_tunes(data->phase_tunes[i]);
         synth->phase_dets[i] = calc_phase_dets(data->phase_dets[i]);
 
         for(u32 e=0; e < KS_ENVELOPE_NUM_POINTS; e++)
@@ -240,26 +240,27 @@ static KS_INLINE u32 phase_lfo_delta(u32 sampling_rate, u32 freq)
     return (u32)delta_11;
 }
 
-static KS_INLINE u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 fine)
+static KS_INLINE u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 fine, u32 tune)
 {
-    u32 freq = ks_notefreq(coarse);
-    u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
-    // 2730 ~ 2^15 * 1/12
-    u32 freq_rate = ks_1(KS_FREQUENCY_BITS) + ((2730 * fine) >> KS_PHASE_FINE_BITS);
+    const u32 freq = ks_1(KS_FREQUENCY_BITS);
+    const u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
 
-    freq_11 *= freq_rate;
-    freq_11 >>= KS_FREQUENCY_BITS;
+    const u32 coarse_exp = ks_exp_u(coarse, 64, 4) -7; // max 2048 ?
+    const u32 freq_rate = (coarse_exp * (ks_1(KS_FREQUENCY_BITS) + 9 * fine + tune));
 
-    u32 delta_11 = (u32)(freq_11 / sampling_rate);
-    return delta_11;
+    u64 delta_11 = (u32)(freq_11 / sampling_rate);
+    delta_11 *= freq_rate;
+    delta_11 >>= KS_FREQUENCY_BITS;
+
+    return (u32)delta_11;
 }
 
-static KS_INLINE u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 fine)
+static KS_INLINE u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 fine, u32 tune)
 {
-    u32 freq = ks_notefreq(notenum); // heltz << KS_FREQUENCY_BITS
-    u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
+    const u32 freq = ks_notefreq(notenum); // heltz << KS_FREQUENCY_BITS
+    const u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
 
-    u32 freq_rate = (coarse * (ks_1(KS_FREQUENCY_BITS) + fine)) >> KS_PHASE_COARSE_BITS;
+    const u32 freq_rate = (coarse * (ks_1(KS_FREQUENCY_BITS) + fine + tune)) >> KS_PHASE_COARSE_BITS;
     u64 delta_11 = (u32)(freq_11 / sampling_rate);
     delta_11 *= freq_rate;
     delta_11 >>= KS_FREQUENCY_BITS;
@@ -343,11 +344,11 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
         note->phases[i] = synth->phase_dets[i];
         if(synth->fixed_frequency[i])
         {
-            note->phase_deltas[i] = phase_delta_fix_freq(sampling_rate, synth->phase_coarses[i], synth->phase_fines[i]);
+            note->phase_deltas[i] = phase_delta_fix_freq(sampling_rate, synth->phase_coarses[i], synth->phase_fines[i], synth->phase_tunes[i]);
         }
         else
         {
-            note->phase_deltas[i] = phase_delta(sampling_rate, notenum, synth->phase_coarses[i], synth->phase_fines[i]);
+            note->phase_deltas[i] = phase_delta(sampling_rate, notenum, synth->phase_coarses[i], synth->phase_fines[i], synth->phase_tunes[i]);
         }
 
         note->output_log[i] = 0;

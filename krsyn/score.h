@@ -118,6 +118,8 @@ typedef struct ks_score_state{
 */
 typedef struct ks_score_event{
     u32             delta;
+    float           time;
+    u32             tick;
     u8              status;
     u8              data           [3];
 }ks_score_event;

@@ -698,7 +698,7 @@ void EditorUpdate(void* ptr){
                 else{
                     text = FormatText(es->note.envelope_now_points[i] == 0 ?
                                           "Attack" : es->note.envelope_now_points[i] == 1 ?
-                                              "Decay" : "Sustain %d", es->note.envelope_now_points[i]-1);
+                                              "Decay" : "Sustain");
                 }
 
                 DrawText(text, rec.x+ 1, env_y -  11, 10, YELLOW);
@@ -751,7 +751,7 @@ void EditorUpdate(void* ptr){
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                 if(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency){
-                    text = FormatText("%.1f Hz", ks_notefreq(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value) / (float)ks_1(KS_FREQUENCY_BITS));
+                    text = FormatText("%d Hz", ks_exp_u(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value, 64 ,4) -7);
                 }
                 else {
                     text = FormatText("%.1f", calc_phase_coarses(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value) / 2.0f);
@@ -776,7 +776,7 @@ void EditorUpdate(void* ptr){
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                 if(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency){
-                    text = FormatText("%.1f cent", calc_phase_fines(es->tones_data.data[es->current_tone_index].synth.phase_fines[i]) * 100.0f / (float)ks_1(KS_PHASE_FINE_BITS));
+                    text = FormatText("x %.3f", calc_phase_fines(es->tones_data.data[es->current_tone_index].synth.phase_fines[i]) * 9.0f / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
                 }
                 else {
                     text = FormatText("x %.3f", calc_phase_fines(es->tones_data.data[es->current_tone_index].synth.phase_fines[i]) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);

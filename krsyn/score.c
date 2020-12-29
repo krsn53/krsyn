@@ -109,6 +109,8 @@ float ks_score_data_calc_score_length(ks_score_data* score, u32 sampling_rate){
         const u64 delta_frame = (u64)score->data[i].delta* frames_per_event;
         const double delta_time =  (double)delta_frame / sampling_rate;
         time = time + delta_time;
+        score->data[i].time = time;
+        score->data[i].tick = tick;
         // tempo change
         if(score->data[i].status ==  0xff && score->data[i].data[0] == 0x51){
             quarter_time = calc_quarter_time(score->data[i].data);

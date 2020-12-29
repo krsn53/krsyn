@@ -185,6 +185,7 @@ typedef struct ks_synth
 {
     u32         phase_coarses               [KS_NUM_OPERATORS];
     u32         phase_fines                 [KS_NUM_OPERATORS];
+    u32         phase_tunes                 [KS_NUM_OPERATORS];
     u32         phase_dets                  [KS_NUM_OPERATORS];
 
     i32         envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
