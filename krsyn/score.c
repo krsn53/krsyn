@@ -379,9 +379,9 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
                 if(ks_score_data_event_run(score, sampling_rate, state, tones)){
                     state->passed_tick = INT32_MIN;
                 }
-            } else {
-                state->passed_tick ++;
             }
+                state->passed_tick ++;
+
             state->current_tick ++;
 
             state->remaining_frame = state->frames_per_event;
@@ -462,9 +462,9 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
 
 void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones, u32 sampling_rate, u32 resolution){
     state->quarter_time = KS_DEFAULT_QUARTER_TIME; // 0.5
+    state->frames_per_event = ks_calc_frames_per_event(sampling_rate, state->quarter_time, resolution);
     state->remaining_frame = 0;
     state->current_event = 0;
-    state->frames_per_event = ks_calc_frames_per_event(sampling_rate, state->quarter_time, resolution);
     state->passed_tick = 0;
     state->current_tick = 0;
     for(u32 i=0; i<ks_1(state->polyphony_bits); i++) {

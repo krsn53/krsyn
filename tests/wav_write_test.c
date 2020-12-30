@@ -352,7 +352,7 @@ int main( void )
     head.tone_format = 1;
     head.channel_num = 2;
     head.sampling_freq = SAMPLING_RATE;
-    head.mean_byte_num_per_sec = SAMPLING_RATE*2;
+    head.mean_byte_num_per_sec = SAMPLING_RATE*4;
     head.block_size = 4;
     head.sample_bits = 16;
     head.sub_chunk_id = 0x61746164;
