@@ -12,7 +12,7 @@
 #define KS_PITCH_BEND_BITS      13u
 #define KS_QUARTER_TIME_BITS    8u
 
-
+#define     KS_DEFAULT_QUARTER_TIME     ks_1(KS_QUARTER_TIME_BITS - 1)
 
 typedef         struct ks_tone_list         ks_tone_list;
 typedef         struct ks_tone_list_bank    ks_tone_list_bank;
@@ -118,8 +118,6 @@ typedef struct ks_score_state{
 */
 typedef struct ks_score_event{
     u32             delta;
-    float           time;
-    u32             tick;
     u8              status;
     u8              data           [3];
 }ks_score_event;
@@ -187,3 +185,6 @@ void                ks_effect_list_data_free                (u32 length, ks_effe
 void                ks_effect_list_data_free                (u32 length, ks_effect* data);
 void                ks_effect_volume_analizer_clear         (ks_effect* effect);
 const u32 *         ks_effect_calc_volume                   (ks_effect* effect);
+
+u32                 ks_calc_quarter_time                    (const u8* data);
+u32                 ks_calc_frames_per_event                (u32 sampling_rate, u16 quarter_time, u16 resolution);

@@ -24,7 +24,11 @@ typedef struct player_state{
         STOP,
         PLAY,
         PAUSE,
-    } play_state;
+        ERROR,
+    } player_state;
+
+    const char*     error_message;
+    char            score_file[256];
 
     AudioStream     stream;
     i32*            buf;
@@ -35,7 +39,7 @@ typedef struct player_state{
     u32             volume;
 } player_state;
 
-static const int screenWidth = 300;
+static const int screenWidth = 260;
 static const int screenHeight = 100;
 static const u32 width = 18;
 static const u32 height =18;
@@ -57,6 +61,7 @@ bool load_file(player_state* ps, const char* file){
     }
 
     const char* ext = GetFileExtension(file);
+    if(ext == NULL) ext = "";
     //midifile
     if(strcmp(ext,  "mid")  == 0 || strcmp(ext,"midi") == 0 ){
         ks_midi_file midi;
@@ -64,6 +69,8 @@ bool load_file(player_state* ps, const char* file){
         ks_io_read_file(io, file);
         if(!ks_io_begin_deserialize(io, binary_big_endian, ks_prop_root(midi, ks_midi_file))){
             ks_error("Failed to load midi file");
+            ps->error_message = "Failed to load midi file";
+            ps->player_state = ERROR;
         }
         else {
              if(ps->score != NULL)ks_score_data_free(ps->score);
@@ -81,6 +88,8 @@ bool load_file(player_state* ps, const char* file){
         ks_io_read_file(io, file);
         if(!ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*ps->score, ks_score_data))){
             ks_error("Failed to load krsyn score binary file");
+            ps->error_message = "Failed to load score file";
+            ps->player_state = ERROR;
             ks_score_data_free(score);
         }
         else {
@@ -96,6 +105,8 @@ bool load_file(player_state* ps, const char* file){
         ks_io_read_file(io, file);
         if(!ks_io_begin_deserialize(io, clike, ks_prop_root(*ps->score, ks_score_data))){
             ks_error("Failed to load krsyn score clike file");
+            ps->error_message = "Failed to load score file";
+            ps->player_state = ERROR;
              ks_score_data_free(score);
 
         }
@@ -115,6 +126,8 @@ bool load_file(player_state* ps, const char* file){
         ks_io_read_file(io, file);
         if(!ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*dat, ks_tone_list_data))){
             ks_error("Failed to load krsyn tone list binary file");
+            ps->error_message = "Failed to load tone list file";
+            ps->player_state = ERROR;
             ks_tone_list_data_free(dat);
         } else {
             state = 2;
@@ -131,6 +144,8 @@ bool load_file(player_state* ps, const char* file){
         ks_io_read_file(io, file);
         if(!ks_io_begin_deserialize(io, clike, ks_prop_root(*dat, ks_tone_list_data))){
             ks_error("Failed to load krsyn tone list clike file");
+            ps->error_message = "Failed to load tone list file";
+            ps->player_state = ERROR;
             ks_tone_list_data_free(dat);
         } else {
             state = 2;
@@ -140,25 +155,26 @@ bool load_file(player_state* ps, const char* file){
     }
     else {
         ks_error("Invalid file type. Extention must be one of the following:\n\t\t*.mid *.midi *.kscb *kscc *.kstb *.kstc");
+        ps->error_message = "Invalid file type";
+        ps->player_state = ERROR;
     }
 
     if(state == 1) {
         ks_score_data_calc_score_length(ps->score, SAMPILNG_RATE);
         ks_score_state_set_default(ps->score_state, ps->tones, SAMPILNG_RATE, ps->score->resolution);
         SetWindowTitle( GetFileName(file) );
+        strcpy(ps->score_file, file);
     }
     else if(state == 2){
         ks_tone_list_free((ks_tone_list*)ps->tones);
         ps->tones = ks_tone_list_new_from_data(SAMPILNG_RATE, ps->tones_data);
     }
 
-
-
     return state != 0;
 }
 
 void stop(player_state* ps){
-    ps->play_state = STOP;
+    ps->player_state = STOP;
     ks_score_state_set_default(ps->score_state, ps->tones, SAMPILNG_RATE, ps->score->resolution);
     ks_effect_volume_analizer_clear(ps->score_state->effects.data);
     ps->time = 0;
@@ -200,9 +216,8 @@ void deinit(player_state* ps){
 void update(void* ptr){
     player_state* ps = ptr;
 
-
     if(IsAudioStreamProcessed(ps->stream)){
-        if(ps->play_state == PLAY && ps->score != NULL && ps->tones_data != NULL){
+        if(ps->player_state == PLAY && ps->score != NULL && ps->tones_data != NULL){
             if(ps->score_state->passed_tick < 0) {
                 stop(ps);
             } else {
@@ -224,20 +239,28 @@ void update(void* ptr){
     // Draw
     //----------------------------------------------------------------------------------
     BeginDrawing();
+    ClearBackground(RAYWHITE);
+
+    if(ps->player_state == ERROR){
+        GuiDisable();
+    }
+
+    const Color border_color = GetColor(GuiGetStyle(DEFAULT, BORDER_COLOR_NORMAL));
 
     Rectangle sr = base_pos;
+
 //        // previous
 //        if(GuiLabelButton(sr, "#129#")){
 //        }
 //        sr.x += step_x;
     // play
-    if(GuiToggle(sr, "#131#", ps->play_state == PLAY)){
-        ps->play_state = PLAY;
+    if(GuiToggle(sr, "#131#", ps->player_state == PLAY)){
+        ps->player_state = PLAY;
     }
     sr.x += step_x;
     // pause
-    if(GuiToggle(sr, "#132#", ps->play_state == PAUSE)){
-        ps->play_state = PAUSE;
+    if(GuiToggle(sr, "#132#", ps->player_state == PAUSE)){
+        ps->player_state = PAUSE;
     }
     sr.x += step_x;
     // stop
@@ -263,11 +286,43 @@ void update(void* ptr){
         const int now_min = now_time / 60;
         const int now_sec = now_time % 60;
 
-        const int song_length = (int)ps->score->score_length;
+        const int song_length = ps->score != NULL ? (int)ps->score->score_length : 0;
         const int song_min = song_length / 60;
         const int song_sec = song_length % 60;
 
-        DrawRectangleLinesEx(sr, 1, GRAY);
+        float now_seek = MIN(ps->time, ps->score != NULL ? ps->score->score_length : 1000000);
+        float seek = GuiSliderBar(sr, "", "", now_seek, 0.0f, ps->score->score_length);
+        if(seek != now_seek){
+            ks_score_state_set_default(ps->score_state, ps->tones, SAMPILNG_RATE, ps->score->resolution);
+
+            float time = 0;
+            u64 tick = 0;
+
+            u32 i=0;
+            for(; i< ps->score->length; i++){
+                tick = tick+ ps->score->data[i].delta;
+                const u64 delta_frame = (u64)ps->score->data[i].delta* ps->score_state->frames_per_event;
+                const double delta_time =  (double)delta_frame / SAMPILNG_RATE;
+                time = time + delta_time;
+
+                if(time >= seek)break;
+                // event run
+                if(ps->score->data[i].status >= 0xb0){
+                     ps->score_state->current_event = i;
+                    ks_score_data_event_run(ps->score, SAMPILNG_RATE, ps->score_state, ps->tones);
+                }
+            }
+
+            const float remaining_time = time - seek;
+            const u32 remaining_tick = remaining_time * SAMPILNG_RATE / ps->score_state->frames_per_event;
+            const u32 passed_tick = ps->score->data[i].delta - remaining_tick;
+
+            ps->time = seek;
+            ps->tick = tick - remaining_tick;
+            ps->score_state->current_tick = ps->tick;
+            ps->score_state->passed_tick = passed_tick;
+            ps->score_state->current_event = i-1;
+        }
         GuiLabel(sr, FormatText("%02d:%02d / %02d:%02d", now_min, now_sec, song_min, song_sec));
     }
 
@@ -279,9 +334,12 @@ void update(void* ptr){
     ps->volume = PropertyInt(sr, FormatText("#122#%d %%", ps->volume), ps->volume, 0, 300, 1);
 
     sr.x = base_pos.x;
+    sr.width = base_pos.width;
     sr.y += step_y;
+
+    // output level
     {
-        float base_height =  screenHeight - step_y - margin *2;
+        float base_height =  screenHeight - sr.y;
         float base_width = screenWidth - margin*2;
 
         Rectangle wr ={sr.x, sr.y, base_width, base_height };
@@ -293,21 +351,25 @@ void update(void* ptr){
 
             const u32* channel_out = ks_effect_calc_volume(&ps->score_state->effects.data[0]);
 
+            const Color channel_color = GetColor(GuiGetStyle(DEFAULT, BASE_COLOR_PRESSED));
+            const Color output_color = GetColor(GuiGetStyle(DEFAULT, BORDER_COLOR_FOCUSED));
             const float x_offset = or.width*0.1f;
             const float wid = or.width * 0.8f;
 
+
+
             for(u32 i =0; i<KS_NUM_CHANNELS; i++){
                 float hei = (float)channel_out[i]/ ks_1(KS_OUTPUT_BITS)*base_height*2;
-                DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei}, (Color){ 100, 220, 255, 255 });
+                DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei},channel_color);
                 or.x += channel_width;
             }
 
             or.x += channel_width*0.5f;
             float hei = (float)channel_out[KS_NUM_CHANNELS]/ ks_1(KS_OUTPUT_BITS)*base_height;
-            DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei}, (Color){ 80, 180, 255, 255 });
+            DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei}, output_color);
             or.x += channel_width;
             hei = (float)channel_out[KS_NUM_CHANNELS+1]/ ks_1(KS_OUTPUT_BITS)*base_height;
-            DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei}, (Color){ 80, 180, 255, 255 });
+            DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei}, output_color);
         }
 
         {
@@ -334,13 +396,12 @@ void update(void* ptr){
                 }
             }
 
-           GuiLabel(cr, FormatText("%d", p));
         }
-        DrawRectangleLinesEx(wr, 1, GRAY);
+        DrawRectangleLinesEx(wr, 1, border_color);
         const int underline_y = wr.y + base_height - step_y;
         const int separateline_x = wr.x + margin + channel_width*16.25;
-        DrawLine(wr.x + margin, underline_y, wr.x + wr.width - margin, underline_y, GRAY);
-        DrawLine(separateline_x, wr.y + margin, separateline_x, wr.y + wr.height - margin, GRAY);
+        DrawLine(wr.x + margin, underline_y, wr.x + wr.width - margin, underline_y, border_color);
+        DrawLine(separateline_x, wr.y + margin, separateline_x, wr.y + wr.height - margin, border_color);
 
         sr.y += wr.height + margin;
     }
@@ -350,7 +411,7 @@ void update(void* ptr){
         int count = 0;
         char** f = GetDroppedFiles(&count);
         if(count == 1){
-            if(ps->play_state == PLAY || ps->play_state == PAUSE){
+            if(ps->player_state == PLAY || ps->player_state == PAUSE){
                 stop(ps);
             }
             load_file(ps, *f);
@@ -358,10 +419,21 @@ void update(void* ptr){
         ClearDroppedFiles();
     }
 
-    ClearBackground(RAYWHITE);
+    if(ps->player_state == ERROR){
+        GuiEnable();
+        float margin = screenHeight * 0.1;
+        Rectangle rec = {margin, margin, screenWidth - margin*2, screenHeight - margin*2};
 
+        DrawRectangleRec(rec, (Color){255, 192, 192, 200});
+        DrawRectangleLinesEx(rec, 1, (Color){0, 0, 0, 200});
 
+        if(GuiLabelButton(rec,  ps->error_message)){
+            ps->player_state = STOP;
+        };
 
+        Rectangle er = {rec.x + margin*2, rec.y + margin*2, rec.width *0.3f, step_y};
+        GuiLabel(er, "Error : ");
+    }
 
     EndDrawing();
     //----------------------------------------------------------------------------------
