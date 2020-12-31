@@ -69,7 +69,7 @@ inline ks_score_note_info ks_score_note_info_of(u8 note_number, u8 channel){
 
 
 ks_score_data* ks_score_data_new(u32 resolution, u32 num_events, ks_score_event* events){
-    ks_score_data* ret = malloc(sizeof(ks_score_data));
+    ks_score_data* ret = calloc(1, sizeof(ks_score_data));
     ret->data = events;
     ret->length = num_events;
     ret->resolution = resolution;

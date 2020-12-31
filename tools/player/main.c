@@ -6,6 +6,7 @@
 #include <ksio/io.h>
 #include <ksio/midi.h>
 
+
 #define SAMPLING_RATE               48000
 #define VOLUME_LOG                  (1<<(KS_TIME_BITS-4))
 #define POLYPHONY_BITS              8
@@ -44,12 +45,12 @@ typedef struct player_state{
 
 static const int screenWidth = 260;
 static const int screenHeight = 100;
-static const u32 width = 18;
-static const u32 height =18;
-static const u32 margin = 1;
-static const u32 step_x = width + margin;
-static const u32 step_y = height + margin;
-static const Rectangle base_pos = (Rectangle){ margin, margin, width, height };
+#define BASE_WIDTH 18
+#define BASE_HEIGHT 18
+#define MARGIN 1
+static const u32 step_x = BASE_WIDTH + MARGIN;
+static const u32 step_y = BASE_HEIGHT + MARGIN;
+static const Rectangle base_pos =  { MARGIN, MARGIN, BASE_WIDTH, BASE_HEIGHT };
 
 static const ks_tone_list_data default_tone_list=
         #include "../test_tones/test.kstc"
@@ -289,7 +290,7 @@ void update(void* ptr){
 //        sr.x += step_x;
 
     // time
-    sr.width = (int)((screenWidth - sr.x) * 0.66f) - margin;
+    sr.width = (int)((screenWidth - sr.x) * 0.66f) - MARGIN;
     const u64 delta_frame = (ps->score_state->current_tick - ps->tick) * ps->score_state->frames_per_event;
     const double delta_time = (double)delta_frame / SAMPLING_RATE;
     ps->tick = ps->score_state->current_tick;
@@ -341,8 +342,8 @@ void update(void* ptr){
     }
 
 
-    sr.x += sr.width + margin;
-    sr.width = (screenWidth - sr.x) - margin;
+    sr.x += sr.width + MARGIN;
+    sr.width = (screenWidth - sr.x) - MARGIN;
 
     // volume
     ps->volume = PropertyInt(sr, FormatText("#122#%d %%", ps->volume), ps->volume, 0, 300, 1);
@@ -354,14 +355,14 @@ void update(void* ptr){
     // output level
     {
         float base_height =  screenHeight - sr.y;
-        float base_width = screenWidth - margin*2;
+        float base_width = screenWidth - MARGIN*2;
 
         Rectangle wr ={sr.x, sr.y, base_width, base_height };
 
-        const float channel_width = (base_width - margin * 2)/ (KS_NUM_CHANNELS+2.5);
+        const float channel_width = (base_width - MARGIN * 2)/ (KS_NUM_CHANNELS+2.5);
 
         {
-            Rectangle or = {sr.x+margin, sr.y+margin + base_height - step_y, channel_width, base_height - step_y};
+            Rectangle or = {sr.x+MARGIN, sr.y+MARGIN + base_height - step_y, channel_width, base_height - step_y};
 
             const u32* channel_out = ks_effect_calc_volume(&ps->score_state->effects.data[0]);
 
@@ -374,20 +375,20 @@ void update(void* ptr){
 
             for(u32 i =0; i<KS_NUM_CHANNELS; i++){
                 float hei = (float)channel_out[i]/ ks_1(KS_OUTPUT_BITS)*base_height*2;
-                DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei},channel_color);
+                DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-MARGIN*2, wid, hei},channel_color);
                 or.x += channel_width;
             }
 
             or.x += channel_width*0.5f;
             float hei = (float)channel_out[KS_NUM_CHANNELS]/ ks_1(KS_OUTPUT_BITS)*base_height;
-            DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei}, output_color);
+            DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-MARGIN*2, wid, hei}, output_color);
             or.x += channel_width;
             hei = (float)channel_out[KS_NUM_CHANNELS+1]/ ks_1(KS_OUTPUT_BITS)*base_height;
-            DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-margin*2, wid, hei}, output_color);
+            DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-MARGIN*2, wid, hei}, output_color);
         }
 
         {
-            Rectangle cr ={sr.x, sr.y + base_height - step_y, channel_width, height};
+            Rectangle cr ={sr.x, sr.y + base_height - step_y, channel_width, BASE_HEIGHT};
             GuiSetStyle(LABEL, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
 
             for(u32 i =0; i<KS_NUM_CHANNELS; i++){
@@ -413,11 +414,11 @@ void update(void* ptr){
         }
         DrawRectangleLinesEx(wr, 1, border_color);
         const int underline_y = wr.y + base_height - step_y;
-        const int separateline_x = wr.x + margin + channel_width*16.25;
-        DrawLine(wr.x + margin, underline_y, wr.x + wr.width - margin, underline_y, border_color);
-        DrawLine(separateline_x, wr.y + margin, separateline_x, wr.y + wr.height - margin, border_color);
+        const int separateline_x = wr.x + MARGIN + channel_width*16.25;
+        DrawLine(wr.x + MARGIN, underline_y, wr.x + wr.width - MARGIN, underline_y, border_color);
+        DrawLine(separateline_x, wr.y + MARGIN, separateline_x, wr.y + wr.height - MARGIN, border_color);
 
-        sr.y += wr.height + margin;
+        sr.y += wr.height + MARGIN;
     }
 
     if(ps->score->length == 0 && ps->player_state < ERROR) {
@@ -439,8 +440,8 @@ void update(void* ptr){
 
     if(ps->player_state == ERROR || ps->player_state == INFO){
         GuiEnable();
-        float margin = screenHeight * 0.1;
-        Rectangle rec = {margin, margin, screenWidth - margin*2, screenHeight - margin*2};
+        float msgmargin = screenHeight * 0.1;
+        Rectangle rec = {msgmargin, msgmargin, screenWidth - msgmargin*2, screenHeight - msgmargin*2};
 
         DrawRectangleRec(rec, ps->player_state == ERROR ? (Color){255, 192, 192, 200} : (Color){192, 255, 192, 200});
         DrawRectangleLinesEx(rec, 1, (Color){0, 0, 0, 200});
@@ -449,18 +450,18 @@ void update(void* ptr){
             stop(ps);
         };
 
-        Rectangle er = {rec.x + margin*2, rec.y + margin*2, rec.width *0.3f, step_y};
+        Rectangle er = {rec.x + msgmargin*2, rec.y + msgmargin*2, rec.width *0.3f, step_y};
         GuiLabel(er, ps->player_state == ERROR ?  "Error : " : "Info : ");
     }
     else if(ps->player_state == EXPORT){
         GuiEnable();
-        float margin = screenHeight * 0.1;
-        Rectangle rec = {margin, margin, screenWidth - margin*2, screenHeight - margin*2};
+        float msgmargin = screenHeight * 0.1;
+        Rectangle rec = {msgmargin, msgmargin, screenWidth - msgmargin*2, screenHeight - msgmargin*2};
 
         DrawRectangleRec(rec, (Color){192, 192, 255, 200});
         DrawRectangleLinesEx(rec, 1, (Color){0, 0, 0, 200});
 
-        const Rectangle ex_base = {rec.x + margin, rec.y + margin, rec.width / 2 - margin*2, base_pos.height};
+        const Rectangle ex_base = {rec.x + msgmargin, rec.y + msgmargin, rec.width / 2 - msgmargin*2, base_pos.height};
         Rectangle ex = ex_base;
         ex.height = 24;
 
@@ -470,7 +471,7 @@ void update(void* ptr){
         GuiTextBox(ex, ps->export_filename, GuiGetStyle(TEXTBOX, TEXT_SIZE), true);
 
         ex.x = ex_base.x;
-        ex.y += ex.height + margin;
+        ex.y += ex.height + msgmargin;
 
         if(GuiButton(ex, "OK")){
             u32 len = (ps->score->score_length+1)*SAMPLING_RATE*BUFFER_CHANNELS;

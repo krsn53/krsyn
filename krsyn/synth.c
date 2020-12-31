@@ -42,7 +42,7 @@ ks_io_end_custom_func(ks_synth_data)
 
 
 ks_synth* ks_synth_new(ks_synth_data* data, u32 sampling_rate){
-    ks_synth* ret = malloc(sizeof(ks_synth));
+    ks_synth* ret = calloc(1 , sizeof(ks_synth));
     ks_synth_set(ret, sampling_rate, data);
     return ret;
 }
@@ -434,9 +434,9 @@ static KS_INLINE i32 output_mod(u32 phase, i32 mod, u32 envelope)
 
 static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 algorithm)
 {
-    i32 out;
-    i32 feedback;
-    i32 output[KS_NUM_OPERATORS];
+    i32 out = 0;
+    i32 feedback = 0;
+    i32 output[KS_NUM_OPERATORS] = { 0 };
 
     if(algorithm == 0)
     {
