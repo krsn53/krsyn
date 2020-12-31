@@ -1,3 +1,6 @@
+#ifdef PLATFORM_WEB
+#include <emscripten/emscripten.h>
+#endif
 
 #include <raylib.h>
 #include <raygui_impl.h>
@@ -14,7 +17,7 @@
 #define SAMPLES_PER_UPDATE          4096
 #define BUFFER_CHANNELS             2
 #define BUFFER_LENGTH_PER_UPDATE    (SAMPLES_PER_UPDATE*BUFFER_CHANNELS)
-#define BUFFER_LENGTH_PER_EXPORT    (BUFFER_LENGTH_PER_UPDATE << 4)
+#define BUFFER_LENGTH_PER_EXPORT    BUFFER_LENGTH_PER_UPDATE
 
 typedef struct player_state{
     ks_score_data *score;
@@ -27,20 +30,26 @@ typedef struct player_state{
         PAUSE,
         ERROR,
         INFO,
-        EXPORT
+        EXPORT,
+        EXPORT_WAIT,
     } player_state;
-
     const char*     message;
     char            score_file[256];
+    char            export_filepath[256];
     char            export_filename[64];
-
     AudioStream     stream;
     i32*            buf;
 
+    // play settings
     u32             tick;
     double          time;
-
     u32             volume;
+
+    // export
+    FILE*           export_fp;
+    u32             export_len;
+    u32             export_seek;
+
 } player_state;
 
 static const int screenWidth = 260;
@@ -474,11 +483,9 @@ void update(void* ptr){
         ex.y += ex.height + msgmargin;
 
         if(GuiButton(ex, "OK")){
-            u32 len = (ps->score->score_length+1)*SAMPLING_RATE*BUFFER_CHANNELS;
-            i32* tmp_buf = calloc(BUFFER_LENGTH_PER_EXPORT, sizeof(i32));
-            i16* export_buf = calloc(BUFFER_LENGTH_PER_EXPORT, sizeof(i16));
+            ps->tick = ps->time = 0;
+            ps->export_len = (ps->score->score_length+1)*SAMPLING_RATE*BUFFER_CHANNELS;
 
-            char file_path[256];
 
             const int score_path_len = strlen(ps->score_file);
             const int score_file_len = strlen(GetFileName(ps->score_file));
@@ -488,15 +495,15 @@ void update(void* ptr){
             if(export_file_len == 0){
                 strcpy(ps->export_filename, "output.wav");
             }
-            else if(strcmp(ps->export_filename + export_file_len - 4, ".wav") != 0){
+            else if(!IsFileExtension(ps->export_filename, ".wav")){
                 strncpy(ps->export_filename + export_file_len - 4, ".wav", 4);
                 export_file_len += 4;
             }
 
-            strncpy(file_path, ps->score_file, score_dir_len);
-            strcpy(file_path + score_dir_len, ps->export_filename);
+            strncpy(ps->export_filepath, ps->score_file, score_dir_len);
+            strcpy(ps->export_filepath + score_dir_len, ps->export_filename);
 
-            int buf_size = sizeof(i16) * len;
+            int buf_size = sizeof(i16) * ps->export_len;
 
             struct wave_header
             {
@@ -529,38 +536,13 @@ void update(void* ptr){
                 .sub_chunk_size = sizeof(out) + buf_size - 126,
             };
 
-            FILE* f = fopen(file_path, "wb");
-            fwrite(&out, 1, sizeof(out), f);
+            ps->export_fp = fopen(ps->export_filepath, "wb");
+            fwrite(&out, 1, sizeof(out), ps->export_fp);
 
             ks_score_state_set_default(ps->score_state, ps->tones, SAMPLING_RATE, ps->score->resolution);
-            u32 seek = 0;
-            while(seek < len){
-               u32 write_len = MIN(len - seek, BUFFER_LENGTH_PER_EXPORT);
-               ks_score_data_render(ps->score, SAMPLING_RATE, ps->score_state, ps->tones, tmp_buf, write_len);
-               for(u32 i = 0; i< write_len; i++){
-                   export_buf[i] = tmp_buf[i] >> 1;
-               }
-               seek+=write_len;
-               fwrite(export_buf, 1, write_len*sizeof(i16), f);
+            ps->export_seek = 0;
 
-               BeginDrawing();
-               ClearBackground(RAYWHITE);
-
-               Rectangle screc = {0, 0, screenWidth, screenHeight};
-               float p = (float)seek / len;
-               GuiProgressBar(screc, "", "", p, 0.0f, 1.0f);
-               GuiLabel(screc, FormatText("%d / %d (%.1f%%)", seek, len, p*100.0));
-
-               EndDrawing();
-            }
-
-            fclose(f);
-
-            free(tmp_buf);
-            free(export_buf);
-
-            ps->message = "Export successfully";
-            ps->player_state = INFO;
+            ps->player_state = EXPORT_WAIT;
         }
 
         ex.x += rec.width / 2;
@@ -569,7 +551,46 @@ void update(void* ptr){
             stop(ps);
         }
     }
+    else if(ps->player_state == EXPORT_WAIT){
+         GuiEnable();
+        double begin = GetTime();
 
+        while(GetTime() - begin < 1.0 / 60.0){
+           u32 write_len = MIN(ps->export_len - ps->export_seek, BUFFER_LENGTH_PER_EXPORT);
+
+           i32* tmp_buf = calloc(write_len, sizeof(i32));
+           i16* export_buf = calloc(write_len, sizeof(i16));
+
+           ks_score_data_render(ps->score, SAMPLING_RATE, ps->score_state, ps->tones, tmp_buf, write_len);
+           for(u32 i = 0; i< write_len; i++){
+               export_buf[i] = tmp_buf[i] >> 1;
+           }
+           ps->export_seek+=write_len;
+           fwrite(export_buf, 1, write_len*sizeof(i16), ps->export_fp);
+
+           free(tmp_buf);
+           free(export_buf);
+        }
+
+        const int srx_margin = screenWidth*0.1;
+        const int sry_margin = (screenHeight -base_pos.height)/2;
+        Rectangle screc = {srx_margin, sry_margin, screenWidth - srx_margin*2, base_pos.height};
+        float p = (float)ps->export_seek / ps->export_len;
+        GuiProgressBar(screc, "", "", p, 0.0f, 1.0f);
+        GuiLabel(screc, FormatText("%d / %d (%.1f%%)", ps->export_seek, ps->export_len, p*100.0));
+
+        if(ps->export_seek >= ps->export_len){
+#ifdef PLATFORM_WEB
+    emscripten_run_script(TextFormat("saveFileFromMEMFSToDisk('%s','%s')", ps->export_filepath, ps->export_filename));
+#endif
+            fclose(ps->export_fp);
+            ps->message = "Export successfully";
+            ps->player_state = INFO;
+        }
+    }
+
+
+    DrawCursor();
     EndDrawing();
     //----------------------------------------------------------------------------------
 }
@@ -582,7 +603,6 @@ int main(int argc, char** argv)
     InitWindow(screenWidth, screenHeight, "Krsyn Player");
     InitAudioDevice();
 
-    SetTargetFPS(60);
 
     player_state ps = { 0 };
 
@@ -594,11 +614,21 @@ int main(int argc, char** argv)
 
     //--------------------------------------------------------------------------------------
 
+#ifdef PLATFORM_WEB
+    SetExitKey(0);
+#endif
+    HideCursor();
+#ifdef PLATFORM_DESKTOP
+    SetTargetFPS(60);
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
-        update(&ps);
+         update(&ps);
+
     }
+#else
+    emscripten_set_main_loop_arg(update, &ps, 0, 1);
+#endif
 
     deinit(&ps);
 

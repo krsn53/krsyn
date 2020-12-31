@@ -1260,6 +1260,8 @@ void EditorUpdate(void* ptr){
         default:
             break;
     }
+
+    DrawCursor();
     EndDrawing();
 }
 
@@ -1423,6 +1425,10 @@ int main(int argc, char** argv)
         }
     }
 
+#ifdef PLATFORM_WEB
+    SetExitKey(0);
+#endif
+    HideCursor();
 #ifdef PLATFORM_DESKTOP
     SetTargetFPS(60);
     // Main game loop

@@ -50,6 +50,13 @@ if(${PLATFORM} MATCHES "Web")
            SUFFIX ".html"
    )
 
+set_target_properties(
+     krsyn_player
+     PROPERTIES
+         OUTPUT_NAME "krsyn_player"
+         SUFFIX ".html"
+ )
+
 else()
     add_resources(krsyn_editor resources)
 endif()
