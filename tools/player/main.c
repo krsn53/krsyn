@@ -7,7 +7,8 @@
 
 #include <krsyn.h>
 #include <ksio/io.h>
-#include <ksio/midi.h>
+#include <ksio/formats/midi.h>
+#include <ksio/formats/wave.h>
 
 
 #define SAMPLING_RATE               48000
@@ -35,7 +36,6 @@ typedef struct player_state{
     } player_state;
     const char*     message;
     char            score_file[256];
-    char            export_filepath[256];
     char            export_filename[64];
     AudioStream     stream;
     i32*            buf;
@@ -46,9 +46,9 @@ typedef struct player_state{
     u32             volume;
 
     // export
-    FILE*           export_fp;
     u32             export_len;
     u32             export_seek;
+    i16             *export_buf;
 
 } player_state;
 
@@ -485,60 +485,7 @@ void update(void* ptr){
         if(GuiButton(ex, "OK")){
             ps->tick = ps->time = 0;
             ps->export_len = (ps->score->score_length+1)*SAMPLING_RATE*BUFFER_CHANNELS;
-
-
-            const int score_path_len = strlen(ps->score_file);
-            const int score_file_len = strlen(GetFileName(ps->score_file));
-            const int score_dir_len = score_path_len - score_file_len;
-            int export_file_len = strlen(ps->export_filename);
-
-            if(export_file_len == 0){
-                strcpy(ps->export_filename, "output.wav");
-            }
-            else if(!IsFileExtension(ps->export_filename, ".wav")){
-                strncpy(ps->export_filename + export_file_len - 4, ".wav", 4);
-                export_file_len += 4;
-            }
-
-            strncpy(ps->export_filepath, ps->score_file, score_dir_len);
-            strcpy(ps->export_filepath + score_dir_len, ps->export_filename);
-
-            int buf_size = sizeof(i16) * ps->export_len;
-
-            struct wave_header
-            {
-              u32 riff_id;
-              u32 chunk_size;
-              u32 format;
-              u32 format_id;
-              u32 fmt_chunk_byte_num;
-              u16 tone_format;
-              u16 channel_num;
-              u32 sampling_freq;
-              u32 mean_byte_num_per_sec;
-              u16 block_size;
-              u16 sample_bits;
-              u32 sub_chunk_id;
-              u32 sub_chunk_size;
-            } out = {
-                .riff_id = 0x46464952,
-                .chunk_size = sizeof(out) + buf_size - 8,
-                .format = 0x45564157,
-                .format_id = 0x20746D66,
-                .fmt_chunk_byte_num = 16,
-                .tone_format = 1,
-                .channel_num = 2,
-                .sampling_freq = SAMPLING_RATE,
-                .mean_byte_num_per_sec = SAMPLING_RATE*4,
-                .block_size = 4,
-                .sample_bits = 16,
-                .sub_chunk_id = 0x61746164,
-                .sub_chunk_size = sizeof(out) + buf_size - 126,
-            };
-
-            ps->export_fp = fopen(ps->export_filepath, "wb");
-            fwrite(&out, 1, sizeof(out), ps->export_fp);
-
+            ps->export_buf = calloc(ps->export_len, sizeof(i16));
             ks_score_state_set_default(ps->score_state, ps->tones, SAMPLING_RATE, ps->score->resolution);
             ps->export_seek = 0;
 
@@ -559,17 +506,14 @@ void update(void* ptr){
            u32 write_len = MIN(ps->export_len - ps->export_seek, BUFFER_LENGTH_PER_EXPORT);
 
            i32* tmp_buf = calloc(write_len, sizeof(i32));
-           i16* export_buf = calloc(write_len, sizeof(i16));
 
            ks_score_data_render(ps->score, SAMPLING_RATE, ps->score_state, ps->tones, tmp_buf, write_len);
            for(u32 i = 0; i< write_len; i++){
-               export_buf[i] = tmp_buf[i] >> 1;
+               ps->export_buf[ps->export_seek] = tmp_buf[i] >> 1;
+               ps->export_seek++;
            }
-           ps->export_seek+=write_len;
-           fwrite(export_buf, 1, write_len*sizeof(i16), ps->export_fp);
 
            free(tmp_buf);
-           free(export_buf);
         }
 
         const int srx_margin = screenWidth*0.1;
@@ -580,12 +524,62 @@ void update(void* ptr){
         GuiLabel(screc, FormatText("%d / %d (%.1f%%)", ps->export_seek, ps->export_len, p*100.0));
 
         if(ps->export_seek >= ps->export_len){
+
+            const int buf_size = sizeof(i16) * ps->export_len;
+            ks_wave_file out = {
+                .chunk_size = sizeof(out) + 4 + buf_size - 8,
+                .fmt_chunk_size = 16,
+                .audio_format = 1,
+                .num_channels = 2,
+                .sampling_freq = SAMPLING_RATE,
+                .bytes_per_sec = SAMPLING_RATE*4,
+                .block_size = 4,
+                .bits_per_sample = 16,
+                .subchunk_size = sizeof(out) + buf_size - 114,
+                .data = (u8*)ps->export_buf,
+            };
+
+            ks_io* io = ks_io_new();
+            if(ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(out, ks_wave_file))){
+                const int score_path_len = strlen(ps->score_file);
+                const int score_file_len = strlen(GetFileName(ps->score_file));
+                const int score_dir_len = score_path_len - score_file_len;
+                int export_file_len = strlen(ps->export_filename);
+
+                if(export_file_len == 0){
+                    strcpy(ps->export_filename, "output.wav");
+                }
+                else if(!IsFileExtension(ps->export_filename, ".wav")){
+                    strncpy(ps->export_filename + export_file_len - 4, ".wav", 4);
+                    export_file_len += 4;
+                }
+                char export_filepath[256];
+                strncpy(export_filepath, ps->score_file, score_dir_len);
+                strcpy(export_filepath + score_dir_len, ps->export_filename);
+                FILE* f = fopen(export_filepath, "wb");
+                if(f){
+                    fwrite(io->str->data, 1, io->str->length, f);
+                    fclose(f);
+
+                    ps->message = "Export successfully";
+                    ps->player_state = INFO;
+                } else {
+                    ps->message = FormatText("Failed to open file \"%s\"", export_filepath);
+                    ps->player_state = ERROR;
+                }
+
 #ifdef PLATFORM_WEB
-    emscripten_run_script(TextFormat("saveFileFromMEMFSToDisk('%s','%s')", ps->export_filepath, ps->export_filename));
+             emscripten_run_script(TextFormat("saveFileFromMEMFSToDisk('%s','%s')", export_filepath, ps->export_filename));
 #endif
-            fclose(ps->export_fp);
-            ps->message = "Export successfully";
-            ps->player_state = INFO;
+
+
+            } else {
+                ps->message = "Failed to export";
+                ps->player_state = ERROR;
+            }
+
+            ks_io_free(io);
+            free(ps->export_buf);
         }
     }
 

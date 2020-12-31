@@ -1,4 +1,4 @@
-#include "ksio/midi.h"
+#include "ksio/formats/midi.h"
 #include <stdio.h>
 
 int main(int argc, char** argv) {

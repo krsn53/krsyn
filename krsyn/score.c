@@ -4,7 +4,7 @@
 
 #include <ksio/logger.h>
 #include <ksio/vector.h>
-#include <ksio/midi.h>
+#include <ksio/formats/midi.h>
 
 #include <stdlib.h>
 #include <malloc.h>

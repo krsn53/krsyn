@@ -174,8 +174,10 @@ void DrawCursor(){
         return;
     }
 
+    if(!IsCursorOnScreen()) return ;
 
     const Vector2 mouse = GetMousePosition();
+
     const float width = 20;
     const float width_s = width*0.7071;
     Vector2 p1 = mouse;

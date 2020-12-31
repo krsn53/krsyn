@@ -1,35 +1,12 @@
-/**
- * @file wav_write_test.c
- * @author Takaya Kurosaki 
- * @brief ks_synthで合成した音声をwavファイルに出力
- * 参考
- * 音ファイル（拡張子：WAVファイル）のデータ構造について - https://www.youfit.co.jp/archives/1418
- */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "../krsyn.h"
+#include <ksio/formats/wave.h>
 
 #define SAMPLING_RATE 48000
 #define OUTPUT_LENGTH SAMPLING_RATE*4.5;
 
-struct wave_header
-{
-  u32 riff_id;
-  u32 chunk_size;
-  u32 format;
-  u32 format_id;
-  u32 fmt_chunk_byte_num;
-  u16 tone_format;
-  u16 channel_num;
-  u32 sampling_freq;
-  u32 mean_byte_num_per_sec;
-  u16 block_size;
-  u16 sample_bits;
-  u32 sub_chunk_id;
-  u32 sub_chunk_size;
-};
 
 int main( void )
 {
@@ -340,29 +317,28 @@ int main( void )
 
 
   {
-    FILE* fp = fopen("out.wav", "wb");
-    struct wave_header head;
-    // 上記サイトでは0x52494646と書かれているが、エンディアンの関係で逆順になっている。
-    // リトルエンディアンだと書き込む際、下位のバイトから書き込まれるため、書き込んだものをバイナリエディタで読むと逆になる。
-    head.riff_id = 0x46464952;
-    head.chunk_size = sizeof(head) + buf_size - 8;
-    head.format = 0x45564157;
-    head.format_id = 0x20746D66;
-    head.fmt_chunk_byte_num = 16;
-    head.tone_format = 1;
-    head.channel_num = 2;
-    head.sampling_freq = SAMPLING_RATE;
-    head.mean_byte_num_per_sec = SAMPLING_RATE*4;
-    head.block_size = 4;
-    head.sample_bits = 16;
-    head.sub_chunk_id = 0x61746164;
-    head.sub_chunk_size = sizeof(head) + buf_size - 126;
 
-    // リトルエンディアン環境でない場合、以下の書き方だと動かないかもしれない。
-    fwrite(&head, 1, sizeof(head), fp);
-    fwrite(writebuf, 1, buf_size, fp);
+    ks_wave_file dat;
 
-    fclose(fp);
+    dat.chunk_size = sizeof(dat) + 4 - sizeof(u8*) + buf_size;
+    dat.fmt_chunk_size = 16;
+    dat.audio_format = 1;
+    dat.num_channels = 2;
+    dat.sampling_freq = SAMPLING_RATE;
+    dat.bytes_per_sec = SAMPLING_RATE*4;
+    dat.block_size = 2*2;
+    dat.bits_per_sample = 16;
+    dat.subchunk_size = sizeof(dat) - sizeof(u8*)  + buf_size - 114;
+    dat.data = (u8*)writebuf;
+
+    ks_io *io = ks_io_new();
+    ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(dat, ks_wave_file));
+
+    FILE* f = fopen("out.wav", "wb");
+    fwrite(io->str->data, 1, io->str->length, f);
+    fclose(f);
+
+    ks_io_free(io);
   }
 
   free (buf);
