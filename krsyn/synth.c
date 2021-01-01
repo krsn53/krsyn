@@ -11,7 +11,7 @@ ks_io_begin_custom_func(ks_synth_data)
     ks_arr_u8(phase_coarses.b);
     ks_arr_u8(phase_tunes);
     ks_arr_u8(phase_fines);
-    ks_arr_u8(phase_dets);
+    ks_arr_u8(levels);
 
     ks_arr_u8(envelope_points[0]);
     ks_arr_u8(envelope_points[1]);
@@ -68,7 +68,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->phase_coarses.st[i].value = 2;
         data->phase_fines[i] = 0;
         data->phase_tunes[i] = 127;
-        data->phase_dets[i] = 0;
+        data->levels[i] = 255;
 
         data->envelope_times[0][i] = 0;
         data->envelope_times[1][i] = UINT8_MAX;
@@ -187,7 +187,7 @@ static KS_INLINE void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
 
         synth->phase_fines[i] = calc_phase_fines(data->phase_fines[i]);
         synth->phase_tunes[i] = calc_phase_tunes(data->phase_tunes[i]);
-        synth->phase_dets[i] = calc_phase_dets(data->phase_dets[i]);
+        synth->levels[i] = calc_levels(data->levels[i]);
 
         for(u32 e=0; e < KS_ENVELOPE_NUM_POINTS; e++)
         {
@@ -290,7 +290,7 @@ static KS_INLINE u32 keyscale_li(u32 index_16, int curve_type)
     return ret;
 }
 
-static KS_INLINE u32 keyscale_value(const ks_synth *synth, u32 table_index, u32 table_range, bool low_note, u32 i)
+static KS_INLINE i32 keyscale_value(const ks_synth *synth, u32 table_index, u32 table_range, bool low_note, u32 i)
 {
     u64 index_16 = table_index;
     index_16 <<= KS_KEYSCALE_CURVE_MAX_BITS;
@@ -302,26 +302,28 @@ static KS_INLINE u32 keyscale_value(const ks_synth *synth, u32 table_index, u32 
     return keyscale_li((u32)index_16, curve_type);
 }
 
-static KS_INLINE u32 keyscale(const ks_synth *synth, u8 notenum, u32 i)
+static KS_INLINE i32 keyscale(const ks_synth *synth, u8 notenum, u32 i)
 {
     // <-- |mid point|
     if(notenum < synth->keyscale_mid_points[i]){
         // volume up until mid point
-        if(synth->keyscale_curve_types[0][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[1][i] > KS_KEYSCALE_CURVE_ED ){
-            return keyscale_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i);
+        if(synth->keyscale_curve_types[0][i] <= KS_KEYSCALE_CURVE_ED){
+            return keyscale_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i) - ks_1(KS_KEYSCALE_CURVE_BITS);
         }
+        //volume down until mid point
         else {
-            return 1<< KS_KEYSCALE_CURVE_BITS;
+            return keyscale_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i);
         }
     }
     // |mid point| -->
     else {
         // volume down from after mid point
-        if(synth->keyscale_curve_types[1][i] <= KS_KEYSCALE_CURVE_ED || synth->keyscale_curve_types[0][i] > KS_KEYSCALE_CURVE_ED){
-            return keyscale_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i);
+        if(synth->keyscale_curve_types[1][i] <= KS_KEYSCALE_CURVE_ED){
+            return keyscale_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i) - ks_1(KS_KEYSCALE_CURVE_BITS);
         }
+        // volume up until mid point
         else {
-             return 1<< KS_KEYSCALE_CURVE_BITS;
+             return keyscale_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i);
         }
     }
 
@@ -338,10 +340,16 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
     note->lfo_phase= synth->lfo_det;
     note->lfo_delta = phase_lfo_delta(sampling_rate, synth->lfo_freq);
 
+    if(synth->algorithm == 8){
+        note->phases[0] = note->phases[1] =  0;
+        note->phases[2] = synth->levels[2] << (KS_PHASE_MAX_BITS - KS_LEVEL_BITS);
+        note->phases[3] = synth->levels[3] << (KS_PHASE_MAX_BITS - KS_LEVEL_BITS);
+    } else {
+        note->phases[0] = note->phases[1] = note->phases[2] = note->phases[3] = 0;
+    }
+
     for(u32 i=0; i< KS_NUM_OPERATORS; i++)
     {
-        //phase
-        note->phases[i] = synth->phase_dets[i];
         if(synth->fixed_frequency[i])
         {
             note->phase_deltas[i] = phase_delta_fix_freq(sampling_rate, synth->phase_coarses[i], synth->phase_fines[i], synth->phase_tunes[i]);
@@ -360,7 +368,7 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
         ratescales += 1<<KS_RATESCALE_BITS;
 
         //key scale
-        u64 keysc = keyscale(synth, notenum, i);
+        i64 keysc = keyscale(synth, notenum, i);
 
         i64 target;
         u32 velocity;
@@ -373,9 +381,14 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
             velocity >>= 7;
             velocity = (1 << KS_VELOCITY_SENS_BITS) -  velocity;
 
-            target = synth->envelope_points[j][i];
-            target *= keysc;
-            target >>= KS_KEYSCALE_CURVE_BITS;
+            target = keysc;
+            target *= synth->envelope_points[j][i];
+            target >>= KS_ENVELOPE_BITS;
+            target += synth->levels[i];
+            target *= synth->envelope_points[j][i];
+            target >>= KS_LEVEL_BITS;
+            target = MAX(MIN(target, synth->envelope_points[j][i]), 0);
+
             target *= velocity;
             target >>= KS_VELOCITY_SENS_BITS;
 
@@ -589,7 +602,7 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         }
 
         out =  envelope_apply(note->envelope_now_amps[0], (output[0]+output[1]) >> 1) -
-                envelope_apply(note->envelope_now_amps[2], (output[2]+output[3]) >> 1);
+                envelope_apply(note->envelope_now_amps[1], (output[2]+output[3]) >> 1);
     }
     if(algorithm ==9)
     {

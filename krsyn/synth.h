@@ -29,6 +29,8 @@
 #define KS_LFO_DEPTH_BITS               16u
 #define KS_FEEDBACK_LEVEL_BITS          16u
 
+#define KS_LEVEL_BITS                   KS_KEYSCALE_CURVE_BITS
+
 #define KS_SAMPLE_PER_FRAMES_BITS       5u
 
 #define KS_PANPOT_BITS          7u
@@ -118,8 +120,8 @@ typedef struct ks_synth_data
     //! Detune of frequency.
     u8                      phase_tunes             [KS_NUM_OPERATORS];
 
-    //! Initial phase of wave. Every time note on event arises, phase is initialized.
-    u8                      phase_dets              [KS_NUM_OPERATORS];
+    //! Amplitude of each operators.
+    u8                      levels                  [KS_NUM_OPERATORS];
 
     //! Amplitude at envelope_times. i.e. Total Level and Sustain Level.
     u8                      envelope_points         [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
@@ -186,7 +188,7 @@ typedef struct ks_synth
     u32         phase_coarses               [KS_NUM_OPERATORS];
     u32         phase_fines                 [KS_NUM_OPERATORS];
     u32         phase_tunes                 [KS_NUM_OPERATORS];
-    u32         phase_dets                  [KS_NUM_OPERATORS];
+    u32         levels                      [KS_NUM_OPERATORS];
 
     i32         envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
     u32         envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
@@ -282,7 +284,7 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_phase_coarses(value)                       (value)
 #define calc_phase_fines(value)                         ks_linear_u(value, 0, 1 << (KS_PHASE_FINE_BITS))
 #define calc_phase_tunes(value)                         ks_linear_u(value-127, 0, 1<< (KS_PHASE_FINE_BITS - 8))
-#define calc_phase_dets(value)                          ks_linear_u(value, 0, ks_1(KS_PHASE_MAX_BITS))
+#define calc_levels(value)                              ks_linear_u(value, 0, ks_1(KS_LEVEL_BITS))
 #define calc_envelope_points(value)                     ks_linear2_i(value, 0, 1 << KS_ENVELOPE_BITS)
 #define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, value)
 #define calc_velocity_sens(value)                       ks_linear2_u(value, 0, 1 << KS_VELOCITY_SENS_BITS)

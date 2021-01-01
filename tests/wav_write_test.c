@@ -47,11 +47,11 @@ int main( void )
                           0,
                           0,
                       },
-                      .phase_dets={
-                          0,
-                          0,
-                          0,
-                          0,
+                      .levels={
+                          255,
+                          255,
+                          255,
+                          255,
                       },
                       .envelope_points[0]={
                           77,

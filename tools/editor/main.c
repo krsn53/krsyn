@@ -787,11 +787,11 @@ void EditorUpdate(void* ptr){
              pos.x = x_pos.x; pos.y += step;
 
             // phase det
-             GuiAlignedLabel("Inital Phase", pos, GUI_TEXT_ALIGN_RIGHT);
+             GuiAlignedLabel("Level", pos, GUI_TEXT_ALIGN_RIGHT);
              pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f deg", 360.0*calc_phase_dets(es->tones_data.data[es->current_tone_index].synth.phase_dets[i]) / (float)ks_1(KS_PHASE_MAX_BITS));
-                es->tones_data.data[es->current_tone_index].synth.phase_dets[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.phase_dets[i], 0, 255, 1);
+                text = FormatText("%.1f", 100.0*calc_levels(es->tones_data.data[es->current_tone_index].synth.levels[i]) / (float)ks_1(KS_LEVEL_BITS));
+                es->tones_data.data[es->current_tone_index].synth.levels[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.levels[i], 0, 255, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
