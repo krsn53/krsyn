@@ -304,7 +304,6 @@ int main( void )
 
       ks_score_state* state = ks_score_state_new(4);
       ks_score_state_set_default(state, tones, SAMPLING_RATE, song.resolution);
-
       ks_score_data_render(&song, SAMPLING_RATE, state, tones, buf, buf_len);
 
       for(i32 i=0; i<buf_len; i++){

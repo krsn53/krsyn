@@ -476,7 +476,7 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones
 
         memset(&state->channels[i], 0 , sizeof(ks_score_channel));
         ks_score_channel_set_panpot(&state->channels[i], 64);
-        ks_score_channel_set_picthbend(&state->channels[i], 0, 0);
+        ks_score_channel_set_picthbend(&state->channels[i], 64, 0);
         ks_score_state_bank_select(state, tones, &state->channels[i], 0, 0);
         state->channels[i].volume= 100;
         state->channels[i].expression= 127;
