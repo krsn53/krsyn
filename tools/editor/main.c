@@ -14,7 +14,7 @@
 #define BUFFER_LENGTH_PER_UPDATE    (SAMPLES_PER_UPDATE*NUM_CHANNELS)
 #define TIME_PER_UPDATE             ((double)SAMPLES_PER_UPDATE / SAMPLING_RATE)
 #define NUM_CHANNELS                2
-#define MIDIIN_RESOLUTION           480
+#define MIDIIN_RESOLUTION           2400
 #define MIDIIN_POLYPHONY_BITS       6
 
 #include "krsyn.h"
@@ -46,8 +46,6 @@ typedef struct editor_state{
 
     ks_score_data score;
     ks_score_state* score_state;
-    double  begin_time;
-    double  time;
     ks_score_event events[MIDIIN_MAX_EVENTS];
     const char* dialog_message;
     i8 noteon_number;
@@ -68,6 +66,8 @@ typedef struct editor_state{
     AudioStream audiostream;
     float *buf;
 #ifdef PLATFORM_DESKTOP
+    double  midiclock;
+    double  last_event_time;
     RtMidiInPtr midiin;
     u32 midiin_port;
     int midiin_list_scroll;
@@ -204,8 +204,10 @@ static void update_tone_list(ks_tone_list ** ptr, ks_tone_list_data* dat, ks_sco
     if(*ptr != NULL)ks_tone_list_free(*ptr);
     *ptr = ks_tone_list_new_from_data(SAMPLING_RATE ,dat);
     u32 tmptick = score_state->current_tick;
+    u32 tmpptick = score_state->passed_tick;
     ks_score_state_set_default(score_state, *ptr, SAMPLING_RATE, MIDIIN_RESOLUTION);
     score_state->current_tick = tmptick;
+    score_state->passed_tick = tmpptick;
 }
 
 void EditorUpdate(void* ptr){
@@ -227,38 +229,45 @@ void EditorUpdate(void* ptr){
             }
 
             es->score_state->current_event = 0;
-
             size_t size;
             do{
                 unsigned char message[4];
                 size = 4;
-                if(es->begin_time == 0){
-                    es->begin_time = GetTime();
-                }
                 double stamp = rtmidi_in_get_message(es->midiin, message, &size);
+
                 if(size != 0){
-                    if(es->score.length >= (sizeof(es->events)/ sizeof(es->events[0])) - 1) continue;
+                    es->midiclock += stamp;
+
+                    if(es->score.length >= (sizeof(es->events)/ sizeof(es->events[0])) - 1){ continue;}
                     if((message[0] == 0xff && message[1] != 0x51) || (message[0] >=0x80 && message[0] < 0xf0)){
-                        es->score.data[es->score.length].delta = (-(GetTime() - es->begin_time - es->time) + stamp)*MIDIIN_RESOLUTION;
+                        double delta_d = es->midiclock - es->last_event_time;
+                        u32 delta = MAX(delta_d, 0)*MIDIIN_RESOLUTION*2;
+
+                        es->score.data[es->score.length].delta = delta;
                         es->score.data[es->score.length].status = message[0];
                         memcpy(es->score.data[es->score.length].data, message + 1, 3);
                         es->score.length ++;
+
+                        es->last_event_time += delta_d;
                     }
-
-
-                    es->time += stamp;
                 }
+
             }while(size != 0);
 
             es->score.data[es->score.length].delta = 0xffffffff;
             es->score.data[es->score.length].status = 0xff;
             es->score.data[es->score.length].data[0] = 0x2f;
             es->score.length ++;
+
            i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
-           memset(tmpbuf, 0, sizeof(tmpbuf));
+            memset(tmpbuf, 0, sizeof(tmpbuf));
             ks_score_data_render(&es->score, SAMPLING_RATE, es->score_state, es->tones, tmpbuf, BUFFER_LENGTH_PER_UPDATE);
             for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
                 es->buf[i] = tmpbuf[i] / (float)INT16_MAX;
+            }
+
+            if(es->midiclock == 0){
+                es->score_state->passed_tick = 0;
             }
 
         } else {
@@ -270,7 +279,7 @@ void EditorUpdate(void* ptr){
 
         i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
         memset(tmpbuf, 0, sizeof(tmpbuf));
-        ks_synth_render(&es->synth, &es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+        ks_synth_render(&es->synth, &es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_OUTPUT_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
         for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
             es->buf[i] += tmpbuf[i] / (float)INT16_MAX;
         }
@@ -575,6 +584,10 @@ void EditorUpdate(void* ptr){
 
             if(mouse_button_pressed){
                 es->texsbox_focus = tmp_focus;
+            }
+
+            if(GetCharPressed() > 0){
+                mark_dirty(&es->dirty, &es->file_dialog_state);
             }
 
             pos.y = x_pos.y;
@@ -1288,8 +1301,6 @@ void init(editor_state* es){
     es->score.resolution = MIDIIN_RESOLUTION;
 
     es->score_state= ks_score_state_new(MIDIIN_POLYPHONY_BITS);
-    es->time = 0;
-    es->begin_time = 0;
 
     update_tone_list(&es->tones, &es->tones_data, es->score_state);
 
@@ -1304,6 +1315,8 @@ void init(editor_state* es){
 
     GuiSetStyle(LISTVIEW, LIST_ITEMS_HEIGHT, 14);
 #ifdef PLATFORM_DESKTOP
+    es->midiclock = 0;
+    es->last_event_time = -0.2;
     enum RtMidiApi api;
     if(rtmidi_get_compiled_api(&api, 1) != 0){
         es->midiin = rtmidi_in_create(api, "C", sizeof(es->events) / sizeof(es->events[0]));

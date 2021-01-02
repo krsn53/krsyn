@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
-
 ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
     ks_arr_u8(phase_coarses.b);
@@ -764,7 +762,7 @@ static KS_INLINE void ks_synth_process(const ks_synth* synth, ks_synth_note* not
         {
             u64 d = delta[j];
             d*= pitchbend;
-            d >>= KS_OUTPUT_BITS;
+            d >>= KS_LFO_DEPTH_BITS;
 
             note->phases[j] = note->phases[j] + d;
         }

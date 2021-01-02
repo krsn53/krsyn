@@ -163,7 +163,7 @@
 					60,
 					141,
 					83,
-					110,
+					127,
 				},
 				.envelope_points[0]={
 					255,
@@ -887,7 +887,7 @@
 					0,
 				},
 				.keyscale_high_depths={
-					46,
+					30,
 					28,
 					0,
 					0,
@@ -899,7 +899,7 @@
 					69,
 				},
 				.keyscale_curve_types.b={
-					32,
+					0,
 					2,
 					0,
 					0,
@@ -929,8 +929,8 @@
 				// Magic number : KSYN
 				.phase_coarses.b={
 					4,
-					16,
-					24,
+					6,
+					12,
 					4,
 				},
 				.phase_tunes={
@@ -947,9 +947,9 @@
 				},
 				.levels={
 					86,
-					127,
+					107,
 					44,
-					122,
+					156,
 				},
 				.envelope_points[0]={
 					255,
@@ -977,9 +977,9 @@
 				},
 				.envelope_times[0]={
 					118,
-					127,
+					123,
 					106,
-					146,
+					118,
 				},
 				.envelope_times[1]={
 					190,
@@ -1013,25 +1013,25 @@
 				},
 				.keyscale_low_depths={
 					0,
-					0,
+					31,
 					0,
 					0,
 				},
 				.keyscale_high_depths={
-					69,
-					0,
+					255,
+					43,
 					52,
 					0,
 				},
 				.keyscale_mid_points={
-					59,
+					20,
 					69,
 					66,
 					69,
 				},
 				.keyscale_curve_types.b={
 					16,
-					0,
+					2,
 					16,
 					0,
 				},

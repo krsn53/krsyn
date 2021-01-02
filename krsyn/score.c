@@ -266,7 +266,7 @@ bool ks_score_channel_set_panpot(ks_score_channel* channel, u8 value){
 }
 
 bool ks_score_channel_set_picthbend(ks_score_channel* channel, u8 msb, u8 lsb){
-    channel->pitchbend = ks_v(msb, 7) + lsb - ks_1(KS_PITCH_BEND_BITS);
+    channel->pitchbend = ks_v(msb, 7) + lsb - ks_v(64, 7);
     channel->pitchbend = ks_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_BITS));
     return true;
 }
@@ -374,14 +374,13 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
         state->remaining_frame -= frame >> 1;
 
         if(state->remaining_frame == 0){
-            if(state->passed_tick >= (i32)score->data[state->current_event].delta){
+            if((u32)state->passed_tick >= score->data[state->current_event].delta){
                 state->passed_tick -= score->data[state->current_event].delta;
                 if(ks_score_data_event_run(score, sampling_rate, state, tones)){
                     state->passed_tick = INT32_MIN;
                 }
             }
-                state->passed_tick ++;
-
+            state->passed_tick ++;
             state->current_tick ++;
 
             state->remaining_frame = state->frames_per_event;
@@ -537,7 +536,7 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
             break;
         default:
             if(msg->status >= 0x80 &&
-                    msg->status < 0xe0){
+                    msg->status < 0xf0){
                 events[ret->length].status = msg->status;
                 events[ret->length].data[0] = msg->message.data[0];
                 events[ret->length].data[1] = msg->message.data[1];
