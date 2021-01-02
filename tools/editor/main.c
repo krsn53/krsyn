@@ -448,6 +448,7 @@ void EditorUpdate(void* ptr){
             int start, end;
 
             GuiListViewGetInfo(pos2, es->tones_data.length, es->tone_list_scroll, &start, &end);
+            end = MIN(end + 1, (i32)es->tones_data.length);
             char *buf = calloc(es->tones_data.length, 48);
             char **ptr = malloc(sizeof(char**)*es->tones_data.length);
             for(i32 i=start; i< end; i++){
