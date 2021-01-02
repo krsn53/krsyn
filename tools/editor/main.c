@@ -66,8 +66,9 @@ typedef struct editor_state{
     AudioStream audiostream;
     float *buf;
 #ifdef PLATFORM_DESKTOP
-    double  midiclock;
+    double  midi_clock;
     double  last_event_time;
+    u32     midi_tick;
     RtMidiInPtr midiin;
     u32 midiin_port;
     int midiin_list_scroll;
@@ -236,18 +237,18 @@ void EditorUpdate(void* ptr){
                 double stamp = rtmidi_in_get_message(es->midiin, message, &size);
 
                 if(size != 0){
-                    es->midiclock += stamp;
+                    es->midi_clock += stamp;
+                    es->midi_tick += stamp*MIDIIN_RESOLUTION*2;
 
                     if(es->score.length >= (sizeof(es->events)/ sizeof(es->events[0])) - 1){ continue;}
                     if((message[0] == 0xff && message[1] != 0x51) || (message[0] >=0x80 && message[0] < 0xf0)){
-                        double delta_d = es->midiclock - es->last_event_time;
-                        u32 delta = MAX(delta_d, 0)*MIDIIN_RESOLUTION*2;
+                        double delta_d = es->midi_clock - es->last_event_time;
+                        u32 delta = MAX(delta_d*MIDIIN_RESOLUTION*2, 0);
 
                         es->score.data[es->score.length].delta = delta;
                         es->score.data[es->score.length].status = message[0];
                         memcpy(es->score.data[es->score.length].data, message + 1, 3);
                         es->score.length ++;
-
                         es->last_event_time += delta_d;
                     }
                 }
@@ -266,7 +267,7 @@ void EditorUpdate(void* ptr){
                 es->buf[i] = tmpbuf[i] / (float)INT16_MAX;
             }
 
-            if(es->midiclock == 0){
+            if(es->midi_clock == 0){
                 es->score_state->passed_tick = 0;
             }
 
@@ -284,6 +285,11 @@ void EditorUpdate(void* ptr){
             es->buf[i] += tmpbuf[i] / (float)INT16_MAX;
         }
         UpdateAudioStream(es->audiostream, es->buf, BUFFER_LENGTH_PER_UPDATE);
+
+        double diff = es->midi_clock - (double)es->midi_tick/MIDIIN_RESOLUTION*0.5;
+        if(diff >= 0.01){
+            es->midi_clock -= diff;
+        }
     }
 
     if(es->display_mode== EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
@@ -1315,8 +1321,9 @@ void init(editor_state* es){
 
     GuiSetStyle(LISTVIEW, LIST_ITEMS_HEIGHT, 14);
 #ifdef PLATFORM_DESKTOP
-    es->midiclock = 0;
+    es->midi_clock = 0;
     es->last_event_time = -0.2;
+    es->midi_tick = 0;
     enum RtMidiApi api;
     if(rtmidi_get_compiled_api(&api, 1) != 0){
         es->midiin = rtmidi_in_create(api, "C", sizeof(es->events) / sizeof(es->events[0]));
