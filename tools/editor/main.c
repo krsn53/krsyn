@@ -258,7 +258,6 @@ void EditorUpdate(void* ptr){
             }while(size != 0);
 
             if(res_midi_event){
-                printf("%d \n", es->score_state->current_tick - es->last_event_tick);
                 i64 diff = (i64)es->score_state->current_tick - es->last_event_tick;
 
                 if(diff > 0.1*MIDIIN_RESOLUTION*2){
