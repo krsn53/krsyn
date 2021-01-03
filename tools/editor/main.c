@@ -68,7 +68,7 @@ typedef struct editor_state{
 #ifdef PLATFORM_DESKTOP
     double  midi_clock;
     double  last_event_time;
-    u32     midi_tick;
+    i32     last_event_tick;
     RtMidiInPtr midiin;
     u32 midiin_port;
     int midiin_list_scroll;
@@ -220,6 +220,7 @@ void EditorUpdate(void* ptr){
     //----------------------------------------------------------------------------------
     if(IsAudioStreamProcessed(es->audiostream)){
 #ifdef PLATFORM_DESKTOP
+        bool res_midi_event = false;
         if(es->midiin != NULL){
             es->score.length = 0;
 
@@ -238,7 +239,6 @@ void EditorUpdate(void* ptr){
 
                 if(size != 0){
                     es->midi_clock += stamp;
-                    es->midi_tick += stamp*MIDIIN_RESOLUTION*2;
 
                     if(es->score.length >= (sizeof(es->events)/ sizeof(es->events[0])) - 1){ continue;}
                     if((message[0] == 0xff && message[1] != 0x51) || (message[0] >=0x80 && message[0] < 0xf0)){
@@ -250,10 +250,25 @@ void EditorUpdate(void* ptr){
                         memcpy(es->score.data[es->score.length].data, message + 1, 3);
                         es->score.length ++;
                         es->last_event_time += delta_d;
+                        es->last_event_tick += delta;
                     }
+
+                    res_midi_event = true;
+                }
+            }while(size != 0);
+
+            if(res_midi_event){
+                printf("%d \n", es->score_state->current_tick - es->last_event_tick);
+                i64 diff = (i64)es->score_state->current_tick - es->last_event_tick;
+
+                if(diff > 0.1*MIDIIN_RESOLUTION*2){
+                    es->last_event_time -= 0.1;
+                }
+                else if(diff < -0.1*MIDIIN_RESOLUTION*2){
+                    es->last_event_time += 0.1;
                 }
 
-            }while(size != 0);
+            }
 
             es->score.data[es->score.length].delta = 0xffffffff;
             es->score.data[es->score.length].status = 0xff;
@@ -262,7 +277,7 @@ void EditorUpdate(void* ptr){
 
            i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
             memset(tmpbuf, 0, sizeof(tmpbuf));
-            ks_score_data_render(&es->score, SAMPLING_RATE, es->score_state, es->tones, tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+            if(es->midi_clock != 0)ks_score_data_render(&es->score, SAMPLING_RATE, es->score_state, es->tones, tmpbuf, BUFFER_LENGTH_PER_UPDATE);
             for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
                 es->buf[i] = tmpbuf[i] / (float)INT16_MAX;
             }
@@ -281,15 +296,12 @@ void EditorUpdate(void* ptr){
         i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
         memset(tmpbuf, 0, sizeof(tmpbuf));
         ks_synth_render(&es->synth, &es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+
         for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
             es->buf[i] += tmpbuf[i] / (float)INT16_MAX;
         }
         UpdateAudioStream(es->audiostream, es->buf, BUFFER_LENGTH_PER_UPDATE);
 
-        double diff = es->midi_clock - (double)es->midi_tick/MIDIIN_RESOLUTION*0.5;
-        if(diff >= 0.01){
-            es->midi_clock -= diff;
-        }
     }
 
     if(es->display_mode== EDIT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
@@ -949,7 +961,7 @@ void EditorUpdate(void* ptr){
 
             float x = pos.x;
             float y = pos.y;
-            for(int o=0; o< oct; o++){
+            for(int o=1; o<= oct; o++){
                 const i8 whites[] = {0, 2, 4, 5, 7, 9, 11};
                 const i8 blacks[] = {1, 3, 6, 8, 10};
                 float x2 = x;
@@ -960,15 +972,19 @@ void EditorUpdate(void* ptr){
                     Rectangle rec = recs[whites[k]] = (Rectangle){x2, y, white.x, white.y};
                     i8 n = whites[k]+ offset;
 
+
+                    DrawRectangleRec(rec, RAYWHITE);
+                    BeginBlendMode(BLEND_MULTIPLIED);
                     if(n == es->noteon_number){
                         noteon_rec = rec;
                         DrawRectangleRec(rec, SKYBLUE);
-                        DrawRectangleLinesEx(rec, 1, es->display_mode!= EDIT ? LIGHTGRAY : GRAY);
                     }
-                    else {
-                        DrawRectangleRec(rec, RAYWHITE);
-                        DrawRectangleLinesEx(rec, 1, es->display_mode!= EDIT ? LIGHTGRAY : GRAY);
+                    if(n == 60) {
+                        DrawCircle(rec.x + rec.width*0.5, rec.y + rec.height - rec.width*0.5, rec.width*0.3, PINK);
                     }
+                    EndBlendMode();
+                    DrawRectangleLinesEx(rec, 1, es->display_mode!= EDIT ? LIGHTGRAY : GRAY);
+
 
                     x2 += white.x;
                 }
@@ -980,12 +996,14 @@ void EditorUpdate(void* ptr){
                     i8 n = blacks[k]+ offset;
 
 
-                    if(n == es->noteon_number){
-                        noteon_rec = rec;
-                        DrawRectangleRec(rec, DARKBLUE);
-                    } else {
-                        DrawRectangleRec(rec, es->display_mode!= EDIT ? LIGHTGRAY : DARKGRAY);
-                    }
+
+                     DrawRectangleRec(rec, es->display_mode!= EDIT ? LIGHTGRAY : DARKGRAY);
+                     BeginBlendMode(BLEND_MULTIPLIED);
+                     if(n == es->noteon_number){
+                         noteon_rec = rec;
+                         DrawRectangleRec(rec, SKYBLUE);
+                     }
+                     EndBlendMode();
 
 
                     x2 += (k != 1 && k != 4) ? white.x : white.x*2;
@@ -1324,7 +1342,7 @@ void init(editor_state* es){
 #ifdef PLATFORM_DESKTOP
     es->midi_clock = 0;
     es->last_event_time = -0.2;
-    es->midi_tick = 0;
+    es->last_event_tick = -0.2*MIDIIN_RESOLUTION*2;
     enum RtMidiApi api;
     if(rtmidi_get_compiled_api(&api, 1) != 0){
         es->midiin = rtmidi_in_create(api, "C", sizeof(es->events) / sizeof(es->events[0]));
