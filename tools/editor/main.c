@@ -38,7 +38,7 @@ typedef struct editor_state{
     ks_tone_list_data tones_data;
     ks_tone_list *tones;
     int tone_list_scroll;
-    int texsbox_focus;
+    int testbox_focus;
     i32 current_tone_index;
     ks_synth_data temp_synth;
     ks_synth synth;
@@ -545,7 +545,7 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("Name", pos2, GUI_TEXT_ALIGN_RIGHT);
                 pos2.x += base_width*0.75f;
                 pos2.width = pos.width * 1.25f;
-                if(GuiTextBox(pos2, es->tones_data.data[es->current_tone_index].name, sizeof(es->tones_data.data[es->current_tone_index].name), es->texsbox_focus == id)){
+                if(GuiTextBox(pos2, es->tones_data.data[es->current_tone_index].name, sizeof(es->tones_data.data[es->current_tone_index].name), es->testbox_focus == id)){
                     if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                 }
                 id++;
@@ -555,7 +555,7 @@ void EditorUpdate(void* ptr){
             pos2.x += pos.width*0.75f;
             {
                 int tmp_val = es->tones_data.data[es->current_tone_index].msb;
-                if(GuiValueBox(pos2, "MSB", &tmp_val, 0, 127, es->texsbox_focus == id)){
+                if(GuiValueBox(pos2, "MSB", &tmp_val, 0, 127, es->testbox_focus == id)){
                     if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                 }
                 es->tones_data.data[es->current_tone_index].msb = tmp_val & 0x7f;
@@ -564,7 +564,7 @@ void EditorUpdate(void* ptr){
             pos2.y += pos2.height + margin;
             {
                 int tmp_val = es->tones_data.data[es->current_tone_index].lsb;
-                if(GuiValueBox(pos2, "LSB", &tmp_val, 0, 127, es->texsbox_focus == id)){
+                if(GuiValueBox(pos2, "LSB", &tmp_val, 0, 127, es->testbox_focus == id)){
                     if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                 }
                 es->tones_data.data[es->current_tone_index].lsb = tmp_val & 0x7f;
@@ -573,7 +573,7 @@ void EditorUpdate(void* ptr){
             pos2.y += pos2.height + margin;
             {
                 int tmp_val = es->tones_data.data[es->current_tone_index].program;
-                if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, es->texsbox_focus == id)){
+                if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, es->testbox_focus == id)){
                    if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2))  tmp_focus = id;
                 }
                 es->tones_data.data[es->current_tone_index].program = tmp_val & 0x7f;
@@ -593,7 +593,7 @@ void EditorUpdate(void* ptr){
 
             if(es->tones_data.data[es->current_tone_index].note != KS_NOTENUMBER_ALL){
                 int tmp_val = es->tones_data.data[es->current_tone_index].note;
-                if(GuiValueBox(pos2, "Note Number", &tmp_val, 0, 127, es->texsbox_focus == id)){
+                if(GuiValueBox(pos2, "Note Number", &tmp_val, 0, 127, es->testbox_focus == id)){
                     if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                 }
                 es->tones_data.data[es->current_tone_index].note = tmp_val & 0x7f;
@@ -601,11 +601,13 @@ void EditorUpdate(void* ptr){
             }
 
             if(mouse_button_pressed){
-                es->texsbox_focus = tmp_focus;
+                es->testbox_focus = tmp_focus;
             }
 
-            if(GetCharPressed() > 0){
-                mark_dirty(&es->dirty, &es->file_dialog_state);
+            if(es->display_mode ==EDIT){
+                if(GetCharPressed() > 0){
+                    mark_dirty(&es->dirty, &es->file_dialog_state);
+                }
             }
 
             pos.y = x_pos.y;
@@ -1304,7 +1306,7 @@ void EditorUpdate(void* ptr){
 
 void init(editor_state* es){
     es->tone_list_scroll=0;
-    es->texsbox_focus = -1;
+    es->testbox_focus = -1;
     es->current_tone_index =-1;
     memset(&es->note, 0, sizeof(es->note));
     es->noteon_number = -1;
