@@ -19,7 +19,7 @@ ks_io_begin_custom_func(ks_tone_list_data)
     ks_magic_number("KSTN");
     ks_u32(length);
     ks_arr_obj_len(data, ks_tone_data, ks_access(length));
-    if(!__SERIALIZE) ks_access(capacity) = ks_access(length);
+    if(__SERIAL_TYPE == KS_IO_DESERIALIZER) ks_access(capacity) = ks_access(length);
 ks_io_end_custom_func(ks_tone_list_data)
 
 ks_tone_list_data* ks_tone_list_data_new(){

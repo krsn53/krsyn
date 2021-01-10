@@ -5,14 +5,6 @@ project(krsyn LANGUAGES C)
 option(KRSYN_BUILD_TESTS "build tests" ON)
 option(KRSYN_BUILD_TOOLS "build tools" ON)
 
-function(add_resources target dir)
-    file(GLOB_RECURSE  ${target}_resources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${dir}/*)
-
-    foreach(var ${${target}_resources})
-        add_custom_command(TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${var} $<TARGET_FILE_DIR:${target}>/${var})
-    endforeach()
-endfunction()
-
 add_subdirectory(ksio)
 
 file(GLOB krsyn_src krsyn/*.c krsyn/*.h)

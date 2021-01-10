@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "../krsyn.h"
+#include <ksio/serial/binary.h>
 #include <ksio/formats/wave.h>
 
 #define SAMPLING_RATE 48000
@@ -331,7 +332,7 @@ int main( void )
     dat.data = (u8*)writebuf;
 
     ks_io *io = ks_io_new();
-    ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(dat, ks_wave_file));
+    ks_io_serialize_begin(io, binary_little_endian, dat, ks_wave_file);
 
     FILE* f = fopen("out.wav", "wb");
     fwrite(io->str->data, 1, io->str->length, f);
@@ -340,6 +341,6 @@ int main( void )
     ks_io_free(io);
   }
 
-  free (buf);
+  free(buf);
   free(writebuf);
 }

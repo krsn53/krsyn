@@ -19,6 +19,8 @@
 
 #include "krsyn.h"
 #include <ksio/vector.h>
+#include <ksio/serial/clike.h>
+#include <ksio/serial/binary.h>
 
 //------------------------------------------------------------------------------------
 
@@ -110,12 +112,12 @@ bool save_load_synth(ks_synth_data* bin, editor_state* es, bool serialize){
 
     bool ret;
     if(text_format){
-        ret = serialize ? ks_io_begin_serialize(io, clike, ks_prop_root(*bin, ks_synth_data)) :
-                          ks_io_begin_deserialize(io, clike, ks_prop_root(*bin, ks_synth_data)) ;
+        ret = serialize ? ks_io_serialize_begin(io, clike, *bin, ks_synth_data) :
+                          ks_io_deserialize_begin(io, clike, *bin, ks_synth_data) ;
     }
      else {
-        ret = serialize ? ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(*bin, ks_synth_data)) :
-                          ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*bin, ks_synth_data)) ;
+        ret = serialize ? ks_io_serialize_begin(io, binary_little_endian, *bin, ks_synth_data) :
+                          ks_io_deserialize_begin(io, binary_little_endian, *bin, ks_synth_data) ;
     }
 
     if(serialize){
@@ -151,12 +153,12 @@ bool save_load_tone_list(ks_tone_list_data* bin, editor_state* es, bool serializ
 
     bool ret;
     if(text_format){
-        ret = serialize ? ks_io_begin_serialize(io, clike, ks_prop_root(*bin, ks_tone_list_data)) :
-                          ks_io_begin_deserialize(io, clike, ks_prop_root(*bin, ks_tone_list_data)) ;
+        ret = serialize ? ks_io_serialize_begin(io, clike, *bin, ks_tone_list_data) :
+                          ks_io_deserialize_begin(io, clike, *bin, ks_tone_list_data) ;
     }
      else {
-        ret = serialize ? ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(*bin, ks_tone_list_data)) :
-                          ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*bin, ks_tone_list_data)) ;
+        ret = serialize ? ks_io_serialize_begin(io, binary_little_endian, *bin, ks_tone_list_data) :
+                          ks_io_deserialize_begin(io, binary_little_endian, *bin, ks_tone_list_data) ;
     }
 
     if(serialize){

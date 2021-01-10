@@ -7,6 +7,8 @@
 
 #include <krsyn.h>
 #include <ksio/io.h>
+#include <ksio/serial/clike.h>
+#include <ksio/serial/binary.h>
 #include <ksio/formats/midi.h>
 #include <ksio/formats/wave.h>
 
@@ -78,9 +80,7 @@ bool load_file(player_state* ps, const char* file){
     //midifile
     if(strcmp(ext,  "mid")  == 0 || strcmp(ext,"midi") == 0 ){
         ks_midi_file midi;
-        ks_io* io = ks_io_new();
-        ks_io_read_file(io, file);
-        if(!ks_io_begin_deserialize(io, binary_big_endian, ks_prop_root(midi, ks_midi_file))){
+        if(!ks_io_deserialize_from_file(binary_big_endian, file, midi, ks_midi_file)){
             ks_error("Failed to load midi file");
             ps->message = "Failed to load midi file";
             ps->player_state = ERROR;
@@ -91,15 +91,12 @@ bool load_file(player_state* ps, const char* file){
              state = 1;
         }
 
-        ks_io_free(io);
         ks_midi_tracks_free(midi.num_tracks, midi.tracks);
     }
     // krsyn score file
     else if(strcmp(ext, "kscb") == 0){
         ks_score_data* score = ks_score_data_new(0,0, 0);
-        ks_io* io = ks_io_new();
-        ks_io_read_file(io, file);
-        if(!ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*ps->score, ks_score_data))){
+        if(!ks_io_deserialize_from_file(binary_big_endian, file, *ps->score, ks_score_data)){
             ks_error("Failed to load krsyn score binary file");
             ps->message = "Failed to load score file";
             ps->player_state = ERROR;
@@ -110,13 +107,10 @@ bool load_file(player_state* ps, const char* file){
             ps->score = score;
             state = 1;
         }
-        ks_io_free(io);
     }
     else if(strcmp(ext, "kscc") == 0){
         ks_score_data* score = ks_score_data_new(0,0, 0);
-        ks_io* io = ks_io_new();
-        ks_io_read_file(io, file);
-        if(!ks_io_begin_deserialize(io, clike, ks_prop_root(*ps->score, ks_score_data))){
+        if(!ks_io_deserialize_from_file(binary_big_endian, file, *ps->score, ks_score_data)){
             ks_error("Failed to load krsyn score clike file");
             ps->message = "Failed to load score file";
             ps->player_state = ERROR;
@@ -128,16 +122,13 @@ bool load_file(player_state* ps, const char* file){
             ps->score = score;
             state = 1;
         }
-        ks_io_free(io);
     }
     else if(strcmp(ext, "kstb") == 0){
         if(ps->tones_data != &default_tone_list){
             ks_tone_list_data_free((ks_tone_list_data*)ps->tones_data);
         }
         ks_tone_list_data* dat = ks_tone_list_data_new();
-        ks_io* io = ks_io_new();
-        ks_io_read_file(io, file);
-        if(!ks_io_begin_deserialize(io, binary_little_endian, ks_prop_root(*dat, ks_tone_list_data))){
+        if(!ks_io_deserialize_from_file(binary_big_endian, file, *ps->score, ks_score_data)){
             ks_error("Failed to load krsyn tone list binary file");
             ps->message = "Failed to load tone list file";
             ps->player_state = ERROR;
@@ -146,16 +137,13 @@ bool load_file(player_state* ps, const char* file){
             state = 2;
             ps->tones_data = dat;
         }
-        ks_io_free(io);
     }
     else if(strcmp(ext, "kstc") == 0){
         if(ps->tones_data != &default_tone_list){
             ks_tone_list_data_free((ks_tone_list_data*)ps->tones_data);
         }
         ks_tone_list_data* dat = ks_tone_list_data_new();
-        ks_io* io = ks_io_new();
-        ks_io_read_file(io, file);
-        if(!ks_io_begin_deserialize(io, clike, ks_prop_root(*dat, ks_tone_list_data))){
+        if(!ks_io_deserialize_from_file(clike, file, *dat, ks_tone_list_data)){
             ks_error("Failed to load krsyn tone list clike file");
             ps->message = "Failed to load tone list file";
             ps->player_state = ERROR;
@@ -164,7 +152,6 @@ bool load_file(player_state* ps, const char* file){
             state = 2;
             ps->tones_data = dat;
         }
-        ks_io_free(io);
     }
     else {
         ks_error("Invalid file type. Extention must be one of the following:\n\t\t*.mid *.midi *.kscb *kscc *.kstb *.kstc");
@@ -539,46 +526,35 @@ void update(void* ptr){
                 .data = (u8*)ps->export_buf,
             };
 
-            ks_io* io = ks_io_new();
-            if(ks_io_begin_serialize(io, binary_little_endian, ks_prop_root(out, ks_wave_file))){
-                const int score_path_len = strlen(ps->score_file);
-                const int score_file_len = strlen(GetFileName(ps->score_file));
-                const int score_dir_len = score_path_len - score_file_len;
-                int export_file_len = strlen(ps->export_filename);
+            const int score_path_len = strlen(ps->score_file);
+            const int score_file_len = strlen(GetFileName(ps->score_file));
+            const int score_dir_len = score_path_len - score_file_len;
+            int export_file_len = strlen(ps->export_filename);
 
-                if(export_file_len == 0){
-                    strcpy(ps->export_filename, "output.wav");
-                }
-                else if(!IsFileExtension(ps->export_filename, ".wav")){
-                    strncpy(ps->export_filename + export_file_len - 4, ".wav", 4);
-                    export_file_len += 4;
-                }
-                char export_filepath[256];
-                strncpy(export_filepath, ps->score_file, score_dir_len);
-                strcpy(export_filepath + score_dir_len, ps->export_filename);
-                FILE* f = fopen(export_filepath, "wb");
-                if(f){
-                    fwrite(io->str->data, 1, io->str->length, f);
-                    fclose(f);
+            if(export_file_len == 0){
+                strcpy(ps->export_filename, "output.wav");
+            }
+            else if(!IsFileExtension(ps->export_filename, ".wav")){
+                strncpy(ps->export_filename + export_file_len - 4, ".wav", 4);
+                export_file_len += 4;
+            }
+            char export_filepath[256];
+            strncpy(export_filepath, ps->score_file, score_dir_len);
+            strcpy(export_filepath + score_dir_len, ps->export_filename);
 
-                    ps->message = "Export successfully";
-                    ps->player_state = INFO;
-                } else {
-                    ps->message = FormatText("Failed to open file \"%s\"", export_filepath);
-                    ps->player_state = ERROR;
-                }
+            if(ks_io_serialize_to_file(binary_little_endian, export_filepath, out, ks_wave_file)){
+                ps->message = "Export successfully";
+                ps->player_state = INFO;
 
 #ifdef PLATFORM_WEB
              emscripten_run_script(TextFormat("saveFileFromMEMFSToDisk('%s','%s')", export_filepath, ps->export_filename));
 #endif
-
-
-            } else {
+            }
+            else {
                 ps->message = "Failed to export";
                 ps->player_state = ERROR;
             }
 
-            ks_io_free(io);
             free(ps->export_buf);
         }
     }
