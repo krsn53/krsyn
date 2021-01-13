@@ -1,7 +1,7 @@
 {
 	// Magic number : KSTN
-	.length=29,
-	.data=(ks_tone_data[29]){
+	.length=30,
+	.data=(ks_tone_data[30]){
 		{
 			.msb=0,
 			.lsb=0,
@@ -107,9 +107,9 @@
 					0,
 				},
 				.keyscale_mid_points={
-					15,
-					27,
-					35,
+					30,
+					46,
+					51,
 					57,
 				},
 				.keyscale_curve_types.b={
@@ -119,7 +119,7 @@
 					49,
 				},
 				.lfo_ams_depths={
-					0,
+					11,
 					0,
 					0,
 					0,
@@ -1174,6 +1174,137 @@
 				},
 				.algorithm=0,
 				.feedback_level=0,
+				.panpot=64,
+				.lfo_wave_type=0,
+				.lfo_freq=128,
+				.lfo_det=0,
+				.lfo_fms_depth=0,
+			},
+		},
+		{
+			.msb=0,
+			.lsb=0,
+			.program=46,
+			.note=128,
+			.name="Harp",
+			.synth={
+				// Magic number : KSYN
+				.phase_coarses.b={
+					12,
+					4,
+					8,
+					4,
+				},
+				.phase_tunes={
+					190,
+					175,
+					208,
+					255,
+				},
+				.phase_fines={
+					0,
+					0,
+					0,
+					0,
+				},
+				.levels={
+					26,
+					134,
+					47,
+					127,
+				},
+				.envelope_points[0]={
+					255,
+					255,
+					255,
+					255,
+				},
+				.envelope_points[1]={
+					53,
+					95,
+					139,
+					97,
+				},
+				.envelope_points[2]={
+					0,
+					0,
+					0,
+					0,
+				},
+				.envelope_points[3]={
+					0,
+					0,
+					0,
+					0,
+				},
+				.envelope_times[0]={
+					0,
+					0,
+					0,
+					0,
+				},
+				.envelope_times[1]={
+					141,
+					157,
+					175,
+					143,
+				},
+				.envelope_times[2]={
+					162,
+					162,
+					0,
+					165,
+				},
+				.envelope_times[3]={
+					154,
+					158,
+					160,
+					145,
+				},
+				.velocity_sens={
+					133,
+					255,
+					126,
+					255,
+				},
+				.ratescales={
+					32,
+					32,
+					32,
+					32,
+				},
+				.keyscale_low_depths={
+					13,
+					0,
+					0,
+					0,
+				},
+				.keyscale_high_depths={
+					0,
+					0,
+					25,
+					0,
+				},
+				.keyscale_mid_points={
+					69,
+					69,
+					69,
+					69,
+				},
+				.keyscale_curve_types.b={
+					2,
+					2,
+					0,
+					0,
+				},
+				.lfo_ams_depths={
+					0,
+					0,
+					0,
+					0,
+				},
+				.algorithm=4,
+				.feedback_level=34,
 				.panpot=64,
 				.lfo_wave_type=0,
 				.lfo_freq=128,
