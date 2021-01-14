@@ -53,7 +53,7 @@ ks_tone_list*               ks_tone_list_new                    ();
 void                        ks_tone_list_free                   (ks_tone_list* tones);
 void                        ks_tone_list_reserve                (ks_tone_list* tones, u32 capacity);
 ks_tone_list_bank*          ks_tone_list_emplace_bank           (ks_tone_list* tones, ks_tone_list_bank_number bank_number);
-ks_tone_list_bank           ks_tone_list_bank_of                (u8 msb, u8 lsb, ks_synth* programs[KS_NUM_MAX_PROGRAMS]);
+ks_tone_list_bank           ks_tone_list_bank_of                (u8 msb, u8 lsb, bool percussion, ks_synth* programs[KS_NUM_MAX_PROGRAMS]);
 ks_tone_list_bank*          ks_tone_list_find_bank              (const ks_tone_list* tones, ks_tone_list_bank_number bank_number);
 
 ks_tone_list_bank*          ks_tone_list_banks_new              (u32 num_banks);
@@ -65,7 +65,7 @@ bool                        ks_tone_list_bank_number_equals     (ks_tone_list_ba
 bool                        ks_tone_list_bank_is_empty          (const ks_tone_list_bank* bank);
 
 // XG like ???
-ks_tone_list_bank_number    ks_tone_list_bank_number_of         (u8 msb, u8 lsb);
+ks_tone_list_bank_number    ks_tone_list_bank_number_of         (u8 msb, u8 lsb, bool percussion);
 
 void                        ks_tone_list_sort                   (ks_tone_list_data* v, i32* current);
 void                        ks_tone_list_insert                 (ks_tone_list_data* v, ks_tone_data d, i32 *current);

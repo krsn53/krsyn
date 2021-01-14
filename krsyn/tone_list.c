@@ -34,7 +34,7 @@ void ks_tone_list_data_free(ks_tone_list_data* d){
 }
 
 KS_INLINE u32 ks_tone_list_bank_number_hash(ks_tone_list_bank_number bank_number){
-    return ks_v(bank_number.msb, 7) +  bank_number.lsb;
+    return ks_v(bank_number.percussion, 8) + ks_v(bank_number.msb, 7) +  bank_number.lsb;
 
 }
 
@@ -47,11 +47,11 @@ KS_INLINE bool ks_tone_list_bank_is_empty(const ks_tone_list_bank* bank){
 }
 
 // XG like ???
-KS_INLINE ks_tone_list_bank_number ks_tone_list_bank_number_of(u8 msb, u8 lsb){
+KS_INLINE ks_tone_list_bank_number ks_tone_list_bank_number_of(u8 msb, u8 lsb, bool percussion){
     return (ks_tone_list_bank_number){
         .msb = msb,
         .lsb = lsb,
-        .percussion = (msb==127 ? 1: 0),
+        .percussion = percussion || msb == 127,
         .enabled = 1,
     };
 }
@@ -62,7 +62,7 @@ ks_tone_list* ks_tone_list_new_from_data(u32 sampling_rate, const ks_tone_list_d
     u32 length = bin->length;
 
     for(u32 i = 0; i< length; i++){
-        ks_tone_list_bank_number bank_number = ks_tone_list_bank_number_of(bin->data[i].msb, bin->data[i].lsb);
+        ks_tone_list_bank_number bank_number = ks_tone_list_bank_number_of(bin->data[i].msb, bin->data[i].lsb, bin->data[i].note != KS_NOTENUMBER_ALL);
         ks_tone_list_bank* bank = ks_tone_list_find_bank(ret, bank_number);
         if(bank == NULL){
             bank = ks_tone_list_emplace_bank(ret, bank_number);
@@ -174,9 +174,9 @@ ks_tone_list_bank* ks_tone_list_find_bank(const ks_tone_list* tones, ks_tone_lis
     return & tones->data[it];
 }
 
-ks_tone_list_bank ks_tone_list_bank_of(u8 msb, u8 lsb, ks_synth *programs[KS_NUM_MAX_PROGRAMS]){
+ks_tone_list_bank ks_tone_list_bank_of(u8 msb, u8 lsb, bool percussion, ks_synth *programs[KS_NUM_MAX_PROGRAMS]){
     ks_tone_list_bank ret;
-    ret.bank_number = ks_tone_list_bank_number_of(msb,lsb);
+    ret.bank_number = ks_tone_list_bank_number_of(msb,lsb, percussion);
 
     for(u32 i=0; i<KS_NUM_MAX_PROGRAMS; i++){
         ret.programs[i] = programs[i];
