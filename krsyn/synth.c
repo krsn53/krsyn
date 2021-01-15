@@ -266,62 +266,53 @@ static KS_INLINE u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 
     return (u32)delta_11;
 }
 
-static KS_INLINE u32 keyscale_li(u32 index_16, int curve_type)
-{
-    u32 index_m = (u32)(index_16>> KS_KEYSCALE_CURVE_BITS);
 
-    if(index_m >= ks_1(KS_KEYSCALE_CURVE_TABLE_BITS)-1)
-    {
-        return ks_keyscale_curves(curve_type, ks_1(KS_KEYSCALE_CURVE_TABLE_BITS)-1);
-    }
 
-    u32 index_b = index_m+1;
-
-    u32 under_fixed_b = index_16 & ((1<<KS_KEYSCALE_CURVE_BITS)-1);
-    u32 under_fixed_m = (1<<KS_KEYSCALE_CURVE_BITS) - under_fixed_b;
-
-    u32 ret = ks_keyscale_curves(curve_type, index_m) * under_fixed_m +
-        ks_keyscale_curves(curve_type, index_b) * under_fixed_b;
-
-    ret >>= KS_KEYSCALE_CURVE_BITS;
-
-    return ret;
-}
-
-static KS_INLINE i32 keyscale_value(const ks_synth *synth, u32 table_index, u32 table_range, bool low_note, u32 i)
-{
-    u64 index_16 = table_index;
-    index_16 <<= KS_KEYSCALE_CURVE_MAX_BITS;
-    index_16 /= table_range;
-    index_16 *= (low_note ? synth->keyscale_low_depths[i] : synth->keyscale_high_depths[i]);
-    index_16 >>= KS_KEYSCALE_DEPTH_BITS;
-
-    int curve_type = synth->keyscale_curve_types[low_note ? 0 : 1][i];
-    return keyscale_li((u32)index_16, curve_type);
+static KS_INLINE i32 keyscale_v(i32 v, u32 d){
+    i64 v2 = (i64)v* d;
+    v2 >>= KS_KEYSCALE_DEPTH_BITS;
+    return v2;
 }
 
 static KS_INLINE i32 keyscale(const ks_synth *synth, u8 notenum, u32 i)
 {
     // <-- |mid point|
     if(notenum < synth->keyscale_mid_points[i]){
-        // volume up until mid point
-        if(synth->keyscale_curve_types[0][i] <= KS_KEYSCALE_CURVE_ED){
-            return keyscale_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i) - ks_1(KS_KEYSCALE_CURVE_BITS);
+        const i32 sub = synth->keyscale_mid_points[i] - notenum;
+
+        switch (synth->keyscale_curve_types[0][i]) {
+        case KS_KEYSCALE_CURVE_ED:{
+            return keyscale_v(sub * ks_1(KS_KEYSCALE_CURVE_BITS) / (sub - 127), synth->keyscale_low_depths[i]) + ks_1(KS_KEYSCALE_CURVE_BITS);
         }
-        //volume down until mid point
-        else {
-            return keyscale_value(synth, synth->keyscale_mid_points[i] - notenum - 1, synth->keyscale_mid_points[i], true, i);
+        case KS_KEYSCALE_CURVE_EU:{
+            return keyscale_v( sub * ks_1(KS_KEYSCALE_CURVE_BITS) / (127 - sub), synth->keyscale_low_depths[i])  + ks_1(KS_KEYSCALE_CURVE_BITS);
         }
+        case KS_KEYSCALE_CURVE_LD:{
+            return keyscale_v((u64)ks_notefreq(0) * ks_1(KS_KEYSCALE_CURVE_BITS) / ks_notefreq(((i64)sub * synth->keyscale_low_depths[i])>> KS_KEYSCALE_DEPTH_BITS),  ks_1(KS_KEYSCALE_DEPTH_BITS));
+        }
+        case KS_KEYSCALE_CURVE_LU:{
+            return keyscale_v((u64)ks_notefreq(sub) * ks_1(KS_KEYSCALE_CURVE_BITS) / ks_notefreq(0), synth->keyscale_low_depths[i])  + ks_1(KS_KEYSCALE_CURVE_BITS); // ?
+        }
+        }
+
     }
     // |mid point| -->
     else {
-        // volume down from after mid point
-        if(synth->keyscale_curve_types[1][i] <= KS_KEYSCALE_CURVE_ED){
-            return keyscale_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i) - ks_1(KS_KEYSCALE_CURVE_BITS);
+        const i32 sub = notenum - synth->keyscale_mid_points[i];
+
+        switch (synth->keyscale_curve_types[1][i]) {
+        case KS_KEYSCALE_CURVE_ED:{
+            return keyscale_v(sub * ks_1(KS_KEYSCALE_CURVE_BITS) / (sub - 127), synth->keyscale_high_depths[i]) + ks_1(KS_KEYSCALE_CURVE_BITS);
         }
-        // volume up until mid point
-        else {
-             return keyscale_value(synth, notenum - synth->keyscale_mid_points[i], ks_1(KS_KEYSCALE_CURVE_TABLE_BITS) - synth->keyscale_mid_points[i], false, i);
+        case KS_KEYSCALE_CURVE_EU:{
+            return keyscale_v( sub * ks_1(KS_KEYSCALE_CURVE_BITS) / (127 - sub), synth->keyscale_high_depths[i])  + ks_1(KS_KEYSCALE_CURVE_BITS);
+        }
+        case KS_KEYSCALE_CURVE_LD:{
+            return keyscale_v((u64)ks_notefreq(0) * ks_1(KS_KEYSCALE_CURVE_BITS) / ks_notefreq(((i64)sub * synth->keyscale_high_depths[i])>> KS_KEYSCALE_DEPTH_BITS),  ks_1(KS_KEYSCALE_DEPTH_BITS));
+        }
+        case KS_KEYSCALE_CURVE_LU:{
+            return keyscale_v((u64)ks_notefreq(sub) * ks_1(KS_KEYSCALE_CURVE_BITS) / ks_notefreq(0), synth->keyscale_high_depths[i])  + ks_1(KS_KEYSCALE_CURVE_BITS); // ?
+        }
         }
     }
 
@@ -381,9 +372,8 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
 
             target = keysc;
             target *= synth->envelope_points[j][i];
-            target >>= KS_ENVELOPE_BITS;
-            target += synth->levels[i];
-            target *= synth->envelope_points[j][i];
+            target >>= KS_KEYSCALE_CURVE_BITS;
+            target *= synth->levels[i];
             target >>= KS_LEVEL_BITS;
             target = MAX(MIN(target, synth->envelope_points[j][i]), 0);
 

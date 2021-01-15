@@ -494,7 +494,7 @@
 					0,
 				},
 				.keyscale_high_depths={
-					15,
+					159,
 					0,
 					0,
 					0,
@@ -756,7 +756,7 @@
 					0,
 				},
 				.keyscale_high_depths={
-					12,
+					117,
 					0,
 					0,
 					0,
@@ -887,9 +887,9 @@
 					0,
 				},
 				.keyscale_high_depths={
-					31,
-					21,
-					26,
+					120,
+					127,
+					142,
 					0,
 				},
 				.keyscale_mid_points={
@@ -1013,15 +1013,15 @@
 				},
 				.keyscale_low_depths={
 					15,
-					18,
+					67,
 					0,
-					26,
+					60,
 				},
 				.keyscale_high_depths={
 					0,
-					27,
+					130,
 					0,
-					36,
+					120,
 				},
 				.keyscale_mid_points={
 					55,
@@ -1143,13 +1143,13 @@
 					45,
 				},
 				.keyscale_low_depths={
-					47,
+					74,
 					0,
 					37,
 					0,
 				},
 				.keyscale_high_depths={
-					51,
+					137,
 					0,
 					0,
 					0,
@@ -1274,7 +1274,7 @@
 					32,
 				},
 				.keyscale_low_depths={
-					13,
+					122,
 					0,
 					0,
 					0,
@@ -1282,7 +1282,7 @@
 				.keyscale_high_depths={
 					0,
 					0,
-					25,
+					132,
 					0,
 				},
 				.keyscale_mid_points={
@@ -1411,8 +1411,8 @@
 					0,
 				},
 				.keyscale_high_depths={
-					30,
-					28,
+					128,
+					129,
 					0,
 					0,
 				},
@@ -1470,7 +1470,7 @@
 					0,
 				},
 				.levels={
-					26,
+					79,
 					107,
 					44,
 					156,
@@ -1500,7 +1500,7 @@
 					0,
 				},
 				.envelope_times[0]={
-					118,
+					131,
 					123,
 					106,
 					118,
@@ -1536,15 +1536,15 @@
 					0,
 				},
 				.keyscale_low_depths={
-					18,
+					109,
 					0,
 					0,
 					0,
 				},
 				.keyscale_high_depths={
-					54,
-					18,
-					52,
+					190,
+					92,
+					107,
 					0,
 				},
 				.keyscale_mid_points={
@@ -1673,7 +1673,7 @@
 					0,
 				},
 				.keyscale_high_depths={
-					91,
+					137,
 					0,
 					0,
 					0,
@@ -1800,8 +1800,8 @@
 				.keyscale_low_depths={
 					0,
 					100,
-					31,
-					84,
+					120,
+					138,
 				},
 				.keyscale_high_depths={
 					0,
@@ -1929,15 +1929,15 @@
 					0,
 				},
 				.keyscale_low_depths={
-					55,
+					95,
 					0,
 					0,
 					0,
 				},
 				.keyscale_high_depths={
-					85,
-					116,
-					225,
+					141,
+					182,
+					165,
 					0,
 				},
 				.keyscale_mid_points={
@@ -2060,13 +2060,13 @@
 					0,
 				},
 				.keyscale_low_depths={
-					17,
+					82,
 					0,
 					0,
 					0,
 				},
 				.keyscale_high_depths={
-					23,
+					158,
 					0,
 					0,
 					0,
@@ -2852,7 +2852,7 @@
 					0,
 				},
 				.keyscale_high_depths={
-					85,
+					127,
 					0,
 					0,
 					0,

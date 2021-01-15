@@ -32,4 +32,3 @@ i16 ks_fake_triangle    (u32 phase, u32 shift);
 i16 ks_noise            (u32 phase, u32 begin);
 u32 ks_notefreq         (u8 notenumber);
 i32 ks_ratescale        (u8 notenumber);
-u16 ks_keyscale_curves  (u8 type, u8 index);
