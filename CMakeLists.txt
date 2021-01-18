@@ -17,7 +17,6 @@ if(${KRSYN_BUILD_TESTS})
     add_subdirectory(tests)
 endif()
 
-
 if(NOT ${CMAKE_C_COMPILER_ID} STREQUAL TinyCC AND ${KRSYN_BUILD_TOOLS})
     add_subdirectory(tools)
 endif()

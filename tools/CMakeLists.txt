@@ -2,12 +2,15 @@ project(krsyn_tools)
 
 option(PROJECT_BINARY_DIR "${CMAKE_BINARY_DIR}/tools")
 
-option(BUILD_RAYGUI_EXAMPLES OFF)
-option(BUILD_GAMES OFF)
-option(BUILD_EXAMPLES OFF)
 
-add_subdirectory(raylib)
-add_subdirectory(raygui/projects/CMake)
+    option(BUILD_RAYGUI_EXAMPLES OFF)
+    option(BUILD_GAMES OFF)
+    option(BUILD_EXAMPLES OFF)
+if(NOT ${KRSYN_EXTERNAL_RAYLIB})
+    add_subdirectory(raylib)
+endif()
+    add_subdirectory(raygui/projects/CMake)
+
 
 file(GLOB raygui_impl_src raygui_impl/*.h raygui_impl/*.c)
 add_library(raygui_impl ${raygui_impl_src})
