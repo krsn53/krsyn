@@ -25,10 +25,12 @@
 #define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 5)
 
 
-i16 ks_sin              (u32 phase, bool linear_interpolution);
-i16 ks_saw              (u32 phase);
-i16 ks_triangle         (u32 phase);
-i16 ks_fake_triangle    (u32 phase, u32 shift);
-i16 ks_noise            (u32 phase, u32 begin);
-u32 ks_notefreq         (u8 notenumber);
-i32 ks_ratescale        (u8 notenumber);
+const i16*  ks_get_wave_table   (u8 index, u8 notenumber);
+i16         ks_table_value      (const i16* table, u32 phase);
+i16         ks_sin              (u32 phase, bool linear_interpolution);
+i16         ks_saw              (u32 phase);
+i16         ks_triangle         (u32 phase);
+i16         ks_fake_triangle    (u32 phase, u32 shift);
+i16         ks_noise            (u32 phase, u32 begin);
+u32         ks_notefreq         (u8 notenumber);
+i32         ks_ratescale        (u8 notenumber);

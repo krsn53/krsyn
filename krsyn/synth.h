@@ -108,72 +108,33 @@ typedef struct ks_keyscale_curve_t
 */
 typedef struct ks_synth_data
 {
-    //! Frequency magnification of output.
+    u8                      wave_index              [KS_NUM_OPERATORS];
     union {
         ks_phase_coarse_t       st                  [KS_NUM_OPERATORS];
         u8                      b                   [KS_NUM_OPERATORS];
     }phase_coarses;
-
-    //! Fine of frequency. Max value is 0.5 coarse.
     u8                      phase_fines             [KS_NUM_OPERATORS];
-
-    //! Detune of frequency.
     u8                      phase_tunes             [KS_NUM_OPERATORS];
-
-    //! Amplitude of each operators.
     u8                      levels                  [KS_NUM_OPERATORS];
-
-    //! Amplitude at envelope_times. i.e. Total Level and Sustain Level.
     u8                      envelope_points         [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-
-    //! Time until becoming envelop_points. i.e. Attack Time and Sustain Time.
     u8                      envelope_times          [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-
-    //! Volume change degree by velocity.
     u8                      velocity_sens           [KS_NUM_OPERATORS];
-
-    //! Envelope speed change degree by note number.
     u8                      ratescales              [KS_NUM_OPERATORS];
-
-    //! Volume change degree by note number when note number is smaller than keyscale_mid_points.
     u8                      keyscale_low_depths     [KS_NUM_OPERATORS];
-
-    //! Volume change degree by note number when note number is bigger than keyscale_mid_points.
     u8                      keyscale_high_depths    [KS_NUM_OPERATORS];
-
-    //! Note number which is center of keyscale.
     u8                      keyscale_mid_points     [KS_NUM_OPERATORS];
-
-    //! Kind of keyscale curve. Upper 4 bits are value for the notes which bellow keyscale_mid_points, and lower 4 bits are value for the notes which above keyscale_mid_points.
     union {
          ks_keyscale_curve_t    st                  [KS_NUM_OPERATORS];
          u8                     b                   [KS_NUM_OPERATORS];
     }keyscale_curve_types;
-
-    //! Amplitude modulation sensitivity of LFO.
-    u8                     lfo_ams_depths           [KS_NUM_OPERATORS]; // zero : disabled
-
-
-    //! algorithm number, 0~7:FM 8~10:PCM
+    u8                     lfo_ams_depths           [KS_NUM_OPERATORS];
     u8                     algorithm;
-
-    //! FM feed back degree.
     u8                     feedback_level;
-
-    //! instrumental panpot
     u8                     panpot;
-
-    //! Wave type of LFO.
     u8                     lfo_wave_type;
-
-    //! Frequency of LFO.
     u8                     lfo_freq;
-
-    //! Initial phase of LFO.
     u8                     lfo_det;
-    
-    //! Frequency modulation sensitivity of LFO.
-    u8                     lfo_fms_depth;                                 // zero : disabled
+    u8                     lfo_fms_depth;
 
 }
 ks_synth_data;
@@ -212,6 +173,7 @@ typedef struct ks_synth
     u32         lfo_fms_depth;
 
     bool        fixed_frequency             [KS_NUM_OPERATORS];
+    u8          wave_index                  [KS_NUM_OPERATORS];
 
     u8          lfo_wave_type;
     bool        lfo_ams_enabled;
@@ -225,27 +187,30 @@ ks_synth;
 */
 typedef  struct ks_synth_note
 {
-    i32     output_log                  [KS_NUM_OPERATORS];
+    i32             output_log                  [KS_NUM_OPERATORS];
 
-    u32     phases                      [KS_NUM_OPERATORS];
-    u32     phase_deltas                [KS_NUM_OPERATORS];
+    const i16       *wave_tables                [KS_NUM_OPERATORS];
+    i16(* f[KS_NUM_OPERATORS])(u32);
 
-    i32     envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32     envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    i32     envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u32             phases                      [KS_NUM_OPERATORS];
+    u32             phase_deltas                [KS_NUM_OPERATORS];
 
-    i32     envelope_now_deltas         [KS_NUM_OPERATORS];
-    i32     envelope_now_times          [KS_NUM_OPERATORS];
-    i32     envelope_now_amps           [KS_NUM_OPERATORS];
-    u8      envelope_states             [KS_NUM_OPERATORS];
-    u8      envelope_now_points         [KS_NUM_OPERATORS];
+    i32             envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u32             envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    i32             envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
-    u32     lfo_phase;
-    u32     lfo_delta;
-    i32     lfo_log;
-    i32     feedback_log;
+    i32             envelope_now_deltas         [KS_NUM_OPERATORS];
+    i32             envelope_now_times          [KS_NUM_OPERATORS];
+    i32             envelope_now_amps           [KS_NUM_OPERATORS];
+    u8              envelope_states             [KS_NUM_OPERATORS];
+    u8              envelope_now_points         [KS_NUM_OPERATORS];
 
-    u32    now_frame;
+    u32             lfo_phase;
+    u32             lfo_delta;
+    i32             lfo_log;
+    i32             feedback_log;
+
+    u32             now_frame;
 }
 ks_synth_note;
 

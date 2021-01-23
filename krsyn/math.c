@@ -558,27 +558,19 @@ static const i32 ratescale[128] = {
     -62092, -62286, -62468, -62640, -62803, -62956, -63101, -63238,
 };
 
-// liniar interpolution
-static KS_INLINE i16 ks_table_value_li(const i16* table, u32 phase, u32 mask)
-{
-    u32 index_m = phase >> KS_PHASE_BITS;
-    u32 index_b = (index_m + 1);
-
-    u32 under_fixed_b = ks_mask(phase, KS_PHASE_BITS);
-    u32 under_fixed_m = ks_1(KS_PHASE_BITS) - under_fixed_b;
-
-    i64 sin_31 = table[index_m & mask] * under_fixed_m +
-        table[index_b & mask] * under_fixed_b;
-     sin_31 >>= KS_PHASE_BITS;
-
-    return (i16)sin_31;
+KS_INLINE const i16* ks_get_wave_table(u8 index, u8 notenumber){
+    return sin_table;
 }
+
+i16  KS_FORCEINLINE ks_table_value(const i16* table, u32 phase){
+    return table[ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
+}
+
 
 // sin table value
 KS_INLINE i16 ks_sin(u32 phase, bool linear_interpolution)
 {
-    return linear_interpolution ? ks_table_value_li(sin_table, phase,  ks_m(KS_TABLE_BITS)) :
-                                  sin_table[ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
+    return sin_table[ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
 }
 
 KS_INLINE i16 ks_saw(u32 phase)
