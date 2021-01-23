@@ -6,6 +6,7 @@
 
 ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
+
     ks_arr_u8(phase_coarses.b);
     ks_arr_u8(phase_tunes);
     ks_arr_u8(phase_fines);
@@ -176,7 +177,7 @@ KS_INLINE i32 ks_apply_panpot(i32 in, i16 pan){
     return out;
 }
 
-static KS_INLINE void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_synth_data* data)
+KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_synth_data* data)
 {
     for(u32 i=0; i<KS_NUM_OPERATORS; i++)
     {
@@ -209,7 +210,7 @@ static KS_INLINE void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
 
 }
 
-static KS_INLINE void synth_common_set(ks_synth* synth, const ks_synth_data* data)
+KS_INLINE static void synth_common_set(ks_synth* synth, const ks_synth_data* data)
 {
     synth->algorithm = calc_algorithm(data->algorithm);
     synth->feedback_level = calc_feedback_level(data->feedback_level);
@@ -230,7 +231,7 @@ void ks_synth_set(ks_synth* synth, u32 sampling_rate, const ks_synth_data* data)
 }
 
 
-static KS_INLINE u32 phase_lfo_delta(u32 sampling_rate, u32 freq)
+KS_INLINE static u32 phase_lfo_delta(u32 sampling_rate, u32 freq)
 {
     u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
     u64 delta_11 = (u32)(freq_11 / sampling_rate);
@@ -238,7 +239,7 @@ static KS_INLINE u32 phase_lfo_delta(u32 sampling_rate, u32 freq)
     return (u32)delta_11;
 }
 
-static KS_INLINE u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 fine, u32 tune)
+KS_INLINE static u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 fine, u32 tune)
 {
     const u32 freq = ks_1(KS_FREQUENCY_BITS);
     const u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
@@ -253,7 +254,7 @@ static KS_INLINE u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 fin
     return (u32)delta_11;
 }
 
-static KS_INLINE u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 fine, u32 tune)
+KS_INLINE static u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 fine, u32 tune)
 {
     const u32 freq = ks_notefreq(notenum); // heltz << KS_FREQUENCY_BITS
     const u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
@@ -268,13 +269,13 @@ static KS_INLINE u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 
 
 
 
-static KS_INLINE i32 keyscale_v(i32 v, u32 d){
+KS_FORCEINLINE static i32 keyscale_v(i32 v, u32 d){
     i64 v2 = (i64)v* d;
     v2 >>= KS_KEYSCALE_DEPTH_BITS;
     return v2;
 }
 
-static KS_INLINE i32 keyscale(const ks_synth *synth, u8 notenum, u32 i)
+KS_INLINE static i32 keyscale(const ks_synth *synth, u8 notenum, u32 i)
 {
     // <-- |mid point|
     if(notenum < synth->keyscale_mid_points[i]){
@@ -418,7 +419,7 @@ void ks_synth_note_off (ks_synth_note* note)
 
 
 
-static KS_INLINE i32 envelope_apply(u32 amp, i32 in)
+KS_FORCEINLINE static i32 envelope_apply(u32 amp, i32 in)
 {
     i64 out = amp;
     out *=in;
@@ -426,14 +427,14 @@ static KS_INLINE i32 envelope_apply(u32 amp, i32 in)
     return out;
 }
 
-static KS_INLINE i32 output_mod(u32 phase, i32 mod, u32 envelope)
+KS_FORCEINLINE static i32 output_mod(u32 phase, i32 mod, u32 envelope)
 {
     // mod<<(KS_TABLE_BITS + 2) = double table length = 4pi
-    i32 out = ks_sin(phase + (mod<<(KS_TABLE_BITS + 2)), true);
+    i32 out = ks_sin( phase + (mod<<(KS_TABLE_BITS + 2)), true);
     return envelope_apply(envelope, out);
 }
 
-static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 algorithm)
+KS_FORCEINLINE static i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 algorithm)
 {
     i32 out = 0;
     i32 feedback = 0;
@@ -444,10 +445,10 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         // +-----+
         // +-[1]-+-[2]---[3]---[4]--->
 
-        output[3] = output_mod(note->phases[3], note->output_log[2], note->envelope_now_amps[3]);
-        output[2] = output_mod(note->phases[2], note->output_log[1], note->envelope_now_amps[2]);
-        output[1] = output_mod(note->phases[1], note->output_log[0], note->envelope_now_amps[1]);
-        output[0] = output_mod(note->phases[0], note->feedback_log , note->envelope_now_amps[0]);
+        output[3] =output_mod( note->phases[3], note->output_log[2], note->envelope_now_amps[3]);
+        output[2] =output_mod( note->phases[2], note->output_log[1], note->envelope_now_amps[2]);
+        output[1] =output_mod( note->phases[1], note->output_log[0], note->envelope_now_amps[1]);
+        output[0] =output_mod( note->phases[0], note->feedback_log , note->envelope_now_amps[0]);
         out = note->output_log[3];
 
         feedback = synth->feedback_level;
@@ -461,10 +462,10 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         // +-[1]-+
         //       +-[3]---[4]--->
         //   [2]-+
-        output[3] = output_mod(note->phases[3], note->output_log[2]                      , note->envelope_now_amps[3]);
-        output[2] = output_mod(note->phases[2], note->output_log[1] + note->output_log[0], note->envelope_now_amps[2]);
-        output[1] = output_mod(note->phases[1], 0                                        , note->envelope_now_amps[1]);
-        output[0] = output_mod(note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
+        output[3] =output_mod( note->phases[3], note->output_log[2]                      , note->envelope_now_amps[3]);
+        output[2] =output_mod( note->phases[2], note->output_log[1] + note->output_log[0], note->envelope_now_amps[2]);
+        output[1] =output_mod( note->phases[1], 0                                        , note->envelope_now_amps[1]);
+        output[0] =output_mod( note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
         out = note->output_log[3];
 
         feedback = synth->feedback_level;
@@ -477,10 +478,10 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         // +-[1]-+-----+
         //             +-[4]--->
         //   [2]---[3]-+
-        output[3] = output_mod(note->phases[3], note->output_log[2] + note->output_log[0], note->envelope_now_amps[3]);
-        output[2] = output_mod(note->phases[2], note->output_log[1]                      , note->envelope_now_amps[2]);
-        output[1] = output_mod(note->phases[1], 0                                        , note->envelope_now_amps[1]);
-        output[0] = output_mod(note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
+        output[3] =output_mod( note->phases[3], note->output_log[2] + note->output_log[0], note->envelope_now_amps[3]);
+        output[2] =output_mod( note->phases[2], note->output_log[1]                      , note->envelope_now_amps[2]);
+        output[1] =output_mod( note->phases[1], 0                                        , note->envelope_now_amps[1]);
+        output[0] =output_mod( note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
         out = note->output_log[3];
 
         feedback = synth->feedback_level;
@@ -493,10 +494,10 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         // +-[1]-+-[2]-+
         //             +-[4]--->
         //         [3]-+
-        output[3] = output_mod(note->phases[3], note->output_log[1] + note->output_log[2], note->envelope_now_amps[3]);
-        output[2] = output_mod(note->phases[2], 0                                        , note->envelope_now_amps[2]);
-        output[1] = output_mod(note->phases[1], note->output_log[0]                      , note->envelope_now_amps[1]);
-        output[0] = output_mod(note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
+        output[3] =output_mod( note->phases[3], note->output_log[1] + note->output_log[2], note->envelope_now_amps[3]);
+        output[2] =output_mod( note->phases[2], 0                                        , note->envelope_now_amps[2]);
+        output[1] =output_mod( note->phases[1], note->output_log[0]                      , note->envelope_now_amps[1]);
+        output[0] =output_mod( note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
         out = note->output_log[3];
 
         feedback = synth->feedback_level;
@@ -509,10 +510,10 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         // +-[1]-+-[2]-+
         //             +--->
         // +-[3]---[4]-+
-        output[3] = output_mod(note->phases[3], note->output_log[2] , note->envelope_now_amps[3]);
-        output[2] = output_mod(note->phases[2], 0                   , note->envelope_now_amps[2]);
-        output[1] = output_mod(note->phases[1], note->output_log[0] , note->envelope_now_amps[1]);
-        output[0] = output_mod(note->phases[0], note->feedback_log  , note->envelope_now_amps[0]);
+        output[3] =output_mod( note->phases[3], note->output_log[2] , note->envelope_now_amps[3]);
+        output[2] =output_mod( note->phases[2], 0                   , note->envelope_now_amps[2]);
+        output[1] =output_mod( note->phases[1], note->output_log[0] , note->envelope_now_amps[1]);
+        output[0] =output_mod( note->phases[0], note->feedback_log  , note->envelope_now_amps[0]);
         out = note->output_log[1] + note->output_log[3];
 
         feedback = synth->feedback_level;
@@ -526,10 +527,10 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         // +-[1]-+-+-[3]-+--->
         //         |     |
         //         +-[4]-+
-        output[3] = output_mod(note->phases[3], note->output_log[0]                      , note->envelope_now_amps[3]);
-        output[2] = output_mod(note->phases[2], note->output_log[0]                      , note->envelope_now_amps[2]);
-        output[1] = output_mod(note->phases[1], note->output_log[0]                      , note->envelope_now_amps[1]);
-        output[0] = output_mod(note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
+        output[3] =output_mod( note->phases[3], note->output_log[0]                      , note->envelope_now_amps[3]);
+        output[2] =output_mod( note->phases[2], note->output_log[0]                      , note->envelope_now_amps[2]);
+        output[1] =output_mod( note->phases[1], note->output_log[0]                      , note->envelope_now_amps[1]);
+        output[0] =output_mod( note->phases[0], note->feedback_log                       , note->envelope_now_amps[0]);
         out = note->output_log[1] + note->output_log[2] + note->output_log[3];
 
         feedback = synth->feedback_level;
@@ -544,10 +545,10 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         //         [3]-+--->
         //             |
         //         [4]-+
-        output[3] = output_mod(note->phases[3], 0                   , note->envelope_now_amps[3]);
-        output[2] = output_mod(note->phases[2], 0                   , note->envelope_now_amps[2]);
-        output[1] = output_mod(note->phases[1], note->output_log[0] , note->envelope_now_amps[1]);
-        output[0] = output_mod(note->phases[0], note->feedback_log  , note->envelope_now_amps[0]);
+        output[3] =output_mod( note->phases[3], 0                   , note->envelope_now_amps[3]);
+        output[2] =output_mod( note->phases[2], 0                   , note->envelope_now_amps[2]);
+        output[1] =output_mod( note->phases[1], note->output_log[0] , note->envelope_now_amps[1]);
+        output[0] =output_mod( note->phases[0], note->feedback_log  , note->envelope_now_amps[0]);
         out = note->output_log[1] + note->output_log[2] + note->output_log[3];
 
         feedback = synth->feedback_level;
@@ -559,10 +560,10 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
         // +-----+
         // +-[1]-+ [2]   [3]   [4]
         //    +-----+-----+-----+--->
-        output[3] = output_mod(note->phases[3], 0                     , note->envelope_now_amps[3]);
-        output[2] = output_mod(note->phases[2], 0                     , note->envelope_now_amps[2]);
-        output[1] = output_mod(note->phases[1], 0                     , note->envelope_now_amps[1]);
-        output[0] = output_mod(note->phases[0], note->feedback_log    , note->envelope_now_amps[0]);
+        output[3] =output_mod( note->phases[3], 0                     , note->envelope_now_amps[3]);
+        output[2] =output_mod( note->phases[2], 0                     , note->envelope_now_amps[2]);
+        output[1] =output_mod( note->phases[1], 0                     , note->envelope_now_amps[1]);
+        output[0] =output_mod( note->phases[0], note->feedback_log    , note->envelope_now_amps[0]);
         out = note->output_log[0] + note->output_log[1] + note->output_log[2] + note->output_log[3];
 
         feedback = synth->feedback_level;
@@ -628,7 +629,7 @@ static KS_INLINE i16 synth_frame(const ks_synth* synth, ks_synth_note* note, u8 
     return out >> 2;
 }
 
-static KS_INLINE void envelope_next(ks_synth_note* note)
+KS_INLINE static void envelope_next(ks_synth_note* note)
 {
     for(u32 i=0; i<KS_NUM_OPERATORS; i++)
     {
@@ -660,7 +661,7 @@ static KS_INLINE void envelope_next(ks_synth_note* note)
     }
 }
 
-static KS_INLINE void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 delta[],
+KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 delta[],
                                       u8 lfo_wave_type, bool ams, bool fms)
 {
     if(fms)
@@ -734,7 +735,8 @@ static KS_INLINE void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 
     }
 }
 
-static KS_INLINE void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len,
+
+static void KS_FORCEINLINE ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len,
                                     u8 algorithm, u8 lfo_type, bool ams, bool fms)
 {
     u32 delta[KS_NUM_OPERATORS];
@@ -772,16 +774,16 @@ static KS_INLINE void ks_synth_process(const ks_synth* synth, ks_synth_note* not
 #define _algorithm_list _(0) _(1) _(2) _(3) _(4) _(5) _(6) _(7) _(8) _(9) _(10)
 
 #define ks_synth_define_synth_render_aw(algorithm, wave) \
-void ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
+void KS_NOINLINE ks_synth_render_ ## algorithm ## _ ## wave ##_0_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
     ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, false, false); \
 } \
-void ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
+void KS_NOINLINE ks_synth_render_ ## algorithm ## _ ## wave  ##_0_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
     ks_synth_process(synth, note, volume, pitchbend,  buf, len, algorithm, wave, false, true); \
 } \
-void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
+void KS_NOINLINE ks_synth_render_ ## algorithm ## _ ## wave  ##_1_0(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
     ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, true, false); \
 } \
-    void ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
+void  KS_NOINLINE ks_synth_render_ ## algorithm ## _ ## wave  ##_1_1(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
     ks_synth_process(synth, note, volume, pitchbend, buf, len, algorithm, wave, true, true); \
 }
 
