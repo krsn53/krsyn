@@ -7,7 +7,7 @@
 #endif
 
 #define SCREEN_WIDTH 730
-#define SCREEN_HEIGHT 550
+#define SCREEN_HEIGHT 600
 
 #define SAMPLING_RATE               48000
 #define SAMPLES_PER_UPDATE          4096
@@ -628,7 +628,7 @@ void EditorUpdate(void* ptr){
                 pos2.height = step * 4;
                 GuiAlignedLabel("Algorithm", pos2, GUI_TEXT_ALIGN_RIGHT);
                 pos2.x += step_x;
-                es->tones_data.data[es->current_tone_index].synth.algorithm = PropertyIntImage(pos2, es->algorithm_images, es->tones_data.data[es->current_tone_index].synth.algorithm, 0, 10, 1);
+                es->tones_data.data[es->current_tone_index].synth.algorithm = PropertyIntImage(pos2, es->algorithm_images, es->tones_data.data[es->current_tone_index].synth.algorithm, 0, 7, 1);
             }
             pos.x = x_pos.x;
             pos.y += pos2.height + margin;
@@ -772,6 +772,19 @@ void EditorUpdate(void* ptr){
             }
             pos.x = x_pos.x; pos.y += step;
 
+            // wave type
+            GuiAlignedLabel("Wave Type", pos, GUI_TEXT_ALIGN_RIGHT);
+            pos.x += step_x;
+            pos2 = pos;
+            pos2.height = pos.height*2;
+            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
+
+                es->tones_data.data[es->current_tone_index].synth.wave_types[i] = PropertyIntImage(pos2, es->lfo_wave_images, es->tones_data.data[es->current_tone_index].synth.wave_types[i], 0, KS_NUM_WAVES-1, 1);
+                pos2.x += step_x;
+            }
+            pos.x = x_pos.x; pos.y += pos2.height + margin;
+
+
             // fixed frequency
             GuiAlignedLabel("Fixed Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
@@ -792,6 +805,16 @@ void EditorUpdate(void* ptr){
                     text = FormatText("%.1f", calc_phase_coarses(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value) / 2.0f);
                 }
                 es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value, 0, 127, 1);
+                pos.x += step_x;
+            }
+            pos.x = x_pos.x; pos.y += step;
+
+            // phase offset
+            GuiAlignedLabel("Phase Offset", pos, GUI_TEXT_ALIGN_RIGHT);
+            pos.x += step_x;
+            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
+                text = FormatText("%.1f deg", es->tones_data.data[es->current_tone_index].synth.phase_offsets[i] * 360.0f / 255.0f);
+                es->tones_data.data[es->current_tone_index].synth.phase_offsets[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.phase_offsets[i], 0, 255, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;

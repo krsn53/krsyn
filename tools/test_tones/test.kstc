@@ -10,6 +10,12 @@
 			.name="Piano",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					20,
@@ -141,6 +147,12 @@
 			.name="EPiano",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					56,
 					4,
@@ -272,6 +284,12 @@
 			.name="Harpsichord",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					2,
 					16,
@@ -403,6 +421,12 @@
 			.name="Celesta",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					20,
 					4,
@@ -534,6 +558,12 @@
 			.name="Tumbular Bells",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					14,
 					4,
@@ -665,6 +695,12 @@
 			.name="Organ 2",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					2,
 					2,
@@ -796,6 +832,12 @@
 			.name="Accordian",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					4,
@@ -927,6 +969,12 @@
 			.name="Ac.StlGtr",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					255,
 					20,
@@ -1058,6 +1106,12 @@
 			.name="Picked Pass",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					84,
 					32,
@@ -1189,6 +1243,12 @@
 			.name="Harp",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					12,
 					4,
@@ -1320,6 +1380,12 @@
 			.name="Strings",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					32,
@@ -1451,6 +1517,12 @@
 			.name="Choir Aahs",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					6,
@@ -1582,6 +1654,12 @@
 			.name="Trombone",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					12,
@@ -1713,6 +1791,12 @@
 			.name="Brass Selection",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					4,
@@ -1844,6 +1928,12 @@
 			.name="Flute",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					4,
@@ -1975,6 +2065,12 @@
 			.name="Pan Flute",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					8,
 					8,
@@ -2106,6 +2202,12 @@
 			.name="Square",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					4,
@@ -2237,6 +2339,12 @@
 			.name="Square 25",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					4,
@@ -2368,6 +2476,12 @@
 			.name="Square 75",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					4,
@@ -2499,6 +2613,12 @@
 			.name="Triangle",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					4,
@@ -2630,6 +2750,12 @@
 			.name="Fantasia",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					12,
 					4,
@@ -2761,6 +2887,12 @@
 			.name="Crystal",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					68,
 					16,
@@ -2892,6 +3024,12 @@
 			.name="Steel Drums",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					4,
 					2,
@@ -3023,6 +3161,12 @@
 			.name="8Bit Cymbal",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					185,
 					145,
@@ -3154,6 +3298,12 @@
 			.name="Snare",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					187,
 					3,
@@ -3285,6 +3435,12 @@
 			.name="Snare",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					187,
 					3,
@@ -3416,6 +3572,12 @@
 			.name="8Bit Snare",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					145,
 					145,
@@ -3547,6 +3709,12 @@
 			.name="Kick",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					131,
 					83,
@@ -3678,6 +3846,12 @@
 			.name="Kick",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					0,
 					81,
@@ -3809,6 +3983,12 @@
 			.name="8Bit Kick",
 			.synth={
 				// Magic number : KSYN
+                                .wave_types={
+					0,
+					0,
+					0,
+					0,
+				},
 				.phase_coarses.b={
 					91,
 					91,

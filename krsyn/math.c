@@ -566,7 +566,7 @@ KS_INLINE const i16* ks_get_wave_table(u8 index, u8 notenumber){
 
 
 // sin table value
-KS_INLINE i16 ks_sin(u32 phase, bool linear_interpolution)
+KS_INLINE i16 ks_sin(u32 phase)
 {
     return sin_table[ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
 }
@@ -574,6 +574,16 @@ KS_INLINE i16 ks_sin(u32 phase, bool linear_interpolution)
 KS_INLINE i16 ks_saw(u32 phase)
 {
     return saw_table[ks_mask((phase >> KS_PHASE_BITS), KS_TABLE_BITS)];
+}
+
+KS_INLINE i16 ks_saw_down(u32 phase)
+{
+    return - saw_table[ks_mask(((phase) >> KS_PHASE_BITS), KS_TABLE_BITS)];
+}
+
+KS_INLINE i16 ks_square(u32 phase)
+{
+    return saw_table[ks_mask(((phase) >> KS_PHASE_BITS), KS_TABLE_BITS)] - saw_table[ks_mask(((phase + ks_1(KS_PHASE_MAX_BITS-1)) >> KS_PHASE_BITS), KS_TABLE_BITS)];
 }
 
 KS_INLINE i16 ks_triangle(u32 phase)
@@ -586,8 +596,8 @@ KS_INLINE i16 ks_fake_triangle(u32 phase, u32 shift)
     return triangle_table[ks_mask((phase >> (KS_PHASE_BITS +shift) << (shift)), KS_TABLE_BITS)];
 }
 
-KS_INLINE i16 ks_noise(u32 phase, u32 begin){
-    return noise_table[ks_mask((begin + ((phase >> KS_NOISE_PHASE_BITS))), KS_TABLE_BITS)];
+KS_INLINE i16 ks_noise(u32 phase){
+    return noise_table[ks_mask((((phase >> KS_NOISE_PHASE_BITS))), KS_TABLE_BITS)];
 }
 
 KS_INLINE u32 ks_notefreq(u8 notenumber){

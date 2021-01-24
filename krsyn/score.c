@@ -164,6 +164,7 @@ bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel
     }
     if(channel->bank->bank_number.percussion) {
         synth += note_number;
+
     }
     state->notes[index].synth = synth;
     state->notes[index].info = id;
@@ -330,6 +331,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
             }
 
             ks_score_channel* channel = &state->channels[state->notes[p].info.channel];
+
             if(channel_enabled[state->notes[p].info.channel] == false){
                 memset(channel->output_log, 0, frame* sizeof(i32));
                 channel_enabled[state->notes[p].info.channel]= true;

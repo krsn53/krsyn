@@ -68,19 +68,36 @@ typedef enum ks_envelope_state
 }ks_synth_envelope_state;
 
 /**
- * @enum ks_synthLFOWaveType
- * @brief LFO wave type
+ * @enum ks_synthWaveType
+ * @brief Wave type
 */
 typedef enum ks_lfo_wave_t
 {
+    KS_WAVE_SIN,
+    KS_WAVE_TRIANGLE,
+    KS_WAVE_SAW_UP,
+    KS_WAVE_SAW_DOWN,
+    KS_WAVE_SQUARE,
+    KS_WAVE_NOISE,
+
+    KS_NUM_WAVES,
+}ks_synth_lfo_wave_t;
+
+/**
+ * @enum ks_synthLFOWaveType
+ * @brief LFO wave type
+*/
+typedef enum ks_wave_t
+{
+    KS_LFO_WAVE_SIN,
     KS_LFO_WAVE_TRIANGLE,
     KS_LFO_WAVE_SAW_UP,
     KS_LFO_WAVE_SAW_DOWN,
     KS_LFO_WAVE_SQUARE,
-    KS_LFO_WAVE_SIN,
+    KS_LFO_WAVE_NOISE,
 
     KS_LFO_NUM_WAVES,
-}ks_synth_lfo_wave_t;
+}ks_synth_wave_t;
 
 /**
   * @struct ks_phase_coarse_t
@@ -108,11 +125,12 @@ typedef struct ks_keyscale_curve_t
 */
 typedef struct ks_synth_data
 {
-    u8                      wave_index              [KS_NUM_OPERATORS];
+    u8                      wave_types              [KS_NUM_OPERATORS];
     union {
         ks_phase_coarse_t       st                  [KS_NUM_OPERATORS];
         u8                      b                   [KS_NUM_OPERATORS];
     }phase_coarses;
+    u8                      phase_offsets           [KS_NUM_OPERATORS];
     u8                      phase_fines             [KS_NUM_OPERATORS];
     u8                      phase_tunes             [KS_NUM_OPERATORS];
     u8                      levels                  [KS_NUM_OPERATORS];
@@ -139,6 +157,11 @@ typedef struct ks_synth_data
 }
 ks_synth_data;
 
+typedef struct ks_synth_note ks_synth_note;
+typedef struct ks_synth     ks_synth;
+
+typedef i16 (* ks_wave_func)(u32);
+typedef i32 (* ks_mod_func)(u8, ks_synth_note*, i32);
 
 /**
  * @struct ks_synth_data
@@ -146,38 +169,40 @@ ks_synth_data;
 */
 typedef struct ks_synth
 {
-    u32         phase_coarses               [KS_NUM_OPERATORS];
-    u32         phase_fines                 [KS_NUM_OPERATORS];
-    u32         phase_tunes                 [KS_NUM_OPERATORS];
-    u32         levels                      [KS_NUM_OPERATORS];
+    u32             phase_offsets               [KS_NUM_OPERATORS];
+    u32             phase_coarses               [KS_NUM_OPERATORS];
+    u32             phase_fines                 [KS_NUM_OPERATORS];
+    u32             phase_tunes                 [KS_NUM_OPERATORS];
+    u32             levels                      [KS_NUM_OPERATORS];
 
-    i32         envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32         envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    i32             envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u32             envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
-    u32         velocity_sens               [KS_NUM_OPERATORS];
-    u32         lfo_ams_depths              [KS_NUM_OPERATORS];
+    u32             velocity_sens               [KS_NUM_OPERATORS];
+    u32             lfo_ams_depths              [KS_NUM_OPERATORS];
 
-    u32         ratescales                  [KS_NUM_OPERATORS];
-    u32         keyscale_low_depths         [KS_NUM_OPERATORS];
-    u32         keyscale_high_depths        [KS_NUM_OPERATORS];
-    u8          keyscale_mid_points         [KS_NUM_OPERATORS];
-    u8          keyscale_curve_types        [2][KS_NUM_OPERATORS];
+    u32             ratescales                  [KS_NUM_OPERATORS];
+    u32             keyscale_low_depths         [KS_NUM_OPERATORS];
+    u32             keyscale_high_depths        [KS_NUM_OPERATORS];
+    u8              keyscale_mid_points         [KS_NUM_OPERATORS];
+    u8              keyscale_curve_types        [2][KS_NUM_OPERATORS];
 
-    u8          algorithm;
-    u32         feedback_level;
+    u8              algorithm;
+    u32             feedback_level;
 
-    i16         panpot_left,     panpot_right;
+    i16             panpot_left,     panpot_right;
 
-    u32         lfo_det;
-    u32         lfo_freq;
-    u32         lfo_fms_depth;
+    u32             lfo_det;
+    u32             lfo_freq;
+    u32             lfo_fms_depth;
 
-    bool        fixed_frequency             [KS_NUM_OPERATORS];
-    u8          wave_index                  [KS_NUM_OPERATORS];
+    bool            fixed_frequency             [KS_NUM_OPERATORS];
 
-    u8          lfo_wave_type;
-    bool        lfo_ams_enabled;
-    bool        lfo_fms_enabled;
+    u8              wave_types                  [KS_NUM_OPERATORS];
+
+    u8              lfo_wave_type;
+    bool            lfo_ams_enabled;
+    bool            lfo_fms_enabled;
 }
 ks_synth;
 
@@ -189,8 +214,8 @@ typedef  struct ks_synth_note
 {
     i32             output_log                  [KS_NUM_OPERATORS];
 
-    const i16       *wave_tables                [KS_NUM_OPERATORS];
-    i16(* f[KS_NUM_OPERATORS])(u32);
+    ks_mod_func     mod_funcs                   [KS_NUM_OPERATORS];
+    i32             mod_func_log                [KS_NUM_OPERATORS];
 
     u32             phases                      [KS_NUM_OPERATORS];
     u32             phase_deltas                [KS_NUM_OPERATORS];
@@ -208,6 +233,7 @@ typedef  struct ks_synth_note
     u32             lfo_phase;
     u32             lfo_delta;
     i32             lfo_log;
+    i32             lfo_func_log;
     i32             feedback_log;
 
     u32             now_frame;
@@ -247,6 +273,7 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 
 #define calc_fixed_frequency(value)                     (value)
 #define calc_phase_coarses(value)                       (value)
+#define calc_phase_offsets(value)                       ks_linear_u(value, 0, 1 << (KS_PHASE_MAX_BITS))
 #define calc_phase_fines(value)                         ks_linear_u(value, 0, 1 << (KS_PHASE_FINE_BITS))
 #define calc_phase_tunes(value)                         ks_linear_u(value-127, 0, 1<< (KS_PHASE_FINE_BITS - 8))
 #define calc_levels(value)                              ks_linear_u(value, 0, ks_1(KS_LEVEL_BITS))
