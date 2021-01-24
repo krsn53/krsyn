@@ -50,6 +50,7 @@ typedef struct player_state{
     // export
     u32             export_len;
     u32             export_seek;
+    double          export_begin;
     i16             *export_buf;
 
 } player_state;
@@ -475,7 +476,7 @@ void update(void* ptr){
             ps->export_buf = calloc(ps->export_len, sizeof(i16));
             ks_score_state_set_default(ps->score_state, ps->tones, SAMPLING_RATE, ps->score->resolution);
             ps->export_seek = 0;
-
+            ps->export_begin = GetTime();
             ps->player_state = EXPORT_WAIT;
         }
 
@@ -544,6 +545,7 @@ void update(void* ptr){
 
             if(ks_io_serialize_to_file(binary_little_endian, export_filepath, out, ks_wave_file)){
                 ps->message = "Export successfully";
+                ks_info("Export successfully in %.3f sec", GetTime() - ps->export_begin);
                 ps->player_state = INFO;
 
 #ifdef PLATFORM_WEB

@@ -562,9 +562,7 @@ KS_INLINE const i16* ks_get_wave_table(u8 index, u8 notenumber){
     return sin_table;
 }
 
-i16  KS_FORCEINLINE ks_table_value(const i16* table, u32 phase){
-    return table[ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
-}
+
 
 
 // sin table value

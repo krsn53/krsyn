@@ -313,7 +313,6 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* to
     return true;
 }
 
-
 void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_score_state* state, const ks_tone_list*tones, i32* buf, u32 len){
     u32 i=0;
     memset(buf, 0, sizeof(i32)*len);

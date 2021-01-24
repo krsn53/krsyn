@@ -26,7 +26,6 @@
 
 
 const i16*  ks_get_wave_table   (u8 index, u8 notenumber);
-i16         ks_table_value      (const i16* table, u32 phase);
 i16         ks_sin              (u32 phase, bool linear_interpolution);
 i16         ks_saw              (u32 phase);
 i16         ks_triangle         (u32 phase);

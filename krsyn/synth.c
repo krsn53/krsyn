@@ -431,6 +431,10 @@ KS_FORCEINLINE static i32 envelope_apply(u32 amp, i32 in)
     return out;
 }
 
+i16 static KS_FORCEINLINE ks_table_value(const i16* table, u32 phase){
+    return table[ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
+}
+
 KS_FORCEINLINE static i32 output_mod(const i16* table, u32 phase, i32 mod, u32 envelope)
 {
     // mod<<(KS_TABLE_BITS + 2) = double table length = 4pi
