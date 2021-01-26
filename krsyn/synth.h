@@ -37,6 +37,7 @@
 #define KS_VOLUME_BITS          13u
 
 #define KS_TIME_BITS            16u
+#define KS_DELTA_TIME_BITS      30u
 
 /**
  * @enum ks_synth_keyscale_t
@@ -68,10 +69,35 @@ typedef enum ks_envelope_state
 }ks_synth_envelope_state;
 
 /**
- * @enum ks_synthWaveType
- * @brief Wave type
+  * @enum ks_mod_t
+  * @brief types of modulation or modifier
 */
-typedef enum ks_lfo_wave_t
+typedef enum ks_mod_t{
+    KS_MOD_FM,
+    KS_MOD_IFM, // integrate fm
+    KS_MOD_MIX,
+    KS_MOD_MUL,
+    KS_MOD_AM,
+    KS_MOD_RSG, // reset signal
+    KS_MOD_LPF, // low path filter
+    KS_MOD_HPF, // high path filter
+    KS_MOD_NONE,
+    KS_MOD_PASS,
+
+    KS_NUM_MODS,
+}ks_mod_t;
+
+
+typedef struct ks_ocillator_t{
+    u8 mod_type : 4;
+    u8 wave_type : 4;
+} ks_ocillator_t;
+
+/**
+ * @enum ks_wave_t
+ * @brief Wave types
+*/
+typedef enum ks_wave_t
 {
     KS_WAVE_SIN,
     KS_WAVE_TRIANGLE,
@@ -81,22 +107,6 @@ typedef enum ks_lfo_wave_t
     KS_WAVE_NOISE,
 
     KS_NUM_WAVES,
-}ks_synth_lfo_wave_t;
-
-/**
- * @enum ks_synthLFOWaveType
- * @brief LFO wave type
-*/
-typedef enum ks_wave_t
-{
-    KS_LFO_WAVE_SIN,
-    KS_LFO_WAVE_TRIANGLE,
-    KS_LFO_WAVE_SAW_UP,
-    KS_LFO_WAVE_SAW_DOWN,
-    KS_LFO_WAVE_SQUARE,
-    KS_LFO_WAVE_NOISE,
-
-    KS_LFO_NUM_WAVES,
 }ks_synth_wave_t;
 
 /**
@@ -125,10 +135,13 @@ typedef struct ks_keyscale_curve_t
 */
 typedef struct ks_synth_data
 {
-    u8                      wave_types              [KS_NUM_OPERATORS];
     union {
-        ks_phase_coarse_t       st                  [KS_NUM_OPERATORS];
-        u8                      b                   [KS_NUM_OPERATORS];
+        ks_ocillator_t      st                      [KS_NUM_OPERATORS];
+        u8                  b                       [KS_NUM_OPERATORS];
+    }ocillator_types;
+    union {
+        ks_phase_coarse_t   st                      [KS_NUM_OPERATORS];
+        u8                  b                       [KS_NUM_OPERATORS];
     }phase_coarses;
     u8                      phase_offsets           [KS_NUM_OPERATORS];
     u8                      phase_fines             [KS_NUM_OPERATORS];
@@ -153,15 +166,15 @@ typedef struct ks_synth_data
     u8                     lfo_freq;
     u8                     lfo_det;
     u8                     lfo_fms_depth;
-
 }
 ks_synth_data;
 
 typedef struct ks_synth_note ks_synth_note;
 typedef struct ks_synth     ks_synth;
 
-typedef i16 (* ks_wave_func)(u32);
-typedef i32 (* ks_mod_func)(u8, ks_synth_note*, i32);
+typedef i16 (* ks_wave_func)(u8, ks_synth_note*, u32);
+typedef i16 (* ks_lfo_wave_func)(ks_synth_note*);
+typedef i32 (* ks_mod_func)(u8, ks_synth_note*,i32 in);
 
 /**
  * @struct ks_synth_data
@@ -198,11 +211,13 @@ typedef struct ks_synth
 
     bool            fixed_frequency             [KS_NUM_OPERATORS];
 
-    u8              wave_types                  [KS_NUM_OPERATORS];
+    ks_ocillator_t  ocillator_types             [KS_NUM_OPERATORS];
 
     u8              lfo_wave_type;
     bool            lfo_ams_enabled;
     bool            lfo_fms_enabled;
+    u16             sampling_rate;
+    u32             delta_time;
 }
 ks_synth;
 
@@ -212,31 +227,37 @@ ks_synth;
 */
 typedef  struct ks_synth_note
 {
-    i32             output_log                  [KS_NUM_OPERATORS];
+    const ks_synth* synth;
 
-    ks_mod_func     mod_funcs                   [KS_NUM_OPERATORS];
-    i32             mod_func_log                [KS_NUM_OPERATORS];
+    i32                 output_log                  [KS_NUM_OPERATORS];
 
-    u32             phases                      [KS_NUM_OPERATORS];
-    u32             phase_deltas                [KS_NUM_OPERATORS];
+    const i16*          wave_tables                 [KS_NUM_OPERATORS];
+    ks_mod_func         mod_funcs                   [KS_NUM_OPERATORS];
+    i32                 mod_func_logs               [KS_NUM_OPERATORS];
 
-    i32             envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32             envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    i32             envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u32                 phases                      [KS_NUM_OPERATORS];
+    u32                 phase_deltas                [KS_NUM_OPERATORS];
 
-    i32             envelope_now_deltas         [KS_NUM_OPERATORS];
-    i32             envelope_now_times          [KS_NUM_OPERATORS];
-    i32             envelope_now_amps           [KS_NUM_OPERATORS];
-    u8              envelope_states             [KS_NUM_OPERATORS];
-    u8              envelope_now_points         [KS_NUM_OPERATORS];
+    i32                 envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    u32                 envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    i32                 envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
-    u32             lfo_phase;
-    u32             lfo_delta;
-    i32             lfo_log;
-    i32             lfo_func_log;
-    i32             feedback_log;
+    i32                 envelope_now_deltas         [KS_NUM_OPERATORS];
+    i32                 envelope_now_times          [KS_NUM_OPERATORS];
+    i32                 envelope_now_amps           [KS_NUM_OPERATORS];
+    u8                  envelope_states             [KS_NUM_OPERATORS];
+    u8                  envelope_now_points         [KS_NUM_OPERATORS];
 
-    u32             now_frame;
+    u32                 lfo_phase;
+    u32                 lfo_delta;
+    i32                 lfo_log;
+    const i16*          lfo_wave_table;
+    ks_lfo_wave_func    lfo_func;
+    i32                 lfo_func_log;
+    i32                 feedback_log;
+
+    u32                 now_frame;
+
 }
 ks_synth_note;
 
@@ -247,7 +268,7 @@ ks_synth*                   ks_synth_array_new              (u32 length, ks_synt
 void                        ks_synth_free                   (ks_synth* synth);
 void                        ks_synth_data_set_default       (ks_synth_data* data);
 void                        ks_synth_set                    (ks_synth* synth, u32 sampling_rate, const ks_synth_data* data);
-void                        ks_synth_render                 (const ks_synth *synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32 *buf, u32 len);
+void                        ks_synth_render                 (ks_synth_note* note, u32 volume, u32 pitchbend, i32 *buf, u32 len);
 void                        ks_synth_note_on                (ks_synth_note* note, const ks_synth *synth, u32 sampling_rate,  u8 notenum, u8 velocity);
 void                        ks_synth_note_off               (ks_synth_note* note);
 bool                        ks_synth_note_is_enabled        (const ks_synth_note* note);

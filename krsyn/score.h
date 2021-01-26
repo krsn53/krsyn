@@ -54,7 +54,6 @@ typedef struct ks_score_note_info{
 typedef struct ks_score_note{
     ks_synth_note           note;
     ks_score_note_info      info;
-    ks_synth                *synth;
 }ks_score_note;
 
 

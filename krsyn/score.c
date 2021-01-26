@@ -166,7 +166,6 @@ bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel
         synth += note_number;
 
     }
-    state->notes[index].synth = synth;
     state->notes[index].info = id;
     ks_synth_note_on(&state->notes[index].note, synth, sampling_rate, note_number, velocity);
 
@@ -340,9 +339,8 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
             // when note on, already checked,
             //if(channel->bank == NULL) continue;
             //if(channel->bank->programs[channel->program_number] == NULL) continue;
-            ks_synth* synth = state->notes[p].synth;
             ks_synth_note* note = &state->notes[p].note;
-            ks_synth_render(synth, note, channel->volume_cache, channel->pitchbend, tmpbuf, frame);
+            ks_synth_render(note, channel->volume_cache, channel->pitchbend, tmpbuf, frame);
 
             for(u32 b =0; b< frame; b+=2){
                 channel->output_log[b] += tmpbuf[b];

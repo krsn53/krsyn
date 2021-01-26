@@ -129,7 +129,7 @@ int PropertyIntImage(Rectangle rec, Texture2D tex, int value, int min_value, int
     value  = UpdateProperty(rec, value, min_value, max_value, step, &state, true);
 
     Rectangle src ={0.0f, 0.0f, tex.width / ((max_value - min_value + 1) / step), tex.height};
-    src.x = (value - min_value) / step * tex.width / ((max_value - min_value + 1) / step);
+    src.x = (value - min_value) / step * tex.width/ ((max_value - min_value + 1) / step);
 
     src.width = MIN(rec.width, src.width);
     src.height = MIN(rec.height, src.height);

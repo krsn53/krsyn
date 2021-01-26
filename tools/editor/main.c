@@ -6,8 +6,8 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#define SCREEN_WIDTH 730
-#define SCREEN_HEIGHT 600
+#define SCREEN_WIDTH 726
+#define SCREEN_HEIGHT 574
 
 #define SAMPLING_RATE               48000
 #define SAMPLES_PER_UPDATE          4096
@@ -77,7 +77,8 @@ typedef struct editor_state{
 #endif
 
     Texture2D algorithm_images;
-    Texture2D lfo_wave_images;
+    Texture2D wave_images;
+    Texture2D mod_images;
     Texture2D keyscale_left_images;
     Texture2D keyscale_right_images;
 } editor_state;
@@ -296,7 +297,7 @@ void EditorUpdate(void* ptr){
 
         i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
         memset(tmpbuf, 0, sizeof(tmpbuf));
-        ks_synth_render(&es->synth, &es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+        ks_synth_render(&es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
 
         for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
             es->buf[i] += tmpbuf[i] / (float)INT16_MAX;
@@ -652,7 +653,7 @@ void EditorUpdate(void* ptr){
             }
             pos.x = x_pos.x;
             pos.y += step;
-            // lfo_wave_type
+            // wave_type
             {
                 pos2 = pos;
                 pos2.height = pos.height*2;
@@ -660,7 +661,7 @@ void EditorUpdate(void* ptr){
                 pos2.x += step_x;
 
 
-                es->tones_data.data[es->current_tone_index].synth.lfo_wave_type = PropertyIntImage(pos2, es->lfo_wave_images, es->tones_data.data[es->current_tone_index].synth.lfo_wave_type, 0, KS_LFO_NUM_WAVES-1, 1);
+                es->tones_data.data[es->current_tone_index].synth.lfo_wave_type = PropertyIntImage(pos2, es->wave_images, es->tones_data.data[es->current_tone_index].synth.lfo_wave_type, 0, KS_NUM_WAVES-1, 1);
 
             }
             pos.x = x_pos.x;
@@ -773,39 +774,43 @@ void EditorUpdate(void* ptr){
             pos.x = x_pos.x; pos.y += step;
 
             // wave type
-            GuiAlignedLabel("Wave Type", pos, GUI_TEXT_ALIGN_RIGHT);
+            GuiAlignedLabel("Ocillator Type", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             pos2 = pos;
             pos2.height = pos.height*2;
+            pos2.width = step_x * 0.5 - margin;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
 
-                es->tones_data.data[es->current_tone_index].synth.wave_types[i] = PropertyIntImage(pos2, es->lfo_wave_images, es->tones_data.data[es->current_tone_index].synth.wave_types[i], 0, KS_NUM_WAVES-1, 1);
-                pos2.x += step_x;
+                es->tones_data.data[es->current_tone_index].synth.ocillator_types.st[i].wave_type = PropertyIntImage(pos2, es->wave_images, es->tones_data.data[es->current_tone_index].synth.ocillator_types.st[i].wave_type, 0, KS_NUM_WAVES-1, 1);
+                pos2.x += pos2.width + margin;
+                es->tones_data.data[es->current_tone_index].synth.ocillator_types.st[i].mod_type = PropertyIntImage(pos2, es->mod_images, es->tones_data.data[es->current_tone_index].synth.ocillator_types.st[i].mod_type, 0, KS_NUM_MODS-1, 1);
+                pos2.x += pos2.width + margin;
             }
             pos.x = x_pos.x; pos.y += pos2.height + margin;
 
 
             // fixed frequency
-            GuiAlignedLabel("Fixed Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
-            pos.x += step_x;
-            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "", es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency);
-                pos.x += step_x;
-            }
-            pos.x = x_pos.x; pos.y += step;
 
             // phase coarse
             GuiAlignedLabel("Phase Coarse", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
+
+            pos2 = pos;
+            pos2.width = step_x*0.5 - margin;
+
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
+
+                es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "FixFQ", es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency);
+                pos2.x += pos2.width + margin;
+
                 if(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency){
                     text = FormatText("%d Hz", ks_exp_u(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value, 64 ,4) -7);
                 }
                 else {
                     text = FormatText("%.1f", calc_phase_coarses(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value) / 2.0f);
                 }
-                es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value, 0, 127, 1);
-                pos.x += step_x;
+                es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value, 0, 127, 1);
+                pos2.x += pos2.width + margin;
             }
             pos.x = x_pos.x; pos.y += step;
 
@@ -1388,12 +1393,14 @@ void init(editor_state* es){
     strcpy(es->file_dialog_state_synth.filterExt, synth_ext);
 
     es->algorithm_images = LoadTexture("resources/images/algorithms.png");
-    es->lfo_wave_images= LoadTexture("resources/images/lfo_waves.png");
+    es->wave_images= LoadTexture("resources/images/waves.png");
+    es->mod_images = LoadTexture("resources/images/mods.png");
     es->keyscale_left_images = LoadTexture("resources/images/keyscale_curves_l.png");
     es->keyscale_right_images =  LoadTexture("resources/images/keyscale_curves_r.png");
 
     SetTextureFilter(es->algorithm_images, FILTER_BILINEAR);
-    SetTextureFilter(es->lfo_wave_images, FILTER_BILINEAR);
+    SetTextureFilter(es->wave_images, FILTER_BILINEAR);
+    SetTextureFilter(es->mod_images, FILTER_BILINEAR);
     SetTextureFilter(es->keyscale_left_images, FILTER_BILINEAR);
     SetTextureFilter(es->keyscale_right_images, FILTER_BILINEAR);
 }
@@ -1402,7 +1409,8 @@ void deinit(editor_state* es){
     //----------------------------------------------------------------------------------
     // unload
     UnloadTexture(es->algorithm_images);
-    UnloadTexture(es->lfo_wave_images);
+    UnloadTexture(es->wave_images);
+    UnloadTexture(es->mod_images);
     UnloadTexture(es->keyscale_left_images);
     UnloadTexture(es->keyscale_right_images);
 

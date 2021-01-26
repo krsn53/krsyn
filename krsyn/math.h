@@ -24,8 +24,8 @@
 #define KS_PHASE_MAX_BITS               (KS_PHASE_BITS + KS_TABLE_BITS)
 #define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 5)
 
-
-const i16*  ks_get_wave_table   (u8 index, u8 notenumber);
+const i16*  ks_get_wave_table   (u8 index);
+const i16*  ks_get_noise_table   ();
 i16         ks_sin              (u32 phase);
 i16         ks_saw              (u32 phase);
 i16         ks_saw_down         (u32 phase);

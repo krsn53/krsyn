@@ -10,17 +10,23 @@
 			.name="Piano",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
+				.ocillator_types.b={
+					8,
+					8,
 					0,
 					0,
 				},
-				.phase_coarses.b={
-					4,
-					20,
-					4,
-					4,
+                                .phase_coarses.b={
+                                        4,
+                                        20,
+                                        4,
+                                        4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					182,
@@ -147,7 +153,7 @@
 			.name="EPiano",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -158,6 +164,12 @@
 					4,
 					4,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -284,7 +296,7 @@
 			.name="Harpsichord",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -295,6 +307,12 @@
 					16,
 					12,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					187,
@@ -421,7 +439,7 @@
 			.name="Celesta",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -432,6 +450,12 @@
 					4,
 					32,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -558,7 +582,7 @@
 			.name="Tumbular Bells",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -569,6 +593,12 @@
 					4,
 					14,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					218,
@@ -695,7 +725,7 @@
 			.name="Organ 2",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -706,6 +736,12 @@
 					2,
 					12,
 					12,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -832,7 +868,7 @@
 			.name="Accordian",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -843,6 +879,12 @@
 					4,
 					2,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -969,7 +1011,7 @@
 			.name="Ac.StlGtr",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -980,6 +1022,12 @@
 					20,
 					12,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -1106,7 +1154,7 @@
 			.name="Picked Pass",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -1117,6 +1165,12 @@
 					32,
 					4,
 					8,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -1243,7 +1297,7 @@
 			.name="Harp",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -1254,6 +1308,12 @@
 					4,
 					8,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					190,
@@ -1380,7 +1440,7 @@
 			.name="Strings",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -1391,6 +1451,12 @@
 					32,
 					4,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					51,
@@ -1517,7 +1583,7 @@
 			.name="Choir Aahs",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -1528,6 +1594,12 @@
 					6,
 					12,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -1654,7 +1726,7 @@
 			.name="Trombone",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -1665,6 +1737,12 @@
 					12,
 					4,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					255,
@@ -1791,7 +1869,7 @@
 			.name="Brass Selection",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -1802,6 +1880,12 @@
 					4,
 					4,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -1928,7 +2012,7 @@
 			.name="Flute",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -1939,6 +2023,12 @@
 					4,
 					4,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					128,
@@ -2065,7 +2155,7 @@
 			.name="Pan Flute",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -2076,6 +2166,12 @@
 					8,
 					8,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					0,
@@ -2202,17 +2298,23 @@
 			.name="Square",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
-					0,
-					0,
+				.ocillator_types.b={
+					72,
+					41,
+					41,
+					9,
 				},
 				.phase_coarses.b={
 					4,
 					4,
 					4,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -2227,27 +2329,27 @@
 					0,
 				},
 				.levels={
-					128,
-					128,
-					128,
-					128,
+					255,
+					0,
+					0,
+					0,
 				},
 				.envelope_points[0]={
 					255,
 					255,
-					125,
+					255,
 					125,
 				},
 				.envelope_points[1]={
 					255,
 					255,
-					125,
+					255,
 					125,
 				},
 				.envelope_points[2]={
 					255,
 					255,
-					125,
+					255,
 					125,
 				},
 				.envelope_points[3]={
@@ -2322,7 +2424,7 @@
 					0,
 					0,
 				},
-				.algorithm=8,
+				.algorithm=7,
 				.feedback_level=0,
 				.panpot=64,
 				.lfo_wave_type=0,
@@ -2339,17 +2441,23 @@
 			.name="Square 25",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
-					0,
-					0,
+				.ocillator_types.b={
+					25,
+					40,
+					25,
+					56,
 				},
 				.phase_coarses.b={
+					2,
 					4,
 					4,
 					4,
-					4,
+				},
+				.phase_offsets={
+					0,
+					64,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -2364,28 +2472,28 @@
 					0,
 				},
 				.levels={
-					128,
-					128,
-					64,
-					64,
+					0,
+					255,
+					0,
+					255,
 				},
 				.envelope_points[0]={
 					255,
 					255,
 					125,
-					125,
+					255,
 				},
 				.envelope_points[1]={
 					255,
 					255,
 					125,
-					125,
+					255,
 				},
 				.envelope_points[2]={
 					255,
 					255,
 					125,
-					125,
+					255,
 				},
 				.envelope_points[3]={
 					0,
@@ -2459,7 +2567,7 @@
 					0,
 					0,
 				},
-				.algorithm=8,
+				.algorithm=4,
 				.feedback_level=0,
 				.panpot=64,
 				.lfo_wave_type=0,
@@ -2476,17 +2584,23 @@
 			.name="Square 75",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
-					0,
-					0,
+				.ocillator_types.b={
+					25,
+					40,
+					25,
+					56,
 				},
 				.phase_coarses.b={
+					2,
 					4,
 					4,
 					4,
-					4,
+				},
+				.phase_offsets={
+					1,
+					192,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -2501,28 +2615,28 @@
 					0,
 				},
 				.levels={
-					128,
-					128,
-					192,
-					192,
+					0,
+					255,
+					0,
+					255,
 				},
 				.envelope_points[0]={
 					255,
 					255,
 					125,
-					125,
+					255,
 				},
 				.envelope_points[1]={
 					255,
 					255,
 					125,
-					125,
+					255,
 				},
 				.envelope_points[2]={
 					255,
 					255,
 					125,
-					125,
+					255,
 				},
 				.envelope_points[3]={
 					0,
@@ -2596,7 +2710,7 @@
 					0,
 					0,
 				},
-				.algorithm=8,
+				.algorithm=4,
 				.feedback_level=0,
 				.panpot=64,
 				.lfo_wave_type=0,
@@ -2613,17 +2727,23 @@
 			.name="Triangle",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
-					0,
-					0,
+				.ocillator_types.b={
+					41,
+					24,
+					40,
+					24,
 				},
 				.phase_coarses.b={
+					64,
 					4,
+					64,
 					4,
-					12,
-					12,
+				},
+				.phase_offsets={
+					131,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -2638,10 +2758,10 @@
 					0,
 				},
 				.levels={
-					128,
-					128,
 					0,
-					0,
+					255,
+					78,
+					255,
 				},
 				.envelope_points[0]={
 					255,
@@ -2733,7 +2853,7 @@
 					0,
 					0,
 				},
-				.algorithm=9,
+				.algorithm=7,
 				.feedback_level=0,
 				.panpot=64,
 				.lfo_wave_type=0,
@@ -2750,17 +2870,23 @@
 			.name="Fantasia",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
-					0,
-					0,
+				.ocillator_types.b={
+					56,
+					16,
+					8,
+					16,
 				},
 				.phase_coarses.b={
 					12,
 					4,
 					56,
 					8,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					103,
@@ -2887,7 +3013,7 @@
 			.name="Crystal",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -2898,6 +3024,12 @@
 					16,
 					4,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					255,
@@ -3024,7 +3156,7 @@
 			.name="Steel Drums",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -3035,6 +3167,12 @@
 					2,
 					8,
 					4,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -3161,17 +3299,23 @@
 			.name="8Bit Cymbal",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
+				.ocillator_types.b={
+					5,
+					5,
 					0,
 					0,
 				},
 				.phase_coarses.b={
 					185,
-					145,
+					185,
 					11,
 					11,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -3187,9 +3331,9 @@
 				},
 				.levels={
 					255,
-					0,
-					0,
 					255,
+					0,
+					0,
 				},
 				.envelope_points[0]={
 					255,
@@ -3223,7 +3367,7 @@
 				},
 				.envelope_times[1]={
 					154,
-					130,
+					151,
 					128,
 					128,
 				},
@@ -3281,7 +3425,7 @@
 					0,
 					0,
 				},
-				.algorithm=10,
+				.algorithm=7,
 				.feedback_level=0,
 				.panpot=64,
 				.lfo_wave_type=0,
@@ -3298,7 +3442,7 @@
 			.name="Snare",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -3309,6 +3453,12 @@
 					3,
 					187,
 					169,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -3435,7 +3585,7 @@
 			.name="Snare",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -3446,6 +3596,12 @@
 					3,
 					123,
 					147,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -3572,9 +3728,9 @@
 			.name="8Bit Snare",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
+				.ocillator_types.b={
+					5,
+					5,
 					0,
 					0,
 				},
@@ -3583,6 +3739,12 @@
 					145,
 					11,
 					11,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -3598,9 +3760,9 @@
 				},
 				.levels={
 					255,
-					0,
-					0,
 					255,
+					0,
+					0,
 				},
 				.envelope_points[0]={
 					255,
@@ -3634,7 +3796,7 @@
 				},
 				.envelope_times[1]={
 					145,
-					130,
+					139,
 					128,
 					128,
 				},
@@ -3646,7 +3808,7 @@
 				},
 				.envelope_times[3]={
 					145,
-					130,
+					134,
 					128,
 					128,
 				},
@@ -3692,7 +3854,7 @@
 					0,
 					0,
 				},
-				.algorithm=10,
+				.algorithm=7,
 				.feedback_level=0,
 				.panpot=64,
 				.lfo_wave_type=0,
@@ -3709,7 +3871,7 @@
 			.name="Kick",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -3720,6 +3882,12 @@
 					83,
 					3,
 					109,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -3846,7 +4014,7 @@
 			.name="Kick",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
+				.ocillator_types.b={
 					0,
 					0,
 					0,
@@ -3857,6 +4025,12 @@
 					81,
 					81,
 					3,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -3983,17 +4157,23 @@
 			.name="8Bit Kick",
 			.synth={
 				// Magic number : KSYN
-                                .wave_types={
-					0,
-					0,
-					0,
-					0,
+				.ocillator_types.b={
+					3,
+					1,
+					1,
+					1,
 				},
 				.phase_coarses.b={
+					193,
 					91,
-					91,
-					13,
-					13,
+					89,
+					95,
+				},
+				.phase_offsets={
+					0,
+					0,
+					0,
+					0,
 				},
 				.phase_tunes={
 					127,
@@ -4008,10 +4188,10 @@
 					0,
 				},
 				.levels={
-					255,
+					6,
 					255,
 					0,
-					0,
+					255,
 				},
 				.envelope_points[0]={
 					255,
@@ -4046,8 +4226,8 @@
 				.envelope_times[1]={
 					140,
 					137,
-					128,
-					128,
+					134,
+					137,
 				},
 				.envelope_times[2]={
 					255,
@@ -4059,7 +4239,7 @@
 					140,
 					137,
 					128,
-					128,
+					134,
 				},
 				.velocity_sens={
 					255,
@@ -4103,7 +4283,7 @@
 					0,
 					0,
 				},
-				.algorithm=9,
+				.algorithm=4,
 				.feedback_level=0,
 				.panpot=64,
 				.lfo_wave_type=0,
