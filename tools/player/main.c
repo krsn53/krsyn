@@ -356,6 +356,8 @@ void update(void* ptr){
 
         Rectangle wr ={sr.x, sr.y, base_width, base_height };
 
+        BeginScissorMode(wr.x, wr.y, wr.width, wr.height);
+
         const float channel_width = (base_width - MARGIN * 2)/ (KS_NUM_CHANNELS+2.5);
 
         {
@@ -371,16 +373,16 @@ void update(void* ptr){
 
 
             for(u32 i =0; i<KS_NUM_CHANNELS; i++){
-                float hei = (float)channel_out[i]/ ks_1(KS_OUTPUT_BITS)*base_height*2;
+                float hei = (float)channel_out[i]/ ks_1(KS_OUTPUT_BITS)*base_height*0.5;
                 DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-MARGIN*2, wid, hei},channel_color);
                 or.x += channel_width;
             }
 
             or.x += channel_width*0.5f;
-            float hei = (float)channel_out[KS_NUM_CHANNELS]/ ks_1(KS_OUTPUT_BITS)*base_height;
+            float hei = (float)channel_out[KS_NUM_CHANNELS]/ ks_1(KS_OUTPUT_BITS)*base_height * 0.25;
             DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-MARGIN*2, wid, hei}, output_color);
             or.x += channel_width;
-            hei = (float)channel_out[KS_NUM_CHANNELS+1]/ ks_1(KS_OUTPUT_BITS)*base_height;
+            hei = (float)channel_out[KS_NUM_CHANNELS+1]/ ks_1(KS_OUTPUT_BITS)*base_height * 0.25;
             DrawRectangleRec((Rectangle){or.x+ x_offset, or.y-hei-MARGIN*2, wid, hei}, output_color);
         }
 
@@ -408,6 +410,8 @@ void update(void* ptr){
                 }
             }
 
+
+            EndScissorMode();
         }
         DrawRectangleLinesEx(wr, 1, border_color);
         const int underline_y = wr.y + base_height - step_y;
@@ -563,6 +567,9 @@ void update(void* ptr){
 
 
     DrawCursor();
+#ifndef NDEBUG
+    DrawText(TextFormat("%2i FPS", GetFPS()), 1, screenHeight - 11, 10, LIME);
+#endif
     EndDrawing();
     //----------------------------------------------------------------------------------
 }
@@ -591,7 +598,7 @@ int main(int argc, char** argv)
 #endif
     HideCursor();
 #ifdef PLATFORM_DESKTOP
-    SetTargetFPS(60);
+    SetTargetFPS(0);
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {

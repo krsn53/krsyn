@@ -629,7 +629,7 @@ void EditorUpdate(void* ptr){
                 pos2.height = step * 4;
                 GuiAlignedLabel("Algorithm", pos2, GUI_TEXT_ALIGN_RIGHT);
                 pos2.x += step_x;
-                es->tones_data.data[es->current_tone_index].synth.algorithm = PropertyIntImage(pos2, es->algorithm_images, es->tones_data.data[es->current_tone_index].synth.algorithm, 0, 7, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.common.algorithm = PropertyIntImage(pos2, es->algorithm_images, es->tones_data.data[es->current_tone_index].synth.st.common.algorithm, 0, 7, 1);
             }
             pos.x = x_pos.x;
             pos.y += pos2.height + margin;
@@ -638,8 +638,8 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("Feedback", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.3f PI", 4.0f *calc_feedback_level(es->tones_data.data[es->current_tone_index].synth.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
-                es->tones_data.data[es->current_tone_index].synth.feedback_level = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.feedback_level, 0, 255, 1);
+                text = FormatText("%.3f PI", 4.0f *calc_feedback_level(es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level, 0, 15, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -648,8 +648,8 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("Panpot", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.3f", 2.0f * calc_panpot(es->tones_data.data[es->current_tone_index].synth.panpot) / ks_1(KS_PANPOT_BITS) - 1.0f);
-                es->tones_data.data[es->current_tone_index].synth.panpot = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.panpot, 0, 127, 1);
+                text = FormatText("%.3f", 2.0f * calc_panpot(es->tones_data.data[es->current_tone_index].synth.st.common.panpot) / ks_1(KS_PANPOT_BITS) - 1.0f);
+                es->tones_data.data[es->current_tone_index].synth.st.common.panpot = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.panpot, 0, 127, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -661,7 +661,7 @@ void EditorUpdate(void* ptr){
                 pos2.x += step_x;
 
 
-                es->tones_data.data[es->current_tone_index].synth.lfo_wave_type = PropertyIntImage(pos2, es->wave_images, es->tones_data.data[es->current_tone_index].synth.lfo_wave_type, 0, KS_NUM_WAVES-1, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.common.lfo_wave_type = PropertyIntImage(pos2, es->wave_images, es->tones_data.data[es->current_tone_index].synth.st.common.lfo_wave_type, 0, KS_NUM_WAVES-1, 1);
 
             }
             pos.x = x_pos.x;
@@ -671,7 +671,7 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("LFO Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                float hz = calc_lfo_freq(es->tones_data.data[es->current_tone_index].synth.lfo_freq) / (float)ks_1(KS_FREQUENCY_BITS);
+                float hz = calc_lfo_freq(es->tones_data.data[es->current_tone_index].synth.st.common.lfo_freq) / (float)ks_1(KS_FREQUENCY_BITS);
                 if(hz >= 1.0f){
                     text = FormatText("%.1f Hz", hz);
                 }
@@ -683,7 +683,7 @@ void EditorUpdate(void* ptr){
                 }
 
 
-                es->tones_data.data[es->current_tone_index].synth.lfo_freq = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.lfo_freq, 0, 255, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.common.lfo_freq = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.lfo_freq, 0, 15, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -692,8 +692,8 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("LFO Initial Phase", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.1f deg", 360.0f *calc_lfo_det(es->tones_data.data[es->current_tone_index].synth.lfo_det) / (float)ks_1(KS_PHASE_MAX_BITS));
-                es->tones_data.data[es->current_tone_index].synth.lfo_det = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.lfo_det, 0, 255, 1);
+                text = FormatText("%.1f deg", 360.0f *calc_lfo_offset(es->tones_data.data[es->current_tone_index].synth.st.common.lfo_offset) / (float)ks_1(KS_PHASE_MAX_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.common.lfo_offset= PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.lfo_offset, 0, 15, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -702,8 +702,8 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("LFO FMS", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.3f %%", 100.0f *calc_lfo_fms_depth(es->tones_data.data[es->current_tone_index].synth.lfo_fms_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
-                es->tones_data.data[es->current_tone_index].synth.lfo_fms_depth= PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.lfo_fms_depth, 0, 240, 1);
+                text = FormatText("%.3f %%", 100.0f *calc_lfo_fms_depth(es->tones_data.data[es->current_tone_index].synth.st.common.lfo_fms_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.common.lfo_fms_depth= PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.lfo_fms_depth, 0, 15, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -712,6 +712,8 @@ void EditorUpdate(void* ptr){
         // wave
         {
             Rectangle wave_rec ={x_pos.x + step_x * 2 + margin, x_pos.y, step_x*3 - margin, pos.y - x_pos.y };
+            BeginScissorMode(wave_rec.x, wave_rec.y, wave_rec.width, wave_rec.height);
+
             DrawRectangleRec(wave_rec, DARKGRAY);
 
             float env_width =wave_rec.width*0.6f / KS_NUM_OPERATORS;
@@ -744,7 +746,7 @@ void EditorUpdate(void* ptr){
             float dx = wave_rec.width * 2.0 / samp;
             float x = 0.0f;
             float y =  wave_rec.y + wave_rec.height/2.0f ;
-            float amp = wave_rec.height * 0.5f ;
+            float amp = wave_rec.height * 0.25f;
 
             for(int i=0; i<samp; i+=2){
                 float base_x = wave_rec.x + x;
@@ -756,6 +758,8 @@ void EditorUpdate(void* ptr){
             if(es->display_mode!= EDIT ){
                 DrawRectangleRec(wave_rec, (Color){200,200,200,128});
             }
+
+            EndScissorMode();
         }
 
 
@@ -781,9 +785,9 @@ void EditorUpdate(void* ptr){
             pos2.width = step_x * 0.5 - margin;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
 
-                es->tones_data.data[es->current_tone_index].synth.ocillator_types.st[i].wave_type = PropertyIntImage(pos2, es->wave_images, es->tones_data.data[es->current_tone_index].synth.ocillator_types.st[i].wave_type, 0, KS_NUM_WAVES-1, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].wave_type = PropertyIntImage(pos2, es->wave_images, es->tones_data.data[es->current_tone_index].synth.st.operators[i].wave_type, 0, KS_NUM_WAVES-1, 1);
                 pos2.x += pos2.width + margin;
-                es->tones_data.data[es->current_tone_index].synth.ocillator_types.st[i].mod_type = PropertyIntImage(pos2, es->mod_images, es->tones_data.data[es->current_tone_index].synth.ocillator_types.st[i].mod_type, 0, KS_NUM_MODS-1, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].mod_type = PropertyIntImage(pos2, es->mod_images, es->tones_data.data[es->current_tone_index].synth.st.operators[i].mod_type, 0, KS_NUM_MODS-1, 1);
                 pos2.x += pos2.width + margin;
             }
             pos.x = x_pos.x; pos.y += pos2.height + margin;
@@ -800,16 +804,16 @@ void EditorUpdate(void* ptr){
 
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
 
-                es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "FixFQ", es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].fixed_frequency = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "FixFQ", es->tones_data.data[es->current_tone_index].synth.st.operators[i].fixed_frequency);
                 pos2.x += pos2.width + margin;
 
-                if(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency){
-                    text = FormatText("%d Hz", ks_exp_u(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value, 64 ,4) -7);
+                if(es->tones_data.data[es->current_tone_index].synth.st.operators[i].fixed_frequency){
+                    text = FormatText("%d Hz", ks_exp_u(es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse, 64 ,4) -7);
                 }
                 else {
-                    text = FormatText("%.1f", calc_phase_coarses(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value) / 2.0f);
+                    text = FormatText("%.1f", calc_phase_coarses(es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse) / 2.0f);
                 }
-                es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].value, 0, 127, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse, 0, 127, 1);
                 pos2.x += pos2.width + margin;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -818,8 +822,8 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Phase Offset", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f deg", es->tones_data.data[es->current_tone_index].synth.phase_offsets[i] * 360.0f / 255.0f);
-                es->tones_data.data[es->current_tone_index].synth.phase_offsets[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.phase_offsets[i], 0, 255, 1);
+                text = FormatText("%.1f deg", es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_offset * 360.0f / 16.0f);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_offset = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_offset, 0, 15, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -828,8 +832,13 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Phase Tune", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%d", (es->tones_data.data[es->current_tone_index].synth.phase_tunes[i] - 127));
-                es->tones_data.data[es->current_tone_index].synth.phase_tunes[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.phase_tunes[i], 0, 255, 1);
+                if(es->tones_data.data[es->current_tone_index].synth.st.operators[i].fixed_frequency){
+                    text = FormatText("x %.3f", calc_phase_tunes(es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune) * 9.0f / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
+                }
+                else {
+                    text = FormatText("x %.3f", calc_phase_tunes(es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
+                }
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune, 0, 255, 1);
                 pos.x += step_x;
             }
              pos.x = x_pos.x; pos.y += step;
@@ -838,13 +847,8 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Phase Fine", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                if(es->tones_data.data[es->current_tone_index].synth.phase_coarses.st[i].fixed_frequency){
-                    text = FormatText("x %.3f", calc_phase_fines(es->tones_data.data[es->current_tone_index].synth.phase_fines[i]) * 9.0f / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
-                }
-                else {
-                    text = FormatText("x %.3f", calc_phase_fines(es->tones_data.data[es->current_tone_index].synth.phase_fines[i]) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
-                }
-                es->tones_data.data[es->current_tone_index].synth.phase_fines[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.phase_fines[i], 0, 255, 1);
+                text = FormatText("%d", (es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_fine - 8));
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_fine = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_fine, 0, 15, 1);
                 pos.x += step_x;
             }
              pos.x = x_pos.x; pos.y += step;
@@ -853,8 +857,8 @@ void EditorUpdate(void* ptr){
              GuiAlignedLabel("Level", pos, GUI_TEXT_ALIGN_RIGHT);
              pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f", 100.0*calc_levels(es->tones_data.data[es->current_tone_index].synth.levels[i]) / (float)ks_1(KS_LEVEL_BITS));
-                es->tones_data.data[es->current_tone_index].synth.levels[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.levels[i], 0, 255, 1);
+                text = FormatText("%.1f", 100.0*calc_levels(es->tones_data.data[es->current_tone_index].synth.st.operators[i].level) / (float)ks_1(KS_LEVEL_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].level = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].level, 0, 255, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -875,11 +879,11 @@ void EditorUpdate(void* ptr){
                 pos2 = pos;
                 pos2.width /= 2.0f;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                    text = FormatText("%.3f", calc_envelope_points(es->tones_data.data[es->current_tone_index].synth.envelope_points[e][i]) / (float)ks_1(KS_ENVELOPE_BITS));
-                    es->tones_data.data[es->current_tone_index].synth.envelope_points[e][i] = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.envelope_points[e][i], 0, 255, 1);
+                    text = FormatText("%.3f", calc_envelope_points(es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
+                    es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].amp = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].amp, 0, 7, 1);
                     pos2.x += step_x / 2.0f;
 
-                    float sec = ks_calc_envelope_times(es->tones_data.data[es->current_tone_index].synth.envelope_times[e][i]) / (float)ks_1(16);
+                    float sec = ks_calc_envelope_times(es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time << (8-5)) / (float)ks_1(16);
                     if(sec >= 1.0f){
                         text = FormatText("%.1f s", sec);
                     }
@@ -890,7 +894,7 @@ void EditorUpdate(void* ptr){
                         text = FormatText("%.3f ms", sec*1000.0f);
                     }
 
-                    es->tones_data.data[es->current_tone_index].synth.envelope_times[e][i] = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.envelope_times[e][i], 0, 255, 1);
+                    es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time, 0, 31, 1);
                     pos2.x += step_x / 2.0f;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -899,21 +903,11 @@ void EditorUpdate(void* ptr){
            GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
            pos.x += step_x;
            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-               text = FormatText("%.1f %%", 100.0*calc_ratescales(es->tones_data.data[es->current_tone_index].synth.ratescales[i]) / (float)ks_1(KS_RATESCALE_BITS));
-               es->tones_data.data[es->current_tone_index].synth.ratescales[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.ratescales[i], 0, 255, 1);
+               text = FormatText("%.1f %%", 100.0*calc_ratescales(es->tones_data.data[es->current_tone_index].synth.st.operators[i].ratescale) / (float)ks_1(KS_RATESCALE_BITS));
+               es->tones_data.data[es->current_tone_index].synth.st.operators[i].ratescale = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].ratescale, 0, 15, 1);
                pos.x += step_x;
            }
-           pos.x = x_pos.x; pos.y += step;
-
-            // velocity sensitive
-            GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
-            pos.x += step_x;
-            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_velocity_sens(es->tones_data.data[es->current_tone_index].synth.velocity_sens[i]) / (float)ks_1(KS_VELOCITY_SENS_BITS));
-                es->tones_data.data[es->current_tone_index].synth.velocity_sens[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.velocity_sens[i], 0, 255, 1);
-                pos.x += step_x;
-            }
-            pos.x = x_pos.x; pos.y += step;
+           pos.x = x_pos.x; pos.y += step; 
 
             // keyscale curve type
             pos2 = pos;
@@ -922,9 +916,9 @@ void EditorUpdate(void* ptr){
             pos2.width = (base_width - margin)/ 2.0;
             pos2.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                es->tones_data.data[es->current_tone_index].synth.keyscale_curve_types.st[i].left = PropertyIntImage(pos2, es->keyscale_left_images, es->tones_data.data[es->current_tone_index].synth.keyscale_curve_types.st[i].left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_left = PropertyIntImage(pos2, es->keyscale_left_images, es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
                 pos2.x += pos2.width  +margin;
-                es->tones_data.data[es->current_tone_index].synth.keyscale_curve_types.st[i].right = PropertyIntImage(pos2, es->keyscale_right_images, es->tones_data.data[es->current_tone_index].synth.keyscale_curve_types.st[i].right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_right = PropertyIntImage(pos2, es->keyscale_right_images, es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
                 pos2.x +=  pos2.width +margin;
             }
             pos.x = x_pos.x; pos.y += (pos2.height + margin);
@@ -937,13 +931,13 @@ void EditorUpdate(void* ptr){
             pos2.width /=2.0f;
 
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(es->tones_data.data[es->current_tone_index].synth.keyscale_low_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
-                es->tones_data.data[es->current_tone_index].synth.keyscale_low_depths[i] = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.keyscale_low_depths[i], 0, 255, 1);
+                text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_low_depth) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_low_depth = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_low_depth, 0, 15, 1);
 
                 pos2.x += step_x/2.0f;
 
-                text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(es->tones_data.data[es->current_tone_index].synth.keyscale_high_depths[i]) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
-                es->tones_data.data[es->current_tone_index].synth.keyscale_high_depths[i] = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.keyscale_high_depths[i], 0, 255, 1);
+                text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_high_depth) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_high_depth = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_high_depth, 0, 15, 1);
                 pos2.x += step_x / 2.0f;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -953,8 +947,18 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Keyscale Mid Key", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%d", calc_keyscale_mid_points(es->tones_data.data[es->current_tone_index].synth.keyscale_mid_points[i]));
-                es->tones_data.data[es->current_tone_index].synth.keyscale_mid_points[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.keyscale_mid_points[i], 0, 127, 1);
+                text = FormatText("%d", calc_keyscale_mid_points(es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_mid_point));
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_mid_point = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].keyscale_mid_point, 0, 31, 1);
+                pos.x += step_x;
+            }
+            pos.x = x_pos.x; pos.y += step;
+
+            // velocity sensitive
+            GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
+            pos.x += step_x;
+            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
+                text = FormatText("%.1f %%", 100*calc_velocity_sens(es->tones_data.data[es->current_tone_index].synth.st.operators[i].velocity_sens) / (float)ks_1(KS_VELOCITY_SENS_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].velocity_sens = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].velocity_sens, 0, 15, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -963,8 +967,8 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("LFO AMS", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_lfo_ams_depths(es->tones_data.data[es->current_tone_index].synth.lfo_ams_depths[i]) / (float)ks_1(KS_LFO_DEPTH_BITS));
-                es->tones_data.data[es->current_tone_index].synth.lfo_ams_depths[i] = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.lfo_ams_depths[i], 0, 255, 1);
+                text = FormatText("%.1f %%", 100*calc_lfo_ams_depths(es->tones_data.data[es->current_tone_index].synth.st.operators[i].lfo_ams_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].lfo_ams_depth = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].lfo_ams_depth, 0, 15, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -1331,6 +1335,7 @@ void EditorUpdate(void* ptr){
     }
 
     DrawCursor();
+    DrawText(TextFormat("%2i FPS", GetFPS()), 1,SCREEN_HEIGHT - 11, 10, LIME);
     EndDrawing();
 }
 
@@ -1503,7 +1508,7 @@ int main(int argc, char** argv)
 #endif
     HideCursor();
 #ifdef PLATFORM_DESKTOP
-    SetTargetFPS(60);
+    SetTargetFPS(0);
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {

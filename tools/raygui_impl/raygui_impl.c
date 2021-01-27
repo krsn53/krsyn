@@ -75,11 +75,12 @@ static inline int UpdateProperty(Rectangle rec, int value, int min_value, int ma
                 *state = GUI_STATE_PRESSED;
             }
 
-            if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
+            if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && dragBeginPos.x >= 0 && dragBeginPos.y >= 0){
+                HideCursor();
+                SetMousePosition(dragBeginPos.x, dragBeginPos.y);
                 dragBeginPos = (Vector2) { -1.0f, -1.0f};
                 dragCurrentPos = dragBeginPos;
                 GuiUnlock();
-                HideCursor();
             }
         }
 
