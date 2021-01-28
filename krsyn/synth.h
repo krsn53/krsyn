@@ -130,13 +130,14 @@ typedef struct ks_operator_data{
 }ks_operator_data;
 
 typedef struct ks_alg_common_data{
-    u8                     output           : 2;
     u8                     feedback_level   : 4;
-    u8                     panpot           : 7;
+    u8                     panpot           : 4;
+    u8                     output           : 2;
+    u8                     lfo_fms_depth    : 5;
     u8                     lfo_wave_type    : 4;
     u8                     lfo_freq         : 4;
     u8                     lfo_offset       : 4;
-    u8                     lfo_fms_depth    : 4;
+
 }ks_alg_common_data;
 
 /**
@@ -289,9 +290,9 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_lfo_ams_depths(value)                      ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_LFO_DEPTH_BITS)+ ks_1(8-4))
 #define calc_output(value)                           (value)
 #define calc_feedback_level(value)                      ks_linear_u(ks_v(value, (8-4)), 0, 1<<(KS_FEEDBACK_LEVEL_BITS))
-#define calc_panpot(value)                              (value)
+#define calc_panpot(value)                              ks_v(value, (7-4))
 #define calc_lfo_wave_type(value)                      (value)
-#define calc_lfo_fms_depth(value)                       ks_exp_u(ks_v(value, (8-4)), 1 << (KS_LFO_DEPTH_BITS-4), 5)
+#define calc_lfo_fms_depth(value)                       ks_exp_u(ks_v(value, (8-5)), 1 << (KS_LFO_DEPTH_BITS-4), 5)
 #define calc_lfo_freq(value)                            ks_exp_u(ks_v(value, (8-4)), 1<<(KS_FREQUENCY_BITS), 5)
 #define calc_lfo_offset(value)                          ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_PHASE_MAX_BITS))
 

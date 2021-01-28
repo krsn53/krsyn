@@ -65,7 +65,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
 
     data->st.common.output = 0;
     data->st.common.feedback_level = 0;
-    data->st.common.panpot = 64;
+    data->st.common.panpot = 7;
 
     data->st.common.lfo_wave_type = KS_WAVE_TRIANGLE;
     data->st.common.lfo_fms_depth = 0;
@@ -245,11 +245,10 @@ KS_FORCEINLINE static i16 ks_mul_mod(ks_wave_func wave_func, u8 op, ks_synth_not
 }
 
 KS_FORCEINLINE static i16 ks_rsg_mod(ks_wave_func wave_func, u8 op, ks_synth_note* note, i32 in){
-    i32 ret = wave_func(op, note, note->phases[op] );
-    ret = ks_envelope_apply(note->envelope_now_amps[op], ret);
-    if(note->mod_func_logs[op] < 0 && in >= 0)note->phases[op] = 0;
-    note->mod_func_logs[op] = in;
-    return ret;
+    if(ks_mask(note->phases[op], KS_PHASE_MAX_BITS) > ks_mask(note->phases[op] + note->phase_deltas[op], KS_PHASE_MAX_BITS)){
+            note->phases[note->synth->mod_srcs[op]] = 0;
+    }
+    return in;
 }
 
 KS_FORCEINLINE static i16 ks_none_mod(ks_wave_func wave_func, u8 op, ks_synth_note* note, i32 in){
@@ -427,7 +426,7 @@ KS_INLINE static void synth_common_set(ks_synth* synth, const ks_synth_data* dat
 {
     synth->output = calc_output(data->st.common.output);
     synth->feedback_level = calc_feedback_level(data->st.common.feedback_level);
-    ks_calc_panpot(&synth->panpot_left, &synth->panpot_right, data->st.common.panpot);
+    ks_calc_panpot(&synth->panpot_left, &synth->panpot_right, data->st.common.panpot << (7-4));
 
     synth->lfo_wave_type = calc_lfo_wave_type(data->st.common.lfo_wave_type);
     synth->lfo_fms_depth = calc_lfo_fms_depth(data->st.common.lfo_fms_depth);
@@ -681,7 +680,7 @@ KS_FORCEINLINE static i32 synth_frame(const ks_synth* synth, ks_synth_note* note
     {
         note->output_logs[i] = outputs[i];
     }
-    return out;
+    return out >> 2;
 }
 
 KS_INLINE static void envelope_next(ks_synth_note* note)

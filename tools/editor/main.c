@@ -7,7 +7,7 @@
 #endif
 
 #define SCREEN_WIDTH 726
-#define SCREEN_HEIGHT 574
+#define SCREEN_HEIGHT 538
 
 #define SAMPLING_RATE               48000
 #define SAMPLES_PER_UPDATE          4096
@@ -656,7 +656,7 @@ void EditorUpdate(void* ptr){
                 pos.x += step_x;
 
                 text = FormatText("%.3f", 2.0f * calc_panpot(es->tones_data.data[es->current_tone_index].synth.st.common.panpot) / ks_1(KS_PANPOT_BITS) - 1.0f);
-                es->tones_data.data[es->current_tone_index].synth.st.common.panpot = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.panpot, 0, 127, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.common.panpot = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.panpot, 0, 15, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -710,7 +710,7 @@ void EditorUpdate(void* ptr){
                 pos.x += step_x;
 
                 text = FormatText("%.3f %%", 100.0f *calc_lfo_fms_depth(es->tones_data.data[es->current_tone_index].synth.st.common.lfo_fms_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
-                es->tones_data.data[es->current_tone_index].synth.st.common.lfo_fms_depth= PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.lfo_fms_depth, 0, 15, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.common.lfo_fms_depth= PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.lfo_fms_depth, 0, 31, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -753,7 +753,7 @@ void EditorUpdate(void* ptr){
             float dx = wave_rec.width * 2.0 / samp;
             float x = 0.0f;
             float y =  wave_rec.y + wave_rec.height/2.0f ;
-            float amp = wave_rec.height * 0.25f;
+            float amp = wave_rec.height;
 
             for(int i=0; i<samp; i+=2){
                 float base_x = wave_rec.x + x;
@@ -1520,7 +1520,7 @@ int main(int argc, char** argv)
 #endif
     HideCursor();
 #ifdef PLATFORM_DESKTOP
-    SetTargetFPS(0);
+    SetTargetFPS(60);
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
