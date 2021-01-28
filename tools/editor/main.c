@@ -32,8 +32,8 @@ static const char* synth_ext = ".ksyb;.ksyc";
 static const int margin = 3;
 static const int base_width = 100;
 static const float line_width = 12;
-#define step_x  (float)(base_width + margin)
-#define step    (float)(line_width+ margin)
+#define step_x  (int)((float)base_width + margin)
+#define step    (int)((float)line_width+ margin)
 #define base_pos (Rectangle){ margin, margin, base_width,  line_width }
 
 typedef struct editor_state{
@@ -76,7 +76,8 @@ typedef struct editor_state{
     int midiin_list_scroll;
 #endif
 
-    Texture2D algorithm_images;
+    Texture2D output_images;
+    Texture2D operator_images;
     Texture2D wave_images;
     Texture2D mod_images;
     Texture2D keyscale_left_images;
@@ -538,7 +539,7 @@ void EditorUpdate(void* ptr){
 
             pos.y += pos2.height + margin;
             pos2.y = pos.y;
-            pos2.width = pos.width*0.75f - margin;
+            pos2.width = (int)(pos.width*0.75f - margin);
             pos2.x = pos.x;
 
             int id = 0;
@@ -546,8 +547,8 @@ void EditorUpdate(void* ptr){
             bool mouse_button_pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
             {
                 GuiAlignedLabel("Name", pos2, GUI_TEXT_ALIGN_RIGHT);
-                pos2.x += base_width*0.75f;
-                pos2.width = pos.width * 1.25f;
+                pos2.x += (int)(base_width*0.75f);
+                pos2.width = (int)(pos.width * 1.25f);
                 if(GuiTextBox(pos2, es->tones_data.data[es->current_tone_index].name, sizeof(es->tones_data.data[es->current_tone_index].name), es->testbox_focus == id)){
                     if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
                 }
@@ -555,7 +556,7 @@ void EditorUpdate(void* ptr){
                 pos2.x = pos.x;
             }
             pos2.y += pos2.height + margin;
-            pos2.x += pos.width*0.75f;
+            pos2.x += (int)(pos.width*0.75f);
             {
                 int tmp_val = es->tones_data.data[es->current_tone_index].msb;
                 if(GuiValueBox(pos2, "MSB", &tmp_val, 0, 127, es->testbox_focus == id)){
@@ -617,32 +618,38 @@ void EditorUpdate(void* ptr){
         }
         x_pos.x += step_x*2;
         pos.x = x_pos.x;
-        pos.y += step / 2.0;
+        pos.y += (int)(step / 2.0);
 
 
         // common params
         {
 
-            // algorithm
+            // output
             {
                 pos2 = pos;
-                pos2.height = step * 4;
-                GuiAlignedLabel("Algorithm", pos2, GUI_TEXT_ALIGN_RIGHT);
+                pos2.height = 20;
+                GuiAlignedLabel("Outputs", pos2, GUI_TEXT_ALIGN_RIGHT);
                 pos2.x += step_x;
-                es->tones_data.data[es->current_tone_index].synth.st.common.algorithm = PropertyIntImage(pos2, es->algorithm_images, es->tones_data.data[es->current_tone_index].synth.st.common.algorithm, 0, 7, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.common.output = PropertyIntImage(pos2, es->output_images, es->tones_data.data[es->current_tone_index].synth.st.common.output, 0, KS_NUM_OPERATORS-1, 1);
             }
             pos.x = x_pos.x;
-            pos.y += pos2.height + margin;
+            pos.y += (int)pos2.height + margin;
             // feedback_level
             {
                 GuiAlignedLabel("Feedback", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.3f PI", 4.0f *calc_feedback_level(es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
-                es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level, 0, 15, 1);
+                pos2 = pos;
+                pos2.width = (int)(pos2.width );
+
+                text = FormatText("%.2f PI", 4.0f *calc_feedback_level(es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
+                es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.common.feedback_level, 0, 15, 1);
+
+
+                pos.x += step_x;
             }
             pos.x = x_pos.x;
-            pos.y += step;
+            pos.y += step + 2;
             // panpot
             {
                 GuiAlignedLabel("Panpot", pos, GUI_TEXT_ALIGN_RIGHT);
@@ -742,7 +749,7 @@ void EditorUpdate(void* ptr){
                 DrawText(text, rec.x+ 1, env_y -  11, 10, YELLOW);
             }
 
-            int samp = SAMPLING_RATE  * 2/ 440.0f;
+            int samp = SAMPLING_RATE  * 2/ 110.0f;
             float dx = wave_rec.width * 2.0 / samp;
             float x = 0.0f;
             float y =  wave_rec.y + wave_rec.height/2.0f ;
@@ -764,18 +771,26 @@ void EditorUpdate(void* ptr){
 
 
         GuiGroupBox((Rectangle){pos.x, x_pos.y, step_x*2, pos.y - x_pos.y}, "Common Params");
-        pos.y += step / 2.0f;
+        pos.y += (int)(step / 2.0f);
         x_pos.y = pos.y;
 
         // operators
         {
-            pos.y += step /2.0f ;
+            pos.y += (int)(step / 2.0f) ;
 
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                 pos.x += step_x;
-                GuiAlignedLabel(FormatText("Operator %d", i+1), pos, GUI_TEXT_ALIGN_CENTER);
+                pos2 = pos;
+                GuiAlignedLabel(FormatText("Op %d ", i+1), pos2, GUI_TEXT_ALIGN_LEFT);
+
+
+                pos2.x += step_x * 2/4;
+                pos2.height = 14;
+                pos2.width = step_x *2 /4 - margin;
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].mod_src = PropertyIntImage(pos2, es->operator_images, es->tones_data.data[es->current_tone_index].synth.st.operators[i].mod_src, 0, KS_NUM_OPERATORS-1, 1);
+
             }
-            pos.x = x_pos.x; pos.y += step;
+            pos.x = x_pos.x; pos.y += step +2;
 
             // wave type
             GuiAlignedLabel("Ocillator Type", pos, GUI_TEXT_ALIGN_RIGHT);
@@ -808,12 +823,12 @@ void EditorUpdate(void* ptr){
                 pos2.x += pos2.width + margin;
 
                 if(es->tones_data.data[es->current_tone_index].synth.st.operators[i].fixed_frequency){
-                    text = FormatText("%d Hz", ks_exp_u(es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse, 64 ,4) -7);
+                    text = FormatText("%d Hz", ks_exp_u(es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse << 2, 40, 5));
                 }
                 else {
                     text = FormatText("%.1f", calc_phase_coarses(es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse) / 2.0f);
                 }
-                es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse, 0, 127, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_coarse, 0, 63, 1);
                 pos2.x += pos2.width + margin;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -838,7 +853,7 @@ void EditorUpdate(void* ptr){
                 else {
                     text = FormatText("x %.3f", calc_phase_tunes(es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
                 }
-                es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune, 0, 255, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].phase_detune, 0, 127, 1);
                 pos.x += step_x;
             }
              pos.x = x_pos.x; pos.y += step;
@@ -858,7 +873,7 @@ void EditorUpdate(void* ptr){
              pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                 text = FormatText("%.1f", 100.0*calc_levels(es->tones_data.data[es->current_tone_index].synth.st.operators[i].level) / (float)ks_1(KS_LEVEL_BITS));
-                es->tones_data.data[es->current_tone_index].synth.st.operators[i].level = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].level, 0, 255, 1);
+                es->tones_data.data[es->current_tone_index].synth.st.operators[i].level = PropertyInt(pos, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].level, 0, 15, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -880,10 +895,10 @@ void EditorUpdate(void* ptr){
                 pos2.width /= 2.0f;
                 for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
                     text = FormatText("%.3f", calc_envelope_points(es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                    es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].amp = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].amp, 0, 7, 1);
+                    es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].amp = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].amp, 0, 15, 1);
                     pos2.x += step_x / 2.0f;
 
-                    float sec = ks_calc_envelope_times(es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time << (8-5)) / (float)ks_1(16);
+                    float sec = ks_calc_envelope_times(es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time << (8-4)) / (float)ks_1(16);
                     if(sec >= 1.0f){
                         text = FormatText("%.1f s", sec);
                     }
@@ -894,7 +909,7 @@ void EditorUpdate(void* ptr){
                         text = FormatText("%.3f ms", sec*1000.0f);
                     }
 
-                    es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time, 0, 31, 1);
+                    es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time = PropertyInt(pos2, text, es->tones_data.data[es->current_tone_index].synth.st.operators[i].envelopes[e].time, 0, 15, 1);
                     pos2.x += step_x / 2.0f;
                 }
                 pos.x = x_pos.x; pos.y += step;
@@ -1397,23 +1412,20 @@ void init(editor_state* es){
     es->file_dialog_state_synth = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, es->file_dialog_state_synth.dirPathText, false);
     strcpy(es->file_dialog_state_synth.filterExt, synth_ext);
 
-    es->algorithm_images = LoadTexture("resources/images/algorithms.png");
+    es->output_images = LoadTexture("resources/images/outputs.png");
+    es->operator_images= LoadTexture("resources/images/operators.png");
     es->wave_images= LoadTexture("resources/images/waves.png");
     es->mod_images = LoadTexture("resources/images/mods.png");
     es->keyscale_left_images = LoadTexture("resources/images/keyscale_curves_l.png");
     es->keyscale_right_images =  LoadTexture("resources/images/keyscale_curves_r.png");
 
-    SetTextureFilter(es->algorithm_images, FILTER_BILINEAR);
-    SetTextureFilter(es->wave_images, FILTER_BILINEAR);
-    SetTextureFilter(es->mod_images, FILTER_BILINEAR);
-    SetTextureFilter(es->keyscale_left_images, FILTER_BILINEAR);
-    SetTextureFilter(es->keyscale_right_images, FILTER_BILINEAR);
 }
 
 void deinit(editor_state* es){
     //----------------------------------------------------------------------------------
     // unload
-    UnloadTexture(es->algorithm_images);
+    UnloadTexture(es->output_images);
+    UnloadTexture(es->operator_images);
     UnloadTexture(es->wave_images);
     UnloadTexture(es->mod_images);
     UnloadTexture(es->keyscale_left_images);

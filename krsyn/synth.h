@@ -76,6 +76,8 @@ typedef enum ks_mod_t{
     KS_MOD_FM,
     KS_MOD_IFM, // integrate fm
     KS_MOD_MIX,
+    KS_MOD_ADD,
+    KS_MOD_SUB,
     KS_MOD_MUL,
     KS_MOD_AM,
     KS_MOD_RSG, // reset signal
@@ -100,33 +102,35 @@ typedef enum ks_wave_t
 }ks_synth_wave_t;
 
 typedef struct ks_envelope_t{
-    u8                      amp: 3;
-    u8                      time: 5;
+    u8                      amp: 4;
+    u8                      time: 4;
 }ks_envelope_t;
 
 
 typedef struct ks_operator_data{
     u8              mod_type                : 4;
+    u8              mod_src                 : 2;
     u8              wave_type               : 4;
     u8              fixed_frequency         : 1;
-    u8              phase_coarse            : 7;
+    u8              phase_coarse            : 6;
     u8              phase_offset            : 4;
     u8              phase_fine              : 4;
-    u8              phase_detune;
-    u8              level;
+    u8              phase_detune            : 7;
     ks_envelope_t   envelopes               [KS_ENVELOPE_NUM_POINTS];
+    u8              level                   : 4;
     u8              ratescale               : 4;
+    u8              keyscale_mid_point      : 5;
     u8              keyscale_left           : 2;
     u8              keyscale_right          : 2;
     u8              keyscale_low_depth      : 4;
     u8              keyscale_high_depth     : 4;
-    u8              keyscale_mid_point      : 5;
+
     u8              velocity_sens           : 4;
     u8              lfo_ams_depth           : 4;
 }ks_operator_data;
 
 typedef struct ks_alg_common_data{
-    u8                     algorithm        : 4;
+    u8                     output           : 2;
     u8                     feedback_level   : 4;
     u8                     panpot           : 7;
     u8                     lfo_wave_type    : 4;
@@ -152,7 +156,7 @@ typedef struct ks_synth     ks_synth;
 
 typedef i16 (* ks_wave_func)(u8, ks_synth_note*, u32);
 typedef i16 (* ks_lfo_wave_func)(ks_synth_note*);
-typedef i32 (* ks_mod_func)(u8, ks_synth_note*,i32 in);
+typedef i32 (* ks_mod_func)(u8, ks_synth_note*, i32);
 
 /**
  * @struct ks_synth_data
@@ -178,7 +182,7 @@ typedef struct ks_synth
     u8              keyscale_mid_points         [KS_NUM_OPERATORS];
     u8              keyscale_curve_types        [2][KS_NUM_OPERATORS];
 
-    u8              algorithm;
+    u8              output;
     u32             feedback_level;
 
     i16             panpot_left,     panpot_right;
@@ -189,8 +193,9 @@ typedef struct ks_synth
 
     bool            fixed_frequency             [KS_NUM_OPERATORS];
 
-    u8              mod_types                   [KS_NUM_OPERATORS];
     u8              wave_types                  [KS_NUM_OPERATORS];
+    ks_mod_func     mod_funcs                   [KS_NUM_OPERATORS];
+    u8              mod_srcs                    [KS_NUM_OPERATORS];
 
     u8              lfo_wave_type;
     bool            lfo_ams_enabled;
@@ -211,7 +216,6 @@ typedef  struct ks_synth_note
     i32                 output_logs                 [KS_NUM_OPERATORS];
 
     const i16*          wave_tables                 [KS_NUM_OPERATORS];
-    ks_mod_func         mod_funcs                   [KS_NUM_OPERATORS];
     i32                 mod_func_logs               [KS_NUM_OPERATORS];
 
     u32                 phases                      [KS_NUM_OPERATORS];
@@ -233,7 +237,6 @@ typedef  struct ks_synth_note
     const i16*          lfo_wave_table;
     ks_lfo_wave_func    lfo_func;
     i32                 lfo_func_log;
-    i32                 feedback_log;
 
     u32                 now_frame;
 
@@ -271,11 +274,11 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_fixed_frequency(value)                     (value)
 #define calc_phase_coarses(value)                       (value)
 #define calc_phase_offsets(value)                       ks_linear_u(ks_v(value, (8-4)), 0, 1 << (KS_PHASE_MAX_BITS))
-#define calc_phase_tunes(value)                         ks_linear_u(value, 0, 1 << (KS_PHASE_FINE_BITS))
+#define calc_phase_tunes(value)                         ks_linear_u(ks_v(value, 1), 0, (10<<(KS_PHASE_FINE_BITS - 3)))
 #define calc_phase_fines(value)                         ks_linear_u(ks_v(value,(8-4))-128, 0, 1<< (KS_PHASE_FINE_BITS - 8))
-#define calc_levels(value)                              ks_linear_u(value, 0, ks_1(KS_LEVEL_BITS))
-#define calc_envelope_points(value)                     ks_linear_i(ks_v(value, (8-3)), 0, (1 << KS_ENVELOPE_BITS)+ks_1(KS_ENVELOPE_BITS - 3))
-#define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, ks_v(value, (8-5)))
+#define calc_levels(value)                              ks_linear_u(ks_v(value,(8-4)), 0, ks_1(KS_LEVEL_BITS))
+#define calc_envelope_points(value)                     ks_linear_i(ks_v(value, (8-4)), 0, (1 << KS_ENVELOPE_BITS)+ks_1(KS_ENVELOPE_BITS - 4))
+#define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, ks_v(value, (8-4)))
 #define calc_velocity_sens(value)                       ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_VELOCITY_SENS_BITS)+ks_1(KS_VELOCITY_SENS_BITS - 4))
 #define calc_ratescales(value)                          ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_RATESCALE_BITS)+ks_1(KS_RATESCALE_BITS - 4))
 #define calc_keyscale_low_depths(value)                 ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_KEYSCALE_DEPTH_BITS)+ks_1(KS_KEYSCALE_DEPTH_BITS - 4))
@@ -284,11 +287,11 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_keyscale_curve_types_left(value)           (value)
 #define calc_keyscale_curve_types_right(value)          (value)
 #define calc_lfo_ams_depths(value)                      ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_LFO_DEPTH_BITS)+ ks_1(8-4))
-#define calc_algorithm(value)                           (value)
+#define calc_output(value)                           (value)
 #define calc_feedback_level(value)                      ks_linear_u(ks_v(value, (8-4)), 0, 1<<(KS_FEEDBACK_LEVEL_BITS))
 #define calc_panpot(value)                              (value)
 #define calc_lfo_wave_type(value)                      (value)
-#define calc_lfo_fms_depth(value)                       ks_exp_u(ks_v(value, (8-4)), 1 << (KS_LFO_DEPTH_BITS-12), 4)
-#define calc_lfo_freq(value)                            ks_exp_u(ks_v(value, (8-4)), 1<<(KS_FREQUENCY_BITS-5), 4)
+#define calc_lfo_fms_depth(value)                       ks_exp_u(ks_v(value, (8-4)), 1 << (KS_LFO_DEPTH_BITS-4), 5)
+#define calc_lfo_freq(value)                            ks_exp_u(ks_v(value, (8-4)), 1<<(KS_FREQUENCY_BITS), 5)
 #define calc_lfo_offset(value)                          ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_PHASE_MAX_BITS))
 

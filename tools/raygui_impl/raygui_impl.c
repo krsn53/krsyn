@@ -123,7 +123,7 @@ int PropertyInt(Rectangle rec, const char* innerText, int value, int min_value, 
 }
 
 int PropertyIntImage(Rectangle rec, Texture2D tex, int value, int min_value, int max_value, int step){
-    rec.width = MAX(rec.width, GuiGetStyle(DEFAULT,TEXT_SIZE)*3 + GuiGetStyle(SLIDER, BORDER_WIDTH)*3*2);
+    rec.width = MAX(rec.width, GetLineWidth());
     rec.height = MAX(rec.height, GetLineWidth());
 
     GuiControlState state = guiState;
