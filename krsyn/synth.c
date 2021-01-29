@@ -38,11 +38,6 @@ ks_io_begin_custom_func(ks_synth_common_data)
 ks_io_end_custom_func(ks_synth_common_data)
 
 
-ks_io_begin_custom_func(ks_envelope_t)
-    ks_bit_u8(amp);
-    ks_bit_u8(time);
-ks_io_end_custom_func(ks_envelope_t)
-
 ks_io_begin_custom_func(ks_synth_operator_data)
     ks_bit_u8(mod_type);
     ks_bit_u8(mod_src);
@@ -52,7 +47,14 @@ ks_io_begin_custom_func(ks_synth_operator_data)
     ks_bit_u8(phase_offset);
     ks_bit_u8(phase_fine);
     ks_bit_u8(phase_detune);
-    ks_arr_obj(envelopes, ks_envelope_t);
+    ks_bit_u8(envelope_attack_amp);
+    ks_bit_u8(envelope_decay_amp);
+    ks_bit_u8(envelope_sustain_amp);
+    ks_bit_u8(envelope_release_amp);
+    ks_bit_u8(envelope_attack_time);
+    ks_bit_u8(envelope_decay_time);
+    ks_bit_u8(envelope_sustain_time);
+    ks_bit_u8(envelope_release_time);
     ks_bit_u8(level);
     ks_bit_u8(ratescale);
     ks_bit_u8(keyscale_mid_point);
@@ -109,17 +111,17 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->operators[i].phase_detune= 0;
         data->operators[i].level = 15;
 
-        data->operators[i].envelopes[0].time = 0;
-        data->operators[i].envelopes[1].time = 15;
-        data->operators[i].envelopes[2].time = 15;
-        data->operators[i].envelopes[3].time = 4;
+        data->operators[i].envelope_attack_time= 0;
+        data->operators[i].envelope_decay_time = 31;
+        data->operators[i].envelope_sustain_time = 31;
+        data->operators[i].envelope_release_time = 8;
 
-        data->operators[i].envelopes[0].amp = 15;
-        data->operators[i].envelopes[1].amp = 15;
-        data->operators[i].envelopes[2].amp = 15;
-        data->operators[i].envelopes[3].amp = 0;
+        data->operators[i].envelope_attack_amp = 7;
+        data->operators[i].envelope_decay_amp= 7;
+        data->operators[i].envelope_sustain_amp = 7;
+        data->operators[i].envelope_release_amp = 0;
 
-        data->operators[i].ratescale = 2; // about 0.125
+        data->operators[i].ratescale = 1;
         data->operators[i].keyscale_low_depth = 0;
         data->operators[i].keyscale_low_depth = 0;
         data->operators[i].keyscale_mid_point = 17;
@@ -455,6 +457,7 @@ static ks_lfo_wave_func ks_get_lfo_wave_func(u8 index){
 
 KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_synth_data* data)
 {
+    synth->lfo_ams_enabled = false;
     for(u32 i=0; i<KS_NUM_OPERATORS; i++)
     {
         synth->mod_funcs[i] = ks_get_mod_func( data->operators[i].mod_type, data->operators[i].wave_type );
@@ -467,11 +470,15 @@ KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
         synth->phase_tunes[i] = calc_phase_tunes(data->operators[i].phase_detune);
         synth->levels[i] = calc_levels(data->operators[i].level);
 
-        for(u32 e=0; e < KS_ENVELOPE_NUM_POINTS; e++)
-        {
-            synth->envelope_points[e][i] = calc_envelope_points(data->operators[i].envelopes[e].amp);
-            synth->envelope_samples[e][i] = calc_envelope_samples(sampling_rate, data->operators[i].envelopes[e].time);
-        }
+        synth->envelope_samples[0][i] = calc_envelope_samples(sampling_rate, data->operators[i].envelope_attack_time);
+        synth->envelope_samples[1][i] = calc_envelope_samples(sampling_rate, data->operators[i].envelope_decay_time);
+        synth->envelope_samples[2][i] = calc_envelope_samples(sampling_rate, data->operators[i].envelope_sustain_time);
+        synth->envelope_samples[3][i] = calc_envelope_samples(sampling_rate, data->operators[i].envelope_release_time);
+
+        synth->envelope_points[0][i] = calc_envelope_points(data->operators[i].envelope_attack_amp);
+        synth->envelope_points[1][i] = calc_envelope_points(data->operators[i].envelope_decay_amp);
+        synth->envelope_points[2][i] = calc_envelope_points(data->operators[i].envelope_sustain_amp);
+        synth->envelope_points[3][i] = calc_envelope_points(data->operators[i].envelope_release_amp);
 
         synth->velocity_sens[i] = calc_velocity_sens(data->operators[i].velocity_sens);
 
@@ -483,9 +490,8 @@ KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
         synth->keyscale_curve_types[1][i] = calc_keyscale_curve_types_right(data->operators[i].keyscale_right);
 
         synth->lfo_ams_depths[i] = calc_lfo_ams_depths(data->operators[i].lfo_ams_depth);
+        synth->lfo_ams_enabled = synth->lfo_ams_enabled ||  data->operators[i].lfo_ams_depth != 0;
     }
-    synth->lfo_ams_enabled = memcmp(synth->lfo_ams_depths, (const u32[]){0,0,0,0}, sizeof(synth->lfo_ams_depths)) != 0;
-
 
 }
 
@@ -720,26 +726,26 @@ KS_FORCEINLINE static i32 synth_frame(const ks_synth* synth, ks_synth_note* note
 
     if(output_op == 0)
     {
-        out = outputs[3];
+        out = note->output_logs[3];
     }
     if(output_op == 1)
     {
-        out = outputs[3];
-        out += outputs[2];
+        out = note->output_logs[3];
+        out += note->output_logs[2];
     }
     if(output_op == 2)
     {
-        out = outputs[3];
-        out += outputs[2];
-        out += outputs[1];
+        out = note->output_logs[3];
+        out += note->output_logs[2];
+        out += note->output_logs[1];
 
     }
     if(output_op == 3)
     {
-        out = outputs[3];
-        out += outputs[2];
-        out += outputs[1];
-        out += outputs[0];
+        out = note->output_logs[3];
+        out += note->output_logs[2];
+        out += note->output_logs[1];
+        out += note->output_logs[0];
 
     }
 
@@ -814,17 +820,11 @@ KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note,
             i64 depth = note->lfo_log;      // -1.0 ~ 1.0
             depth *= synth->lfo_ams_depths[j];
             depth >>= KS_LFO_DEPTH_BITS;
-            depth >>= 1;
             depth += 1<<(KS_OUTPUT_BITS);     // 0 ~ 2.0
 
 
-            u32 ams_size =  synth->lfo_ams_depths[j];
-            ams_size >>= (KS_LFO_DEPTH_BITS - KS_OUTPUT_BITS) + 1; // MAX 0.0 ~ 1.0, mean 1-ams_depth/2
-
-            depth -= ams_size;
-
             depth *= note->output_logs[j];
-            depth >>= KS_OUTPUT_BITS;
+            depth >>= KS_LFO_DEPTH_BITS;
             note->output_logs[j] = (i32)depth;
         }
     }

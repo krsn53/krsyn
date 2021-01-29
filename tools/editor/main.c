@@ -824,11 +824,11 @@ void EditorUpdate(void* ptr){
                op[i].fixed_frequency = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "FixFQ",op[i].fixed_frequency);
                 pos2.x += pos2.width + margin;
 
-                if(es->tones_data.data[es->current_tone_index].synth.operators[i].fixed_frequency){
-                    text = FormatText("%d Hz", ks_exp_u(es->tones_data.data[es->current_tone_index].synth.operators[i].phase_coarse << 2, 40, 5));
+                if(op[i].fixed_frequency){
+                    text = FormatText("%d Hz", ks_exp_u(op[i].phase_coarse << 2, 40, 5));
                 }
                 else {
-                    text = FormatText("%.1f", calc_phase_coarses(es->tones_data.data[es->current_tone_index].synth.operators[i].phase_coarse) / 2.0f);
+                    text = FormatText("%.1f", calc_phase_coarses(op[i].phase_coarse) / 2.0f);
                 }
                op[i].phase_coarse = PropertyInt(pos2, text,op[i].phase_coarse, 0, 63, 1);
                 pos2.x += pos2.width + margin;
@@ -849,11 +849,11 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Phase Tune", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                if(es->tones_data.data[es->current_tone_index].synth.operators[i].fixed_frequency){
-                    text = FormatText("x %.3f", calc_phase_tunes(es->tones_data.data[es->current_tone_index].synth.operators[i].phase_detune) * 9.0f / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
+                if(op[i].fixed_frequency){
+                    text = FormatText("x %.3f", calc_phase_tunes(op[i].phase_detune) * 9.0f / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
                 }
                 else {
-                    text = FormatText("x %.3f", calc_phase_tunes(es->tones_data.data[es->current_tone_index].synth.operators[i].phase_detune) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
+                    text = FormatText("x %.3f", calc_phase_tunes(op[i].phase_detune) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
                 }
                op[i].phase_detune = PropertyInt(pos, text,op[i].phase_detune, 0, 127, 1);
                 pos.x += step_x;
@@ -864,7 +864,7 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Phase Fine", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%d", (es->tones_data.data[es->current_tone_index].synth.operators[i].phase_fine - 8));
+                text = FormatText("%d", (op[i].phase_fine - 8));
                op[i].phase_fine = PropertyInt(pos, text,op[i].phase_fine, 0, 15, 1);
                 pos.x += step_x;
             }
@@ -874,54 +874,131 @@ void EditorUpdate(void* ptr){
              GuiAlignedLabel("Level", pos, GUI_TEXT_ALIGN_RIGHT);
              pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f", 100.0*calc_levels(es->tones_data.data[es->current_tone_index].synth.operators[i].level) / (float)ks_1(KS_LEVEL_BITS));
+                text = FormatText("%.1f", 100.0*calc_levels(op[i].level) / (float)ks_1(KS_LEVEL_BITS));
                op[i].level = PropertyInt(pos, text,op[i].level, 0, 15, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
 
+            {
+                const u32 amp_max = 7;
+                const u32 time_max = 31;
+                // envelope points and times
+                {
+                    GuiAlignedLabel("Envelope Attack", pos, GUI_TEXT_ALIGN_RIGHT);
+                    pos.x += step_x;
 
-            // envelope points and times
-            for(unsigned e =0; e< KS_ENVELOPE_NUM_POINTS; e++){
-                const char* texts [KS_ENVELOPE_NUM_POINTS] = {
-                    "Attack",
-                    "Decay",
-                    "Sustain",
-                    "Release",
-                };
-                text = texts[e];
-                GuiAlignedLabel(text, pos, GUI_TEXT_ALIGN_RIGHT);
-                pos.x += step_x;
+                    pos2 = pos;
+                    pos2.width /= 2.0f;
+                    for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
+                        text = FormatText("%.3f", calc_envelope_points(op[i].envelope_attack_amp) / (float)ks_1(KS_ENVELOPE_BITS));
+                       op[i].envelope_attack_amp = PropertyInt(pos2, text,op[i].envelope_attack_amp, 0, amp_max, 1);
+                        pos2.x += step_x / 2.0f;
 
-                pos2 = pos;
-                pos2.width /= 2.0f;
-                for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                    text = FormatText("%.3f", calc_envelope_points(es->tones_data.data[es->current_tone_index].synth.operators[i].envelopes[e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                   op[i].envelopes[e].amp = PropertyInt(pos2, text,op[i].envelopes[e].amp, 0, 15, 1);
-                    pos2.x += step_x / 2.0f;
+                        float sec = calc_envelope_times(op[i].envelope_attack_time) / (float)ks_1(16);
+                        if(sec >= 1.0f){
+                            text = FormatText("%.1f s", sec);
+                        }
+                        else if(sec< 1.0f && sec>= 0.01f){
+                            text = FormatText("%.1f ms", sec*1000.0f);
+                        }
+                        else {
+                            text = FormatText("%.3f ms", sec*1000.0f);
+                        }
 
-                    float sec = ks_calc_envelope_times(es->tones_data.data[es->current_tone_index].synth.operators[i].envelopes[e].time << (8-4)) / (float)ks_1(16);
-                    if(sec >= 1.0f){
-                        text = FormatText("%.1f s", sec);
+                       op[i].envelope_attack_time = PropertyInt(pos2, text,op[i].envelope_attack_time, 0, time_max, 1);
+                        pos2.x += step_x / 2.0f;
                     }
-                    else if(sec< 1.0f && sec>= 0.01f){
-                        text = FormatText("%.1f ms", sec*1000.0f);
-                    }
-                    else {
-                        text = FormatText("%.3f ms", sec*1000.0f);
-                    }
-
-                   op[i].envelopes[e].time = PropertyInt(pos2, text,op[i].envelopes[e].time, 0, 15, 1);
-                    pos2.x += step_x / 2.0f;
+                    pos.x = x_pos.x; pos.y += step;
                 }
-                pos.x = x_pos.x; pos.y += step;
+                {
+                    GuiAlignedLabel("Decay", pos, GUI_TEXT_ALIGN_RIGHT);
+                    pos.x += step_x;
+
+                    pos2 = pos;
+                    pos2.width /= 2.0f;
+                    for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
+                        text = FormatText("%.3f", calc_envelope_points(op[i].envelope_decay_amp) / (float)ks_1(KS_ENVELOPE_BITS));
+                       op[i].envelope_decay_amp = PropertyInt(pos2, text,op[i].envelope_decay_amp, 0, amp_max, 1);
+                        pos2.x += step_x / 2.0f;
+
+                        float sec = calc_envelope_times(op[i].envelope_decay_time) / (float)ks_1(16);
+                        if(sec >= 1.0f){
+                            text = FormatText("%.1f s", sec);
+                        }
+                        else if(sec< 1.0f && sec>= 0.01f){
+                            text = FormatText("%.1f ms", sec*1000.0f);
+                        }
+                        else {
+                            text = FormatText("%.3f ms", sec*1000.0f);
+                        }
+
+                       op[i].envelope_decay_time = PropertyInt(pos2, text,op[i].envelope_decay_time, 0, time_max, 1);
+                        pos2.x += step_x / 2.0f;
+                    }
+                    pos.x = x_pos.x; pos.y += step;
+                }
+                {
+                    GuiAlignedLabel("Sustain", pos, GUI_TEXT_ALIGN_RIGHT);
+                    pos.x += step_x;
+
+                    pos2 = pos;
+                    pos2.width /= 2.0f;
+                    for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
+                        text = FormatText("%.3f", calc_envelope_points(op[i].envelope_sustain_amp) / (float)ks_1(KS_ENVELOPE_BITS));
+                       op[i].envelope_sustain_amp = PropertyInt(pos2, text,op[i].envelope_sustain_amp, 0, amp_max, 1);
+                        pos2.x += step_x / 2.0f;
+
+                        float sec = calc_envelope_times(op[i].envelope_sustain_time) / (float)ks_1(16);
+                        if(sec >= 1.0f){
+                            text = FormatText("%.1f s", sec);
+                        }
+                        else if(sec< 1.0f && sec>= 0.01f){
+                            text = FormatText("%.1f ms", sec*1000.0f);
+                        }
+                        else {
+                            text = FormatText("%.3f ms", sec*1000.0f);
+                        }
+
+                       op[i].envelope_sustain_time = PropertyInt(pos2, text,op[i].envelope_sustain_time, 0, time_max, 1);
+                        pos2.x += step_x / 2.0f;
+                    }
+                    pos.x = x_pos.x; pos.y += step;
+                }
+                {
+                    GuiAlignedLabel("Release", pos, GUI_TEXT_ALIGN_RIGHT);
+                    pos.x += step_x;
+
+                    pos2 = pos;
+                    pos2.width /= 2.0f;
+                    for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
+                        text = FormatText("%.3f", calc_envelope_points(op[i].envelope_release_amp) / (float)ks_1(KS_ENVELOPE_BITS));
+                       op[i].envelope_release_amp = PropertyInt(pos2, text,op[i].envelope_release_amp, 0, 15, 1);
+                        pos2.x += step_x / 2.0f;
+
+                        float sec = calc_envelope_times(op[i].envelope_release_time) / (float)ks_1(16);
+                        if(sec >= 1.0f){
+                            text = FormatText("%.1f s", sec);
+                        }
+                        else if(sec< 1.0f && sec>= 0.01f){
+                            text = FormatText("%.1f ms", sec*1000.0f);
+                        }
+                        else {
+                            text = FormatText("%.3f ms", sec*1000.0f);
+                        }
+
+                       op[i].envelope_release_time = PropertyInt(pos2, text,op[i].envelope_release_time, 0, 15, 1);
+                        pos2.x += step_x / 2.0f;
+                    }
+                    pos.x = x_pos.x; pos.y += step;
+                }
             }
             // rate scale
            GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
            pos.x += step_x;
            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-               text = FormatText("%.1f %%", 100.0*calc_ratescales(es->tones_data.data[es->current_tone_index].synth.operators[i].ratescale) / (float)ks_1(KS_RATESCALE_BITS));
-              op[i].ratescale = PropertyInt(pos, text,op[i].ratescale, 0, 15, 1);
+               text = FormatText("%.1f %%", 100.0*calc_ratescales(op[i].ratescale) / (float)ks_1(KS_RATESCALE_BITS));
+              op[i].ratescale = PropertyInt(pos, text,op[i].ratescale, 0, 7, 1);
                pos.x += step_x;
            }
            pos.x = x_pos.x; pos.y += step; 
@@ -948,12 +1025,12 @@ void EditorUpdate(void* ptr){
             pos2.width /=2.0f;
 
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(es->tones_data.data[es->current_tone_index].synth.operators[i].keyscale_low_depth) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
+                text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(op[i].keyscale_low_depth) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
                op[i].keyscale_low_depth = PropertyInt(pos2, text,op[i].keyscale_low_depth, 0, 15, 1);
 
                 pos2.x += step_x/2.0f;
 
-                text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(es->tones_data.data[es->current_tone_index].synth.operators[i].keyscale_high_depth) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
+                text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(op[i].keyscale_high_depth) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
                op[i].keyscale_high_depth = PropertyInt(pos2, text,op[i].keyscale_high_depth, 0, 15, 1);
                 pos2.x += step_x / 2.0f;
             }
@@ -964,7 +1041,7 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Keyscale Mid Key", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%d", calc_keyscale_mid_points(es->tones_data.data[es->current_tone_index].synth.operators[i].keyscale_mid_point));
+                text = FormatText("%d", calc_keyscale_mid_points(op[i].keyscale_mid_point));
                op[i].keyscale_mid_point = PropertyInt(pos, text,op[i].keyscale_mid_point, 0, 31, 1);
                 pos.x += step_x;
             }
@@ -974,7 +1051,7 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_velocity_sens(es->tones_data.data[es->current_tone_index].synth.operators[i].velocity_sens) / (float)ks_1(KS_VELOCITY_SENS_BITS));
+                text = FormatText("%.1f %%", 100*calc_velocity_sens(op[i].velocity_sens) / (float)ks_1(KS_VELOCITY_SENS_BITS));
                op[i].velocity_sens = PropertyInt(pos, text,op[i].velocity_sens, 0, 15, 1);
                 pos.x += step_x;
             }
@@ -984,7 +1061,7 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("LFO AMS", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_lfo_ams_depths(es->tones_data.data[es->current_tone_index].synth.operators[i].lfo_ams_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
+                text = FormatText("%.1f %%", 100*calc_lfo_ams_depths(op[i].lfo_ams_depth) / (float)ks_1(KS_LFO_DEPTH_BITS));
                op[i].lfo_ams_depth = PropertyInt(pos, text,op[i].lfo_ams_depth, 0, 15, 1);
                 pos.x += step_x;
             }

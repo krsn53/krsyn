@@ -101,12 +101,6 @@ typedef enum ks_wave_t
     KS_NUM_WAVES,
 }ks_synth_wave_t;
 
-typedef struct ks_envelope_t{
-    u8                      amp: 4;
-    u8                      time: 4;
-}ks_envelope_t;
-
-
 typedef struct ks_synth_operator_data{
     u8              mod_type                : 4;
     u8              mod_src                 : 2;
@@ -116,14 +110,22 @@ typedef struct ks_synth_operator_data{
     u8              phase_offset            : 4;
     u8              phase_fine              : 4;
     u8              phase_detune            : 7;
-    ks_envelope_t   envelopes               [KS_ENVELOPE_NUM_POINTS];
     u8              level                   : 4;
-    u8              ratescale               : 4;
+    u8              ratescale               : 3;
     u8              keyscale_mid_point      : 5;
     u8              keyscale_left           : 2;
     u8              keyscale_right          : 2;
     u8              keyscale_low_depth      : 4;
     u8              keyscale_high_depth     : 4;
+
+    u8              envelope_attack_time    : 5;
+    u8              envelope_attack_amp    : 3;
+    u8              envelope_decay_time     : 5;
+    u8              envelope_decay_amp     : 3;
+    u8              envelope_sustain_time   : 5;
+    u8              envelope_sustain_amp   : 3;
+    u8              envelope_release_time   : 5;
+    u8              envelope_release_amp   : 3;
 
     u8              velocity_sens           : 4;
     u8              lfo_ams_depth           : 4;
@@ -276,9 +278,10 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_phase_offsets(value)                       ks_linear_u(ks_v(value, (8-4)), 0, 1 << (KS_PHASE_MAX_BITS))
 #define calc_phase_tunes(value)                         ks_linear_u(ks_v(value, 1), 0, (10<<(KS_PHASE_FINE_BITS - 3)))
 #define calc_phase_fines(value)                         ks_linear_u(ks_v(value,(8-4))-128, 0, 1<< (KS_PHASE_FINE_BITS - 8))
-#define calc_levels(value)                              ks_linear_u(ks_v(value,(8-4)), 0, ks_1(KS_LEVEL_BITS))
-#define calc_envelope_points(value)                     ks_linear_i(ks_v(value, (8-4)), 0, (1 << KS_ENVELOPE_BITS)+ks_1(KS_ENVELOPE_BITS - 4))
-#define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, ks_v(value, (8-4)))
+#define calc_levels(value)                              ks_linear_u(ks_v(value,(8-4)), 0, ks_1(KS_LEVEL_BITS)+ks_1(KS_LEVEL_BITS-4))
+#define calc_envelope_points(value)                     ks_linear_i(ks_v(value, (8-3)), 0, (1 << KS_ENVELOPE_BITS)+ks_1(KS_ENVELOPE_BITS - 3))
+#define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, ks_v(value, (8-5)))
+#define calc_envelope_times(value)                      ks_calc_envelope_times( ks_v(value, (8-5)))
 #define calc_velocity_sens(value)                       ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_VELOCITY_SENS_BITS)+ks_1(KS_VELOCITY_SENS_BITS - 4))
 #define calc_ratescales(value)                          ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_RATESCALE_BITS)+ks_1(KS_RATESCALE_BITS - 4))
 #define calc_keyscale_low_depths(value)                 ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_KEYSCALE_DEPTH_BITS)+ks_1(KS_KEYSCALE_DEPTH_BITS - 4))
@@ -286,7 +289,7 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_keyscale_mid_points(value)                 ks_v(value, (8-6))
 #define calc_keyscale_curve_types_left(value)           (value)
 #define calc_keyscale_curve_types_right(value)          (value)
-#define calc_lfo_ams_depths(value)                      ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_LFO_DEPTH_BITS)+ ks_1(8-4))
+#define calc_lfo_ams_depths(value)                      ks_linear_u(ks_v(value, (8-4)), 0, (1 << KS_LFO_DEPTH_BITS)+ ks_1(KS_LFO_DEPTH_BITS-4))
 #define calc_output(value)                           (value)
 #define calc_feedback_level(value)                      ks_linear_u(ks_v(value, (8-4)), 0, 1<<(KS_FEEDBACK_LEVEL_BITS))
 #define calc_panpot(value)                              ks_v(value, (7-4))
