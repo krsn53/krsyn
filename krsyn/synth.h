@@ -107,7 +107,7 @@ typedef struct ks_envelope_t{
 }ks_envelope_t;
 
 
-typedef struct ks_operator_data{
+typedef struct ks_synth_operator_data{
     u8              mod_type                : 4;
     u8              mod_src                 : 2;
     u8              wave_type               : 4;
@@ -127,9 +127,9 @@ typedef struct ks_operator_data{
 
     u8              velocity_sens           : 4;
     u8              lfo_ams_depth           : 4;
-}ks_operator_data;
+}ks_synth_operator_data;
 
-typedef struct ks_alg_common_data{
+typedef struct ks_synth_common_data{
     u8                     feedback_level   : 4;
     u8                     panpot           : 4;
     u8                     output           : 2;
@@ -138,18 +138,15 @@ typedef struct ks_alg_common_data{
     u8                     lfo_freq         : 4;
     u8                     lfo_offset       : 4;
 
-}ks_alg_common_data;
+}ks_synth_common_data;
 
 /**
  * @struct ks_synth_data
  * @brief Binary data of the synthesizer.
 */
-typedef union ks_synth_data{
-    struct {
-        ks_operator_data    operators[KS_NUM_OPERATORS];
-        ks_alg_common_data  common;
-    } st;
-    u8  b[sizeof(ks_operator_data)*KS_NUM_OPERATORS + sizeof(ks_alg_common_data)];
+typedef struct ks_synth_data{
+        ks_synth_operator_data    operators[KS_NUM_OPERATORS];
+        ks_synth_common_data  common;
 }ks_synth_data;
 
 typedef struct ks_synth_note ks_synth_note;
@@ -245,6 +242,8 @@ typedef  struct ks_synth_note
 ks_synth_note;
 
 ks_io_decl_custom_func(ks_synth_data);
+ks_io_decl_custom_func(ks_synth_common_data);
+ks_io_decl_custom_func(ks_synth_operator_data);
 
 ks_synth*                   ks_synth_new                    (ks_synth_data* data, u32 sampling_rate);
 ks_synth*                   ks_synth_array_new              (u32 length, ks_synth_data data[], u32 sampling_rate);

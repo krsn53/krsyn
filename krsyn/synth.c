@@ -1,12 +1,79 @@
 #include "synth.h"
 
+#include <ksio/serial/binary.h>
 #include <memory.h>
 #include <stdlib.h>
 #include <stdio.h>
 
+KS_FORCEINLINE bool ks_io_binary_as_array(ks_io* io, const ks_io_methods* methods, void* data, u32 data_size, ks_io_serial_type serial_type){
+    ks_value v = ks_val_ptr(data, KS_VALUE_U8);
+    ks_array_data arr = ks_prop_arr_data_size_len(data_size, 1, v, true);
+    return ks_io_array(io, methods, arr, 0, serial_type);
+}
+
+KS_FORCEINLINE i16 ks_io_bit_value(ks_io* io, const ks_io_methods* methods, u8 val, const char* prop_name, ks_io_serial_type serial_type){
+    ks_value v = ks_val_ptr(&val, KS_VALUE_U8);
+    ks_property p = ks_prop_v(prop_name, v);
+    return ks_io_property(io, methods, p, serial_type) ? val : -1;
+}
+
+
+#define ks_bit_u8(prop) { \
+    i16 ret = ks_io_bit_value(__IO, __METHODS, ks_access(prop), #prop, __SERIAL_TYPE); \
+    if(ret != -1) { \
+        ks_access(prop) = ret; \
+        __RETURN ++; \
+    } \
+}
+
+
+ks_io_begin_custom_func(ks_synth_common_data)
+    ks_bit_u8(feedback_level);
+    ks_bit_u8(panpot);
+    ks_bit_u8(output);
+    ks_bit_u8(lfo_fms_depth);
+    ks_bit_u8(lfo_wave_type);
+    ks_bit_u8(lfo_freq);
+    ks_bit_u8(lfo_offset);
+ks_io_end_custom_func(ks_synth_common_data)
+
+
+ks_io_begin_custom_func(ks_envelope_t)
+    ks_bit_u8(amp);
+    ks_bit_u8(time);
+ks_io_end_custom_func(ks_envelope_t)
+
+ks_io_begin_custom_func(ks_synth_operator_data)
+    ks_bit_u8(mod_type);
+    ks_bit_u8(mod_src);
+    ks_bit_u8(wave_type);
+    ks_bit_u8(fixed_frequency);
+    ks_bit_u8(phase_coarse);
+    ks_bit_u8(phase_offset);
+    ks_bit_u8(phase_fine);
+    ks_bit_u8(phase_detune);
+    ks_arr_obj(envelopes, ks_envelope_t);
+    ks_bit_u8(level);
+    ks_bit_u8(ratescale);
+    ks_bit_u8(keyscale_mid_point);
+    ks_bit_u8(keyscale_left);
+    ks_bit_u8(keyscale_right);
+    ks_bit_u8(keyscale_low_depth);
+    ks_bit_u8(keyscale_high_depth );
+
+    ks_bit_u8(velocity_sens);
+    ks_bit_u8(lfo_ams_depth);
+ks_io_end_custom_func(ks_synth_operator_data)
+
 ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
-    ks_arr_u8(b);
+    if((__SERIAL_TYPE == KS_IO_DESERIALIZER &&(__METHODS == &binary_big_endian_deserializer || __METHODS == &binary_little_endian_deserializer))||
+        (__SERIAL_TYPE == KS_IO_SERIALIZER &&(__METHODS == &binary_big_endian_serializer || __METHODS == &binary_little_endian_serializer))){
+        __RETURN += ks_io_binary_as_array(io, __METHODS, __OBJECT, sizeof(ks_synth_data), __SERIAL_TYPE);
+    } else {
+        ks_arr_obj(operators, ks_synth_operator_data);
+        ks_obj(common, ks_synth_common_data);
+    }
 ks_io_end_custom_func(ks_synth_data)
 
 
@@ -33,44 +100,44 @@ void ks_synth_data_set_default(ks_synth_data* data)
     *data = (ks_synth_data){ 0 };
     for(u32 i=0; i<KS_NUM_OPERATORS; i++)
     {
-        data->st.operators[i].mod_type = 0;
-        data->st.operators[i].wave_type = 0;
-        data->st.operators[i].fixed_frequency = false;
-        data->st.operators[i].phase_coarse = 2;
-        data->st.operators[i].phase_offset = 0;
-        data->st.operators[i].phase_fine = 8;
-        data->st.operators[i].phase_detune= 0;
-        data->st.operators[i].level = 15;
+        data->operators[i].mod_type = 0;
+        data->operators[i].wave_type = 0;
+        data->operators[i].fixed_frequency = false;
+        data->operators[i].phase_coarse = 2;
+        data->operators[i].phase_offset = 0;
+        data->operators[i].phase_fine = 8;
+        data->operators[i].phase_detune= 0;
+        data->operators[i].level = 15;
 
-        data->st.operators[i].envelopes[0].time = 0;
-        data->st.operators[i].envelopes[1].time = 15;
-        data->st.operators[i].envelopes[2].time = 15;
-        data->st.operators[i].envelopes[3].time = 4;
+        data->operators[i].envelopes[0].time = 0;
+        data->operators[i].envelopes[1].time = 15;
+        data->operators[i].envelopes[2].time = 15;
+        data->operators[i].envelopes[3].time = 4;
 
-        data->st.operators[i].envelopes[0].amp = 15;
-        data->st.operators[i].envelopes[1].amp = 15;
-        data->st.operators[i].envelopes[2].amp = 15;
-        data->st.operators[i].envelopes[3].amp = 0;
+        data->operators[i].envelopes[0].amp = 15;
+        data->operators[i].envelopes[1].amp = 15;
+        data->operators[i].envelopes[2].amp = 15;
+        data->operators[i].envelopes[3].amp = 0;
 
-        data->st.operators[i].ratescale = 2; // about 0.125
-        data->st.operators[i].keyscale_low_depth = 0;
-        data->st.operators[i].keyscale_low_depth = 0;
-        data->st.operators[i].keyscale_mid_point = 17;
-        data->st.operators[i].keyscale_left = KS_KEYSCALE_CURVE_LD;
-        data->st.operators[i].keyscale_right = KS_KEYSCALE_CURVE_LD;
+        data->operators[i].ratescale = 2; // about 0.125
+        data->operators[i].keyscale_low_depth = 0;
+        data->operators[i].keyscale_low_depth = 0;
+        data->operators[i].keyscale_mid_point = 17;
+        data->operators[i].keyscale_left = KS_KEYSCALE_CURVE_LD;
+        data->operators[i].keyscale_right = KS_KEYSCALE_CURVE_LD;
 
-        data->st.operators[i].velocity_sens = 15;
-        data->st.operators[i].lfo_ams_depth = 0;
+        data->operators[i].velocity_sens = 15;
+        data->operators[i].lfo_ams_depth = 0;
     }
 
-    data->st.common.output = 0;
-    data->st.common.feedback_level = 0;
-    data->st.common.panpot = 7;
+    data->common.output = 0;
+    data->common.feedback_level = 0;
+    data->common.panpot = 7;
 
-    data->st.common.lfo_wave_type = KS_WAVE_TRIANGLE;
-    data->st.common.lfo_fms_depth = 0;
-    data->st.common.lfo_freq = 0;
-    data->st.common.lfo_offset = 0;
+    data->common.lfo_wave_type = KS_WAVE_TRIANGLE;
+    data->common.lfo_fms_depth = 0;
+    data->common.lfo_freq = 0;
+    data->common.lfo_offset = 0;
 }
 
 KS_INLINE  bool  ks_synth_note_is_enabled     (const ks_synth_note* note){
@@ -390,32 +457,32 @@ KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
 {
     for(u32 i=0; i<KS_NUM_OPERATORS; i++)
     {
-        synth->mod_funcs[i] = ks_get_mod_func( data->st.operators[i].mod_type, data->st.operators[i].wave_type );
-        synth->wave_types[i] = data->st.operators[i].wave_type;
-        synth->mod_srcs[i] = data->st.operators[i].mod_src;
-        synth->fixed_frequency[i] = calc_fixed_frequency(data->st.operators[i].fixed_frequency);
-        synth->phase_coarses[i] = calc_phase_coarses(data->st.operators[i].phase_coarse);
-        synth->phase_offsets[i] = calc_phase_offsets(data->st.operators[i].phase_offset);
-        synth->phase_fines[i] = calc_phase_fines(data->st.operators[i].phase_fine);
-        synth->phase_tunes[i] = calc_phase_tunes(data->st.operators[i].phase_detune);
-        synth->levels[i] = calc_levels(data->st.operators[i].level);
+        synth->mod_funcs[i] = ks_get_mod_func( data->operators[i].mod_type, data->operators[i].wave_type );
+        synth->wave_types[i] = data->operators[i].wave_type;
+        synth->mod_srcs[i] = data->operators[i].mod_src;
+        synth->fixed_frequency[i] = calc_fixed_frequency(data->operators[i].fixed_frequency);
+        synth->phase_coarses[i] = calc_phase_coarses(data->operators[i].phase_coarse);
+        synth->phase_offsets[i] = calc_phase_offsets(data->operators[i].phase_offset);
+        synth->phase_fines[i] = calc_phase_fines(data->operators[i].phase_fine);
+        synth->phase_tunes[i] = calc_phase_tunes(data->operators[i].phase_detune);
+        synth->levels[i] = calc_levels(data->operators[i].level);
 
         for(u32 e=0; e < KS_ENVELOPE_NUM_POINTS; e++)
         {
-            synth->envelope_points[e][i] = calc_envelope_points(data->st.operators[i].envelopes[e].amp);
-            synth->envelope_samples[e][i] = calc_envelope_samples(sampling_rate, data->st.operators[i].envelopes[e].time);
+            synth->envelope_points[e][i] = calc_envelope_points(data->operators[i].envelopes[e].amp);
+            synth->envelope_samples[e][i] = calc_envelope_samples(sampling_rate, data->operators[i].envelopes[e].time);
         }
 
-        synth->velocity_sens[i] = calc_velocity_sens(data->st.operators[i].velocity_sens);
+        synth->velocity_sens[i] = calc_velocity_sens(data->operators[i].velocity_sens);
 
-        synth->ratescales[i] = calc_ratescales(data->st.operators[i].ratescale);
-        synth->keyscale_low_depths[i] = calc_keyscale_low_depths(data->st.operators[i].keyscale_low_depth);
-        synth->keyscale_high_depths[i] = calc_keyscale_high_depths(data->st.operators[i].keyscale_high_depth);
-        synth->keyscale_mid_points[i] = calc_keyscale_mid_points(data->st.operators[i].keyscale_mid_point);
-        synth->keyscale_curve_types[0][i] = calc_keyscale_curve_types_left(data->st.operators[i].keyscale_left);
-        synth->keyscale_curve_types[1][i] = calc_keyscale_curve_types_right(data->st.operators[i].keyscale_right);
+        synth->ratescales[i] = calc_ratescales(data->operators[i].ratescale);
+        synth->keyscale_low_depths[i] = calc_keyscale_low_depths(data->operators[i].keyscale_low_depth);
+        synth->keyscale_high_depths[i] = calc_keyscale_high_depths(data->operators[i].keyscale_high_depth);
+        synth->keyscale_mid_points[i] = calc_keyscale_mid_points(data->operators[i].keyscale_mid_point);
+        synth->keyscale_curve_types[0][i] = calc_keyscale_curve_types_left(data->operators[i].keyscale_left);
+        synth->keyscale_curve_types[1][i] = calc_keyscale_curve_types_right(data->operators[i].keyscale_right);
 
-        synth->lfo_ams_depths[i] = calc_lfo_ams_depths(data->st.operators[i].lfo_ams_depth);
+        synth->lfo_ams_depths[i] = calc_lfo_ams_depths(data->operators[i].lfo_ams_depth);
     }
     synth->lfo_ams_enabled = memcmp(synth->lfo_ams_depths, (const u32[]){0,0,0,0}, sizeof(synth->lfo_ams_depths)) != 0;
 
@@ -424,15 +491,15 @@ KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
 
 KS_INLINE static void synth_common_set(ks_synth* synth, const ks_synth_data* data)
 {
-    synth->output = calc_output(data->st.common.output);
-    synth->feedback_level = calc_feedback_level(data->st.common.feedback_level);
-    ks_calc_panpot(&synth->panpot_left, &synth->panpot_right, data->st.common.panpot << (7-4));
+    synth->output = calc_output(data->common.output);
+    synth->feedback_level = calc_feedback_level(data->common.feedback_level);
+    ks_calc_panpot(&synth->panpot_left, &synth->panpot_right, data->common.panpot << (7-4));
 
-    synth->lfo_wave_type = calc_lfo_wave_type(data->st.common.lfo_wave_type);
-    synth->lfo_fms_depth = calc_lfo_fms_depth(data->st.common.lfo_fms_depth);
-    synth->lfo_fms_enabled = data->st.common.lfo_fms_depth != 0;
-    synth->lfo_freq = calc_lfo_freq(data->st.common.lfo_freq);
-    synth->lfo_offset =calc_lfo_offset(ks_v(data->st.common.lfo_offset, (8-4)));
+    synth->lfo_wave_type = calc_lfo_wave_type(data->common.lfo_wave_type);
+    synth->lfo_fms_depth = calc_lfo_fms_depth(data->common.lfo_fms_depth);
+    synth->lfo_fms_enabled = data->common.lfo_fms_depth != 0;
+    synth->lfo_freq = calc_lfo_freq(data->common.lfo_freq);
+    synth->lfo_offset =calc_lfo_offset(ks_v(data->common.lfo_offset, (8-4)));
 }
 
 
@@ -715,8 +782,7 @@ KS_INLINE static void envelope_next(ks_synth_note* note)
     }
 }
 
-KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 delta[],
-                                       bool ams, bool fms)
+KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 delta[], bool ams, bool fms)
 {
     if(fms)
     {
@@ -771,8 +837,7 @@ KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note,
 }
 
 
-KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len,
-                                    u8 output, bool ams, bool fms)
+KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len, u8 output, bool ams, bool fms)
 {
     u32 delta[KS_NUM_OPERATORS];
 
