@@ -227,10 +227,14 @@ typedef  struct ks_synth_note
     i32                 envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
     u32                 envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
     i32                 envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    i32                 envelope_point_subs         [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
-    i32                 envelope_now_deltas         [KS_NUM_OPERATORS];
+    u32                 envelope_now_deltas         [KS_NUM_OPERATORS];
     i32                 envelope_now_times          [KS_NUM_OPERATORS];
     i32                 envelope_now_amps           [KS_NUM_OPERATORS];
+    i32                 envelope_now_remains        [KS_NUM_OPERATORS];
+    i32                 envelope_now_diff           [KS_NUM_OPERATORS];
+    i32                 envelope_now_point_amps     [KS_NUM_OPERATORS];
     u8                  envelope_states             [KS_NUM_OPERATORS];
     u8                  envelope_now_points         [KS_NUM_OPERATORS];
 
@@ -262,7 +266,7 @@ void                        ks_synth_note_off               (ks_synth_note* note
 bool                        ks_synth_note_is_enabled        (const ks_synth_note* note);
 bool                        ks_synth_note_is_on             (const ks_synth_note* note);
 
-u32                         ks_u2f                          (u32 val, int num_v);
+u64                         ks_u2f                          (u32 val, int num_v);
 u32                         ks_exp_u                        (u32 val, u32 base, int num_v_bit);
 u32                         ks_calc_envelope_times          (u32 val);
 u32                         ks_calc_envelope_samples        (u32 smp_freq, u8 val);

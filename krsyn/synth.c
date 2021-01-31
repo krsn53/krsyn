@@ -152,7 +152,7 @@ KS_INLINE bool ks_synth_note_is_on (const ks_synth_note* note){
     return (*((u32*)note->envelope_states) & 0x0f0f0f0f) != 0;
 }
 
-KS_INLINE  u32 ks_u2f(u32 val, int num_v){
+KS_INLINE  u64 ks_u2f(u32 val, int num_v){
     u32 v = ks_mask(val, num_v);
     u32 e = val >> num_v;
     if(e!= 0){
@@ -721,17 +721,23 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
             note->envelope_samples[j][i] = MAX((u32)frame, 1u);
         }
 
-        note->envelope_deltas[0][i] = note->envelope_points[0][i] / (note->envelope_samples[0][i] << KS_SAMPLE_PER_FRAMES_BITS);
+        note->envelope_deltas[0][i] = ks_1(KS_ENVELOPE_BITS);
+        note->envelope_deltas[0][i] /= ((i32)note->envelope_samples[0][i] << KS_SAMPLE_PER_FRAMES_BITS);
+        note->envelope_point_subs[0][i] = note->envelope_points[0][i];
         for(u32 j=1; j < KS_ENVELOPE_NUM_POINTS; j++)
         {
-            note->envelope_deltas[j][i] = (note->envelope_points[j][i] - note->envelope_points[j-1][i]);
-            note->envelope_deltas[j][i] /= (i32)note->envelope_samples[j][i] << KS_SAMPLE_PER_FRAMES_BITS;
+            i32 sub = note->envelope_points[j][i] - note->envelope_points[j-1][i];
+            note->envelope_point_subs[j][i] = sub;
+            note->envelope_deltas[j][i] =  ks_1(KS_ENVELOPE_BITS);
+            note->envelope_deltas[j][i] /=  ((i32)note->envelope_samples[j][i] << KS_SAMPLE_PER_FRAMES_BITS);
         }
 
         //envelope state init
         note->envelope_now_amps[i] = 0;
         note->envelope_now_times[i] = note->envelope_samples[0][i];
         note->envelope_now_deltas[i] = note->envelope_deltas[0][i];
+        note->envelope_now_diff[i] = note->envelope_point_subs[0][i];
+        note->envelope_now_remains[i] = ks_1(KS_ENVELOPE_BITS);
         note->envelope_now_points[i] = 0;
         note->envelope_states[i] = KS_ENVELOPE_ON;
 
@@ -742,9 +748,15 @@ void ks_synth_note_off (ks_synth_note* note)
 {
     for(u32 i=0; i< KS_NUM_OPERATORS; i++)
     {
-        note->envelope_states[i] = KS_ENVELOPE_RELEASED;
         note->envelope_now_times[i] = note->envelope_samples[KS_ENVELOPE_RELEASE_INDEX][i];
-        note->envelope_now_deltas[i] =  (note->envelope_points[KS_ENVELOPE_RELEASE_INDEX][i] - note->envelope_now_amps[i]) / ((i32)note->envelope_now_times[i] << KS_SAMPLE_PER_FRAMES_BITS);
+        note->envelope_now_points[i] = KS_ENVELOPE_RELEASE_INDEX;
+        note->envelope_states[i] = KS_ENVELOPE_RELEASED;
+
+        note->envelope_now_remains[i] = ks_1(KS_ENVELOPE_BITS);
+        i32 sub = note->envelope_points[KS_ENVELOPE_RELEASE_INDEX][i] - note->envelope_now_amps[i];
+        note->envelope_now_diff[i] =  sub;
+        note->envelope_now_deltas[i] = note->envelope_deltas[KS_ENVELOPE_RELEASE_INDEX][i];
+        note->envelope_now_point_amps[i] =  note->envelope_points[note->envelope_now_points[KS_ENVELOPE_RELEASE_INDEX]][i];
     }
 }
 
@@ -799,39 +811,7 @@ KS_FORCEINLINE static i32 synth_frame(const ks_synth* synth, ks_synth_note* note
     return out >> 2;
 }
 
-KS_INLINE static void envelope_next(ks_synth_note* note)
-{
-    for(u32 i=0; i<KS_NUM_OPERATORS; i++)
-    {
-        if(--note->envelope_now_times[i] <= 0)
-        {
-            switch(note->envelope_states[i])
-            {
-            case KS_ENVELOPE_ON:
-                note->envelope_now_amps[i] = note->envelope_points[note->envelope_now_points[i]][i];
-                note->envelope_now_points[i] ++;
-                if(note->envelope_now_points[i] == KS_ENVELOPE_RELEASE_INDEX)
-                {
-                    note->envelope_states[i] = KS_ENVELOPE_SUSTAINED;
-                    note->envelope_now_deltas[i] = 0;
-                    note->envelope_now_times[i] = -1;
-                } else{
-                    note->envelope_now_deltas[i] = note->envelope_deltas[note->envelope_now_points[i]][i];
-                    note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
-                }
-
-                break;
-            case KS_ENVELOPE_RELEASED:
-                note->envelope_now_amps[i] = 0;
-                note->envelope_now_deltas[i] = 0;
-                note->envelope_states[i] = KS_ENVELOPE_OFF;
-                break;
-            }
-        }
-    }
-}
-
-KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 delta[], bool ams, bool fms, lfo)
+KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 delta[], bool ams, bool fms, bool lfo)
 {
     if(fms)
     {
@@ -879,7 +859,54 @@ KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note,
     }
 }
 
+KS_FORCEINLINE static void ks_synth_envelope_process(ks_synth_note* note){
+    for(u32 j=0; j<KS_NUM_OPERATORS; j++)
+    {
+        note->envelope_now_remains[j] -= note->envelope_now_deltas[j];
+        i64 amp = note->envelope_now_remains[j] >> 1;
 
+        amp = (ks_u2f(amp, 27) );
+        amp *=note->envelope_now_diff[j];
+        amp >>= KS_ENVELOPE_BITS;
+        note->envelope_now_amps[j] = note->envelope_now_point_amps[j] - amp;
+    }
+
+    if(ks_mask(note->now_frame, KS_SAMPLE_PER_FRAMES_BITS) == 0)
+    {
+        for(u32 i=0; i<KS_NUM_OPERATORS; i++)
+        {
+            if(--note->envelope_now_times[i] <= 0)
+            {
+                note->envelope_now_remains[i] = ks_1(KS_ENVELOPE_BITS);
+                switch(note->envelope_states[i])
+                {
+                case KS_ENVELOPE_ON:
+                    note->envelope_now_points[i] ++;
+                    if(note->envelope_now_points[i] == KS_ENVELOPE_RELEASE_INDEX)
+                    {
+                        note->envelope_now_points[i] --;
+                        note->envelope_states[i] = KS_ENVELOPE_SUSTAINED;
+                        note->envelope_now_deltas[i] = 0;
+                        note->envelope_now_diff[i] = 0;
+                        note->envelope_now_times[i] =-1;
+                    } else{
+                        note->envelope_now_deltas[i] = note->envelope_deltas[note->envelope_now_points[i]][i];
+                        note->envelope_now_times[i] = note->envelope_samples[note->envelope_now_points[i]][i];
+                        note->envelope_now_diff[i] = note->envelope_point_subs[note->envelope_now_points[i]][i];
+                    }
+                    note->envelope_now_point_amps[i] =  note->envelope_points[note->envelope_now_points[i]][i];
+                    break;
+                case KS_ENVELOPE_RELEASED:
+                    note->envelope_now_deltas[i] = 0;
+                    note->envelope_now_diff[i] = 0;
+                    note->envelope_now_point_amps[i] =  note->envelope_points[note->envelope_now_points[KS_ENVELOPE_RELEASE_INDEX]][i];
+                    note->envelope_states[i] = KS_ENVELOPE_OFF;
+                    break;
+                }
+            }
+        }
+    }
+}
 KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len, u8 output, bool ams, bool fms, bool lfo)
 {
     u32 delta[KS_NUM_OPERATORS];
@@ -902,14 +929,10 @@ KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note
             note->phases[j] = note->phases[j] + d;
         }
 
-        for(u32 j=0; j<KS_NUM_OPERATORS; j++)
-        {
-            note->envelope_now_amps[j] += note->envelope_now_deltas[j];
-        }
-        if(ks_mask(note->now_frame, KS_SAMPLE_PER_FRAMES_BITS) == 0)
-        {
-            envelope_next(note);
-        }
+
+        ks_synth_envelope_process(note);
+
+
         note->now_frame ++;
     }
 }
