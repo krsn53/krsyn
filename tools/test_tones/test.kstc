@@ -5,7 +5,7 @@
 		{
 			.msb=0,
 			.lsb=0,
-			.program=1,
+			.program=0,
 			.note=128,
 			.name="Piano",
 			.synth={
@@ -27,11 +27,11 @@
 								.amp=7,
 							},
 							{
-								.time=17,
+								.time=18,
 								.amp=4,
 							},
 							{
-								.time=20,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -65,11 +65,11 @@
 								.amp=7,
 							},
 							{
-								.time=17,
+								.time=18,
 								.amp=4,
 							},
 							{
-								.time=20,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -103,11 +103,11 @@
 								.amp=7,
 							},
 							{
-								.time=17,
+								.time=18,
 								.amp=4,
 							},
 							{
-								.time=20,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -141,11 +141,11 @@
 								.amp=7,
 							},
 							{
-								.time=17,
+								.time=18,
 								.amp=4,
 							},
 							{
-								.time=20,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -178,7 +178,7 @@
 		{
 			.msb=0,
 			.lsb=0,
-			.program=0,
+			.program=1,
 			.note=128,
 			.name="LPF",
 			.synth={

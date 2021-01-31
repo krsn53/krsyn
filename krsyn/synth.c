@@ -155,16 +155,19 @@ KS_INLINE bool ks_synth_note_is_on (const ks_synth_note* note){
 KS_INLINE  u64 ks_u2f(u32 val, int num_v){
     u32 v = ks_mask(val, num_v);
     u32 e = val >> num_v;
+    v |= 1 << num_v;
+    return (u64)(v << e) - (1<<num_v) + 1; // fixed point (value bit + e)
+}
+
+KS_INLINE u32 ks_exp_u(u32 val, u32 base, int num_v)
+{
+    u32 v = ks_mask(val, num_v);
+    u32 e = val >> num_v;
     if(e!= 0){
         e--;
         v |= 1 << num_v;
     }
-    return (u64)v << e; // fixed point (value bit + e)
-}
-
-KS_INLINE u32 ks_exp_u(u32 val, u32 base, int num_v_bit)
-{
-    u64 ret = ks_u2f(val, num_v_bit);
+    i64 ret = (u64)v<< e;
     ret *= base;
     ret >>= 7;
     return ret;
@@ -332,7 +335,7 @@ KS_FORCEINLINE static i32 ks_output_lpf_base(u8 op, ks_synth_note* note, i32 in,
         out = MIN(ks_1(KS_OUTPUT_BITS), out);
     }
     out = ks_1(KS_OUTPUT_BITS) - out;
-    out = ks_u2f(out, 12) >> 8;
+    out = ks_u2f(out, 12) >> 9;
     out *= note->phase_deltas[op];
     out >>= KS_PHASE_BITS; // +- 5 octave of note key ???
     out = MIN(out, ks_1(KS_OUTPUT_BITS));
@@ -353,7 +356,7 @@ KS_FORCEINLINE static i32 ks_output_hpf_base(u8 op, ks_synth_note* note, i32 in,
         out += lfo_level;
         out = MAX(0, out);
     }
-    out = ks_u2f(out, 12) >> 8;
+    out = ks_u2f(out, 12) >> 9;
     out *= note->phase_deltas[op];
     out >>= KS_PHASE_BITS; // +- 5 octave of note key ???
     out = MIN(out, ks_1(KS_OUTPUT_BITS));
@@ -865,9 +868,9 @@ KS_FORCEINLINE static void ks_synth_envelope_process(ks_synth_note* note){
     for(u32 j=0; j<KS_NUM_OPERATORS; j++)
     {
         note->envelope_now_remains[j] -= note->envelope_now_deltas[j];
-        i64 amp = note->envelope_now_remains[j] >> 1;
+        i64 amp = note->envelope_now_remains[j] >> 2;
 
-        amp = (ks_u2f(amp, 27) );
+        amp = (ks_u2f(amp, 26)) ;
         amp *=note->envelope_now_diff[j];
         amp >>= KS_ENVELOPE_BITS;
         note->envelope_now_amps[j] = note->envelope_now_point_amps[j] - amp;
