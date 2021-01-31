@@ -107,7 +107,7 @@ int PropertyInt(Rectangle rec, const char* innerText, int value, int min_value, 
     GuiControlState state = guiState;
     value  = UpdateProperty(rec, value, min_value, max_value, step, &state, false);
 
-    if (state != GUI_STATE_DISABLED) progress.width = ((float)value/(float)(max_value - min_value)*(float)(rec.width - 2*GuiGetStyle(SLIDER, BORDER_WIDTH)));
+    if (state != GUI_STATE_DISABLED) progress.width = ((float)(value-min_value)/(float)(max_value - min_value)*(float)(rec.width - 2*GuiGetStyle(SLIDER, BORDER_WIDTH)));
 
 
     GuiDrawRectangle(rec, GuiGetStyle(SLIDER, BORDER_WIDTH),
@@ -143,7 +143,7 @@ int PropertyIntImage(Rectangle rec, Texture2D tex, int value, int min_value, int
     DrawTexturePro(tex, src, dest,
                    (Vector2){src.width/2.0f, src.height/2.0f}, 0.0f, Fade(tex_color ,guiAlpha));
     if(state == GUI_STATE_DISABLED){
-        DrawRectangleRec(rec, (Color){200,200,200, 128});
+        DrawRectangleRec(rec,Fade(RAYWHITE, 0.5));
     }
 
     GuiDrawRectangle(rec, GuiGetStyle(SLIDER, BORDER_WIDTH),

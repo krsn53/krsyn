@@ -7,7 +7,7 @@
 #endif
 
 #define SCREEN_WIDTH 726
-#define SCREEN_HEIGHT 538
+#define SCREEN_HEIGHT 552
 
 #define SAMPLING_RATE               48000
 #define SAMPLES_PER_UPDATE          4096
@@ -690,7 +690,7 @@ void EditorUpdate(void* ptr){
                 }
 
 
-                common->lfo_freq = PropertyInt(pos, text, common->lfo_freq, 0, 15, 1);
+                common->lfo_freq = PropertyInt(pos, text, common->lfo_freq, 0, 31, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -699,7 +699,7 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("LFO Initial Phase", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.1f deg", 360.0f *calc_lfo_offset(common->lfo_offset) / (float)ks_1(KS_PHASE_MAX_BITS));
+                text = FormatText("%.1f deg", 360.0f *common->lfo_offset / (float)16);
                 common->lfo_offset= PropertyInt(pos, text, common->lfo_offset, 0, 15, 1);
             }
             pos.x = x_pos.x;
@@ -785,18 +785,42 @@ void EditorUpdate(void* ptr){
                 pos2 = pos;
                 GuiAlignedLabel(FormatText("Op %d ", i+1), pos2, GUI_TEXT_ALIGN_LEFT);
 
-
-                pos2.x += step_x * 2/4;
-                pos2.height = 14;
-                pos2.width = step_x *2 /4 - margin;
-               op[i].mod_src = PropertyIntImage(pos2, es->operator_images,op[i].mod_src, 0, KS_NUM_OPERATORS-1, 1);
-
+                pos2.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step +2;
 
             // wave type
             GuiAlignedLabel("Ocillator Type", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
+
+            for(unsigned i=0; i<KS_NUM_OPERATORS; i++){
+                pos2 = pos;
+                pos2.width =pos2.height;
+                const bool sync_less = op[i].mod_type == KS_MOD_PASS || op[i].mod_type == KS_MOD_LPF || op[i].mod_type == KS_MOD_HPF ;
+                if(sync_less){
+                    GuiDisable();
+                }
+                op[i].mod_sync = GuiCheckBox(pos2, "Sync", op[i].mod_sync);
+                if(sync_less){
+                    GuiEnable();
+                }
+                pos2.width =(int)(pos.width * 0.5) - 2;
+                pos2.height += 2;
+                pos2.x += pos2.width + margin;
+
+                const bool in_less = op[i].mod_type == KS_MOD_PASS ;
+                if(in_less){
+                    GuiDisable();
+                }
+                op[i].mod_src = PropertyIntImage(pos2, es->operator_images,op[i].mod_src, 0, KS_NUM_OPERATORS-1, 1);
+                if(in_less){
+                    GuiEnable();
+                }
+                 pos.x += step_x;
+            }
+
+            pos.x = x_pos.x + step_x;
+            pos.y += step;
             pos2 = pos;
             pos2.height = pos.height*2;
             pos2.width = step_x * 0.5 - margin;
@@ -825,7 +849,7 @@ void EditorUpdate(void* ptr){
                 pos2.x += pos2.width + margin;
 
                 if(op[i].fixed_frequency){
-                    text = FormatText("%d Hz", ks_exp_u(op[i].phase_coarse << 2, 40, 5));
+                    text = FormatText("%d Hz",calc_frequency_fixed(op[i].phase_coarse));
                 }
                 else {
                     text = FormatText("%.1f", calc_phase_coarses(op[i].phase_coarse) / 2.0f);
@@ -865,7 +889,7 @@ void EditorUpdate(void* ptr){
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                 text = FormatText("%d", (op[i].phase_fine - 8));
-               op[i].phase_fine = PropertyInt(pos, text,op[i].phase_fine, 0, 15, 1);
+               op[i].phase_fine = PropertyInt(pos, text,op[i].phase_fine, 1, 15, 1);
                 pos.x += step_x;
             }
              pos.x = x_pos.x; pos.y += step;
@@ -875,27 +899,34 @@ void EditorUpdate(void* ptr){
              pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                 text = FormatText("%.1f", 100.0*calc_levels(op[i].level) / (float)ks_1(KS_LEVEL_BITS));
-               op[i].level = PropertyInt(pos, text,op[i].level, 0, 15, 1);
+               op[i].level = PropertyInt(pos, text,op[i].level, 0, 127, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
 
             {
+                const char *envelope_texts[4] ={
+                    "Envelope Attack",
+                    "Decay",
+                    "Sustain",
+                    "Release",
+                };
+
                 const u32 amp_max = 7;
                 const u32 time_max = 31;
                 // envelope points and times
-                {
-                    GuiAlignedLabel("Envelope Attack", pos, GUI_TEXT_ALIGN_RIGHT);
+                for (u32 e = 0; e< KS_ENVELOPE_NUM_POINTS; e++){
+                    GuiAlignedLabel(envelope_texts[e], pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
                     pos2 = pos;
                     pos2.width /= 2.0f;
                     for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                        text = FormatText("%.3f", calc_envelope_points(op[i].envelope_attack_amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                       op[i].envelope_attack_amp = PropertyInt(pos2, text,op[i].envelope_attack_amp, 0, amp_max, 1);
+                        text = FormatText("%.3f", calc_envelope_points(op[i].envelopes[e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
+                       op[i].envelopes[e].amp = PropertyInt(pos2, text,op[i].envelopes[e].amp, 0, amp_max, 1);
                         pos2.x += step_x / 2.0f;
 
-                        float sec = calc_envelope_times(op[i].envelope_attack_time) / (float)ks_1(16);
+                        float sec = calc_envelope_times(op[i].envelopes[e].time) / (float)ks_1(16);
                         if(sec >= 1.0f){
                             text = FormatText("%.1f s", sec);
                         }
@@ -906,92 +937,12 @@ void EditorUpdate(void* ptr){
                             text = FormatText("%.3f ms", sec*1000.0f);
                         }
 
-                       op[i].envelope_attack_time = PropertyInt(pos2, text,op[i].envelope_attack_time, 0, time_max, 1);
+                       op[i].envelopes[e].time = PropertyInt(pos2, text,op[i].envelopes[e].time, 0, time_max, 1);
                         pos2.x += step_x / 2.0f;
                     }
                     pos.x = x_pos.x; pos.y += step;
                 }
-                {
-                    GuiAlignedLabel("Decay", pos, GUI_TEXT_ALIGN_RIGHT);
-                    pos.x += step_x;
 
-                    pos2 = pos;
-                    pos2.width /= 2.0f;
-                    for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                        text = FormatText("%.3f", calc_envelope_points(op[i].envelope_decay_amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                       op[i].envelope_decay_amp = PropertyInt(pos2, text,op[i].envelope_decay_amp, 0, amp_max, 1);
-                        pos2.x += step_x / 2.0f;
-
-                        float sec = calc_envelope_times(op[i].envelope_decay_time) / (float)ks_1(16);
-                        if(sec >= 1.0f){
-                            text = FormatText("%.1f s", sec);
-                        }
-                        else if(sec< 1.0f && sec>= 0.01f){
-                            text = FormatText("%.1f ms", sec*1000.0f);
-                        }
-                        else {
-                            text = FormatText("%.3f ms", sec*1000.0f);
-                        }
-
-                       op[i].envelope_decay_time = PropertyInt(pos2, text,op[i].envelope_decay_time, 0, time_max, 1);
-                        pos2.x += step_x / 2.0f;
-                    }
-                    pos.x = x_pos.x; pos.y += step;
-                }
-                {
-                    GuiAlignedLabel("Sustain", pos, GUI_TEXT_ALIGN_RIGHT);
-                    pos.x += step_x;
-
-                    pos2 = pos;
-                    pos2.width /= 2.0f;
-                    for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                        text = FormatText("%.3f", calc_envelope_points(op[i].envelope_sustain_amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                       op[i].envelope_sustain_amp = PropertyInt(pos2, text,op[i].envelope_sustain_amp, 0, amp_max, 1);
-                        pos2.x += step_x / 2.0f;
-
-                        float sec = calc_envelope_times(op[i].envelope_sustain_time) / (float)ks_1(16);
-                        if(sec >= 1.0f){
-                            text = FormatText("%.1f s", sec);
-                        }
-                        else if(sec< 1.0f && sec>= 0.01f){
-                            text = FormatText("%.1f ms", sec*1000.0f);
-                        }
-                        else {
-                            text = FormatText("%.3f ms", sec*1000.0f);
-                        }
-
-                       op[i].envelope_sustain_time = PropertyInt(pos2, text,op[i].envelope_sustain_time, 0, time_max, 1);
-                        pos2.x += step_x / 2.0f;
-                    }
-                    pos.x = x_pos.x; pos.y += step;
-                }
-                {
-                    GuiAlignedLabel("Release", pos, GUI_TEXT_ALIGN_RIGHT);
-                    pos.x += step_x;
-
-                    pos2 = pos;
-                    pos2.width /= 2.0f;
-                    for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                        text = FormatText("%.3f", calc_envelope_points(op[i].envelope_release_amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                       op[i].envelope_release_amp = PropertyInt(pos2, text,op[i].envelope_release_amp, 0, 15, 1);
-                        pos2.x += step_x / 2.0f;
-
-                        float sec = calc_envelope_times(op[i].envelope_release_time) / (float)ks_1(16);
-                        if(sec >= 1.0f){
-                            text = FormatText("%.1f s", sec);
-                        }
-                        else if(sec< 1.0f && sec>= 0.01f){
-                            text = FormatText("%.1f ms", sec*1000.0f);
-                        }
-                        else {
-                            text = FormatText("%.3f ms", sec*1000.0f);
-                        }
-
-                       op[i].envelope_release_time = PropertyInt(pos2, text,op[i].envelope_release_time, 0, 15, 1);
-                        pos2.x += step_x / 2.0f;
-                    }
-                    pos.x = x_pos.x; pos.y += step;
-                }
             }
             // rate scale
            GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);

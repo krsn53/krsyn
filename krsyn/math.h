@@ -20,7 +20,7 @@
 #define KS_FREQUENCY_BITS               16u
 #define KS_RATESCALE_BITS               16u
 
-#define KS_PHASE_BITS                   16u
+#define KS_PHASE_BITS                   (30u - KS_TABLE_BITS)
 #define KS_PHASE_MAX_BITS               (KS_PHASE_BITS + KS_TABLE_BITS)
 #define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 5)
 
