@@ -329,6 +329,7 @@ KS_FORCEINLINE static i32 ks_output_lpf_base(u8 op, ks_synth_note* note, i32 in,
         const i32 lfo_factor = note->synth->phase_offsets[op] >> (KS_PHASE_MAX_BITS - KS_OUTPUT_BITS);
         const i32 lfo_level = (note->lfo_log * lfo_factor) >> KS_OUTPUT_BITS;
         out += lfo_level; // should lfo be influenced to envelope ?
+        out = MIN(ks_1(KS_OUTPUT_BITS), out);
     }
     out = ks_1(KS_OUTPUT_BITS) - out;
     out = ks_u2f(out, 12) >> 8;
@@ -350,6 +351,7 @@ KS_FORCEINLINE static i32 ks_output_hpf_base(u8 op, ks_synth_note* note, i32 in,
         const i32 lfo_factor = note->synth->phase_offsets[op] >> (KS_PHASE_MAX_BITS - KS_OUTPUT_BITS);
         const i32 lfo_level = (note->lfo_log * lfo_factor) >> KS_OUTPUT_BITS;
         out += lfo_level;
+        out = MAX(0, out);
     }
     out = ks_u2f(out, 12) >> 8;
     out *= note->phase_deltas[op];

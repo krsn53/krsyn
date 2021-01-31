@@ -5,7 +5,7 @@
 		{
 			.msb=0,
 			.lsb=0,
-			.program=0,
+			.program=1,
 			.note=128,
 			.name="Piano",
 			.synth={
@@ -178,7 +178,7 @@
 		{
 			.msb=0,
 			.lsb=0,
-			.program=1,
+			.program=0,
 			.note=128,
 			.name="LPF",
 			.synth={
@@ -478,7 +478,7 @@
 						.wave_type=0,
 						.fixed_frequency=0,
 						.phase_coarse=2,
-						.phase_offset=15,
+						.phase_offset=4,
 						.phase_fine=8,
 						.phase_detune=0,
 						.envelopes={
@@ -516,7 +516,7 @@
 					.output=0,
 					.lfo_fms_depth=1,
 					.lfo_wave_type=1,
-					.lfo_freq=14,
+					.lfo_freq=5,
 					.lfo_offset=0,
 				},
 			},
