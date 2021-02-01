@@ -655,8 +655,8 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("Panpot", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.3f", 2.0f * calc_panpot(common->panpot) / ks_1(KS_PANPOT_BITS) - 1.0f);
-                common->panpot = PropertyInt(pos, text, common->panpot, 0, 15, 1);
+                text = FormatText("%.3f", 2.0f * (calc_panpot(common->panpot)) / ks_1(KS_PANPOT_BITS) - 1.0f);
+                common->panpot = PropertyInt(pos, text, common->panpot, 1, 15, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;

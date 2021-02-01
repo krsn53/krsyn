@@ -152,8 +152,8 @@ typedef struct ks_synth_data{
 typedef struct ks_synth_note ks_synth_note;
 typedef struct ks_synth     ks_synth;
 
-typedef i16 (* ks_wave_func)(u8, ks_synth_note*, u32);
-typedef i16 (* ks_lfo_wave_func)(ks_synth_note*);
+typedef i32 (* ks_wave_func)(u8, ks_synth_note*, u32);
+typedef i32 (* ks_lfo_wave_func)(ks_synth_note*);
 typedef i32 (* ks_mod_func)(u8, ks_synth_note*, i32);
 
 /**
@@ -227,13 +227,13 @@ typedef  struct ks_synth_note
     i32                 envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
     u32                 envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
     i32                 envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    i32                 envelope_point_subs         [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    i32                 envelope_diffs              [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
     u32                 envelope_now_deltas         [KS_NUM_OPERATORS];
     i32                 envelope_now_times          [KS_NUM_OPERATORS];
     i32                 envelope_now_amps           [KS_NUM_OPERATORS];
     i32                 envelope_now_remains        [KS_NUM_OPERATORS];
-    i32                 envelope_now_diff           [KS_NUM_OPERATORS];
+    i32                 envelope_now_diffs          [KS_NUM_OPERATORS];
     i32                 envelope_now_point_amps     [KS_NUM_OPERATORS];
     u8                  envelope_states             [KS_NUM_OPERATORS];
     u8                  envelope_now_points         [KS_NUM_OPERATORS];
@@ -302,7 +302,7 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_lfo_ams_depths(value)                      ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_LFO_DEPTH_BITS)+ ks_1(KS_LFO_DEPTH_BITS-4))
 #define calc_output(value)                              (value)
 #define calc_feedback_level(value)                      ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_FEEDBACK_LEVEL_BITS))
-#define calc_panpot(value)                              ks_v(value, (7-4))
+#define calc_panpot(value)                              ks_linear_u(ks_v(value, (7-4)), 0, ks_1(8))
 #define calc_lfo_wave_type(value)                      (value)
 #define calc_lfo_fms_depth(value)                       ks_exp_u(ks_v(value, (8-5)), (ks_1(KS_LFO_DEPTH_BITS-11)), 4)
 #define calc_lfo_freq(value)                            ks_exp_u(ks_v(value+4, (8-4)), ks_1(KS_FREQUENCY_BITS), 6)
