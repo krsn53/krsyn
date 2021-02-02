@@ -377,6 +377,7 @@ KS_FORCEINLINE static i32 ks_output_hpf_base(u8 op, ks_synth_note* note, i32 in,
     note->mod_func_logs[op][1] += out;
 
     return in - note->mod_func_logs[op][1] ;
+
 }
 
 static i32 ks_output_lpf(u8 op, ks_synth_note* note, i32 in){
