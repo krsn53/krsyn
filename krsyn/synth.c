@@ -326,49 +326,57 @@ static i32 ks_output_pass(u8 op, ks_synth_note* note, i32 in){
 }
 
 KS_FORCEINLINE static i32 ks_output_lpf_base(u8 op, ks_synth_note* note, i32 in, bool lfo){
-    i64  out = ks_1(KS_ENVELOPE_BITS) - note->envelope_now_amps[op];
+    i64  alpha = ks_1(KS_ENVELOPE_BITS) - note->envelope_now_amps[op];
     if(lfo){
         const i32 lfo_factor = note->synth->phase_offsets[op] >> (KS_PHASE_MAX_BITS - KS_ENVELOPE_BITS + 1);// max amp is half of envelope max amp
         const i32 lfo_level = ((i64)note->lfo_log * lfo_factor) >> KS_OUTPUT_BITS;
-        out += lfo_level;
-        out = MAX(out, 0);
+        alpha += lfo_level;
+        alpha = MAX(alpha, 0);
     }
-    out >>= KS_ENVELOPE_BITS - KS_OUTPUT_BITS;
+    alpha >>= KS_ENVELOPE_BITS - KS_OUTPUT_BITS;
 
-    out = ks_u2f(out, 12 ) >> 9;
+    alpha = ks_u2f(alpha, 12 ) >> 9;
 
-    out *= note->phase_deltas[op] ;
-    out >>= KS_PHASE_BITS;
-    out = MIN(out, ks_1(KS_OUTPUT_BITS));
+    alpha *= note->phase_deltas[op] ;
+    alpha >>= KS_PHASE_BITS;
+    alpha = MIN(alpha, ks_1(KS_OUTPUT_BITS));
 
-    out = out*(in - note->mod_func_logs[op]);
+    i64 out = alpha*(in - note->mod_func_logs[op][0]);
     out >>= KS_OUTPUT_BITS;
-    note->mod_func_logs[op] += out;
+    note->mod_func_logs[op][0] += out;
 
-    return note->mod_func_logs[op] ;
+    out = alpha*(note->mod_func_logs[op][0] - note->mod_func_logs[op][1]);
+    out >>= KS_OUTPUT_BITS;
+    note->mod_func_logs[op][1] += out;
+
+    return note->mod_func_logs[op][1] ;
 }
 
 KS_FORCEINLINE static i32 ks_output_hpf_base(u8 op, ks_synth_note* note, i32 in, bool lfo){
-    i64  out = note->envelope_now_amps[op];
+    i64  alpha= note->envelope_now_amps[op];
     if(lfo){
         const i32 lfo_factor = note->synth->phase_offsets[op] >> (KS_PHASE_MAX_BITS - KS_ENVELOPE_BITS + 1);// max amp is half of envelope max amp
         const i32 lfo_level = ((i64)note->lfo_log * lfo_factor) >> KS_OUTPUT_BITS;
-        out -= lfo_level;
-        out = MAX(out, 0);
+        alpha -= lfo_level;
+        alpha = MAX(alpha, 0);
     }
-     out >>= KS_ENVELOPE_BITS - KS_OUTPUT_BITS;
+     alpha >>= KS_ENVELOPE_BITS - KS_OUTPUT_BITS;
 
-    out = ks_u2f( out, 12 ) >> 14; // 9 + 5 (phase coarse)
+    alpha = ks_u2f( alpha, 12 ) >> 14; // 9 + 5 (phase coarse)
 
-    out *= note->phase_deltas[op];
-    out >>= KS_PHASE_BITS;
-    out = MIN(out, ks_1(KS_OUTPUT_BITS));
+    alpha *= note->phase_deltas[op];
+    alpha >>= KS_PHASE_BITS;
+    alpha = MIN(alpha, ks_1(KS_OUTPUT_BITS));
 
-    out = out*(in - note->mod_func_logs[op]);
+    i64 out = alpha*(in - note->mod_func_logs[op][0]);
     out >>= KS_OUTPUT_BITS;
-    note->mod_func_logs[op] += out;
+    note->mod_func_logs[op][0] += out;
 
-    return in - note->mod_func_logs[op] ;
+    out = alpha*(note->mod_func_logs[op][0] - note->mod_func_logs[op][1]);
+    out >>= KS_OUTPUT_BITS;
+    note->mod_func_logs[op][1] += out;
+
+    return in - note->mod_func_logs[op][1] ;
 }
 
 static i32 ks_output_lpf(u8 op, ks_synth_note* note, i32 in){
@@ -570,8 +578,6 @@ KS_INLINE static void synth_common_set(ks_synth* synth, const ks_synth_data* dat
 
 void ks_synth_set(ks_synth* synth, u32 sampling_rate, const ks_synth_data* data)
 {
-    synth->sampling_rate = sampling_rate;
-    synth->delta_time = ks_1(KS_DELTA_TIME_BITS)  / sampling_rate;
     synth_op_set(sampling_rate, synth, data);
     synth_common_set(synth, data);
 }
@@ -873,7 +879,6 @@ KS_FORCEINLINE static void ks_synth_envelope_process(ks_synth_note* note){
     {
         note->envelope_now_remains[j] -= note->envelope_now_deltas[j];
         i64 amp = note->envelope_now_remains[j];
-
         amp = (ks_u2f(amp, 28)) >> 2;
         amp *=note->envelope_now_diffs[j];
         amp >>= KS_ENVELOPE_BITS;

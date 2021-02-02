@@ -203,8 +203,6 @@ typedef struct ks_synth
         bool            fms      :1;
         bool            filter   :1;
     } lfo_enabled;
-    u16             sampling_rate;
-    u32             delta_time;
 }
 ks_synth;
 
@@ -219,7 +217,7 @@ typedef  struct ks_synth_note
     i32                 output_logs                 [KS_NUM_OPERATORS];
 
     const i16*          wave_tables                 [KS_NUM_OPERATORS];
-    i32                 mod_func_logs               [KS_NUM_OPERATORS];
+    i16                 mod_func_logs               [KS_NUM_OPERATORS][2];
 
     u32                 phases                      [KS_NUM_OPERATORS];
     u32                 phase_deltas                [KS_NUM_OPERATORS];

@@ -5,7 +5,7 @@
 		{
 			.msb=0,
 			.lsb=0,
-			.program=0,
+			.program=1,
 			.note=128,
 			.name="Piano",
 			.synth={
@@ -39,7 +39,7 @@
 								.amp=0,
 							},
 						},
-						.level=9,
+						.level=15,
 						.ratescale=1,
 						.keyscale_mid_point=17,
 						.keyscale_left=2,
@@ -77,7 +77,7 @@
 								.amp=0,
 							},
 						},
-						.level=8,
+						.level=10,
 						.ratescale=1,
 						.keyscale_mid_point=17,
 						.keyscale_left=2,
@@ -115,7 +115,7 @@
 								.amp=0,
 							},
 						},
-						.level=26,
+						.level=28,
 						.ratescale=1,
 						.keyscale_mid_point=17,
 						.keyscale_left=2,
@@ -185,7 +185,7 @@
 				// Magic number : KSYN
 				.operators={
 					{
-						.mod_type=8,
+						.mod_type=9,
 						.mod_src=0,
 						.mod_sync=0,
 						.wave_type=2,
@@ -305,7 +305,7 @@
 						.wave_type=0,
 						.fixed_frequency=0,
 						.phase_coarse=2,
-						.phase_offset=2,
+						.phase_offset=8,
 						.phase_fine=8,
 						.phase_detune=0,
 						.envelopes={
@@ -343,7 +343,7 @@
 					.output=0,
 					.lfo_fms_depth=0,
 					.lfo_wave_type=0,
-					.lfo_freq=15,
+					.lfo_freq=5,
 					.lfo_offset=0,
 				},
 			},
@@ -351,7 +351,7 @@
 		{
 			.msb=0,
 			.lsb=0,
-			.program=1,
+			.program=0,
 			.note=128,
 			.name="HPF",
 			.synth={
@@ -478,7 +478,7 @@
 						.wave_type=0,
 						.fixed_frequency=0,
 						.phase_coarse=63,
-						.phase_offset=3,
+						.phase_offset=8,
 						.phase_fine=8,
 						.phase_detune=0,
 						.envelopes={
@@ -499,7 +499,7 @@
 								.amp=0,
 							},
 						},
-						.level=63,
+						.level=70,
 						.ratescale=1,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
