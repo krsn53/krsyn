@@ -1332,7 +1332,7 @@ void EditorUpdate(void* ptr){
 #ifdef PLATFORM_WEB
             es->display_mode= EDIT;
 #else
-            const float lr_margin =  SCREEN_WIDTH * 0.3f;
+            const float lr_margin =  SCREEN_WIDTH * 0.2f;
             const float td_margin = SCREEN_HEIGHT * 0.28f;
             Rectangle window ={ lr_margin, td_margin, SCREEN_WIDTH - lr_margin *2, SCREEN_HEIGHT - td_margin*2 };
             if(GuiWindowBox(window, "#141#Settings")){

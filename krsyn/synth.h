@@ -4,6 +4,10 @@
 */
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //#include <xmmintrin.h> perhaps, my implementation is so bad, so I have compiler vectorize automatically. It is faster.
 #include <stdint.h>
 #include <stdbool.h>
@@ -217,7 +221,7 @@ typedef  struct ks_synth_note
     i32                 output_logs                 [KS_NUM_OPERATORS];
 
     const i16*          wave_tables                 [KS_NUM_OPERATORS];
-    i16                 mod_func_logs               [KS_NUM_OPERATORS][2];
+    i32                 mod_func_logs               [KS_NUM_OPERATORS][2];
 
     u32                 phases                      [KS_NUM_OPERATORS];
     u32                 phase_deltas                [KS_NUM_OPERATORS];
@@ -241,7 +245,6 @@ typedef  struct ks_synth_note
     i32                 lfo_log;
     const i16*          lfo_wave_table;
     ks_lfo_wave_func    lfo_func;
-    i32                 lfo_func_log;
 
     u32                 now_frame;
 
@@ -306,3 +309,7 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_lfo_freq(value)                            ks_exp_u(ks_v(value+4, (8-4)), ks_1(KS_FREQUENCY_BITS), 6)
 #define calc_lfo_offset(value)                          ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_PHASE_MAX_BITS))
 
+
+#ifdef __cplusplus
+}
+#endif

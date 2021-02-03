@@ -4,6 +4,10 @@
 */
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "./synth.h"
 
 #define KS_CHANNEL_BITs         4u
@@ -187,3 +191,8 @@ const u32 *         ks_effect_calc_volume                   (ks_effect* effect);
 
 u32                 ks_calc_quarter_time                    (const u8* data);
 u32                 ks_calc_frames_per_event                (u32 sampling_rate, u16 quarter_time, u16 resolution);
+
+
+#ifdef __cplusplus
+}
+#endif

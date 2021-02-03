@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <ksio/types.h>
 
@@ -35,3 +39,8 @@ i16         ks_square           (u32 phase);
 i16         ks_noise            (u32 phase);
 u32         ks_notefreq         (u8 notenumber);
 i32         ks_ratescale        (u8 notenumber);
+
+
+#ifdef __cplusplus
+}
+#endif

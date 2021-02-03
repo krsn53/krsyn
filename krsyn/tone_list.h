@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <ksio/io.h>
@@ -70,3 +74,8 @@ ks_tone_list_bank_number    ks_tone_list_bank_number_of         (u8 msb, u8 lsb,
 void                        ks_tone_list_sort                   (ks_tone_list_data* v, i32* current);
 void                        ks_tone_list_insert                 (ks_tone_list_data* v, ks_tone_data d, i32 *current);
 void                        ks_tone_list_insert_empty           (ks_tone_list_data*v, i32 *current);
+
+
+#ifdef __cplusplus
+}
+#endif

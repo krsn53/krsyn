@@ -257,7 +257,7 @@ KS_FORCEINLINE static i32 ks_envelope_apply(u32 amp, i32 in)
 
 
 KS_FORCEINLINE static i32 ks_fm_mod(ks_wave_func wave_func, u8 op, ks_synth_note* note,i32 in){
-    return ks_envelope_apply(note->envelope_now_amps[op], wave_func(op, note, note->phases[op] + (in<<(KS_TABLE_BITS + (KS_PHASE_BITS - KS_OUTPUT_BITS) + 2))));
+    return ks_envelope_apply(note->envelope_now_amps[op], wave_func(op, note, note->phases[op] + (in<<(KS_TABLE_BITS + (KS_PHASE_BITS - KS_OUTPUT_BITS) + 1))));
 }
 
 
@@ -756,7 +756,8 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
         note->envelope_now_remains[i] = ks_1(KS_ENVELOPE_BITS);
         note->envelope_now_points[i] = 0;
         note->envelope_states[i] = KS_ENVELOPE_ON;
-
+        note->mod_func_logs[i][0] = 0;
+        note->mod_func_logs[i][1] = 0;
     }
 }
 
