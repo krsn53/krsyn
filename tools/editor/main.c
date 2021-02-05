@@ -870,16 +870,16 @@ void EditorUpdate(void* ptr){
             pos.x = x_pos.x; pos.y += step;
 
             // phase tune
-            GuiAlignedLabel("Phase Tune", pos, GUI_TEXT_ALIGN_RIGHT);
+            GuiAlignedLabel("Semitones", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                 if(op[i].fixed_frequency){
-                    text = FormatText("x %.3f", calc_phase_tunes(op[i].phase_detune) * 9.0f / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
+                    text = FormatText("x %.3f", calc_semitones(op[i].semitones) * 9.0f / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
                 }
                 else {
-                    text = FormatText("x %.3f", calc_phase_tunes(op[i].phase_detune) / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
+                    text = FormatText("%d", calc_semitones(op[i].semitones) - ks_1(5));
                 }
-               op[i].phase_detune = PropertyInt(pos, text,op[i].phase_detune, 0, 127, 1);
+               op[i].semitones = PropertyInt(pos, text,op[i].semitones, 0, 63, 1);
                 pos.x += step_x;
             }
              pos.x = x_pos.x; pos.y += step;
@@ -1002,8 +1002,8 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_velocity_sens(op[i].velocity_sens) / (float)ks_1(KS_VELOCITY_SENS_BITS));
-               op[i].velocity_sens = PropertyInt(pos, text,op[i].velocity_sens, 0, 15, 1);
+                text = FormatText("%.1f %%", 200*calc_velocity_sens(op[i].velocity_sens) / (float)ks_1(8));
+               op[i].velocity_sens = PropertyInt(pos, text,op[i].velocity_sens, 0, 31, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;

@@ -53,7 +53,7 @@ ks_io_begin_custom_func(ks_synth_operator_data)
     ks_bit_u8(phase_coarse);
     ks_bit_u8(phase_offset);
     ks_bit_u8(phase_fine);
-    ks_bit_u8(phase_detune);
+    ks_bit_u8(semitones);
     ks_arr_obj(envelopes, ks_synth_envelope_data);
     ks_bit_u8(level);
     ks_bit_u8(ratescale);
@@ -110,17 +110,17 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->operators[i].phase_coarse = 2;
         data->operators[i].phase_offset = 0;
         data->operators[i].phase_fine = 8;
-        data->operators[i].phase_detune= 0;
+        data->operators[i].semitones= ks_1(5);
         data->operators[i].level = 127;
 
         data->operators[i].envelopes[0].time= 0;
-        data->operators[i].envelopes[1].time = 31;
-        data->operators[i].envelopes[2].time = 31;
-        data->operators[i].envelopes[3].time = 8;
+        data->operators[i].envelopes[1].time = 20;
+        data->operators[i].envelopes[2].time = 20;
+        data->operators[i].envelopes[3].time = 14;
 
         data->operators[i].envelopes[0].amp = 7;
-        data->operators[i].envelopes[1].amp= 7;
-        data->operators[i].envelopes[2].amp = 7;
+        data->operators[i].envelopes[1].amp= 3;
+        data->operators[i].envelopes[2].amp = 2;
         data->operators[i].envelopes[3].amp = 0;
 
         data->operators[i].ratescale = 1;
@@ -130,7 +130,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->operators[i].keyscale_left = KS_KEYSCALE_CURVE_LD;
         data->operators[i].keyscale_right = KS_KEYSCALE_CURVE_LD;
 
-        data->operators[i].velocity_sens = 15;
+        data->operators[i].velocity_sens = 31;
         data->operators[i].lfo_ams_depth = 0;
     }
 
@@ -537,7 +537,7 @@ KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
         synth->phase_coarses[i] = calc_phase_coarses(data->operators[i].phase_coarse);
         synth->phase_offsets[i] = calc_phase_offsets(data->operators[i].phase_offset);
         synth->phase_fines[i] = calc_phase_fines(data->operators[i].phase_fine);
-        synth->phase_tunes[i] = calc_phase_tunes(data->operators[i].phase_detune);
+        synth->semitones[i] = calc_semitones(data->operators[i].semitones);
         synth->levels[i] = calc_levels(data->operators[i].level);
 
         for(u32 e=0; e< KS_ENVELOPE_NUM_POINTS; e++){
@@ -546,6 +546,7 @@ KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
         }
 
         synth->velocity_sens[i] = calc_velocity_sens(data->operators[i].velocity_sens);
+        synth->velocity_base[i] = synth->velocity_sens[i] < 0 ? 0: 127;
 
         synth->ratescales[i] = calc_ratescales(data->operators[i].ratescale);
         synth->keyscale_low_depths[i] = calc_keyscale_low_depths(data->operators[i].keyscale_low_depth);
@@ -598,7 +599,7 @@ KS_INLINE static u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 tun
     const u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
 
     const u32 freq_rate =  (ks_1(KS_FREQUENCY_BITS));
-    const u32 freq_rate_tuned = ((u64)freq_rate * (ks_1(KS_PHASE_FINE_BITS) + 9 * tune + fine)) >> KS_PHASE_FINE_BITS;
+    const u32 freq_rate_tuned = ((u64)freq_rate * (ks_1(KS_PHASE_FINE_BITS) + ks_v(tune, KS_PHASE_FINE_BITS - 6 + 3) + fine)) >> KS_PHASE_FINE_BITS;
 
     u64 delta_11 = (u32)(freq_11 / sampling_rate);
     delta_11 *= freq_rate_tuned;
@@ -609,11 +610,11 @@ KS_INLINE static u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 tun
 
 KS_INLINE static u32 phase_delta(u32 sampling_rate, u8 notenum, u32 coarse, u32 tune, i32 fine)
 {
-    const u32 freq = ks_notefreq(notenum); // heltz << KS_FREQUENCY_BITS
+    const u32 freq = ks_notefreq(MAX(MIN(notenum + tune - ks_1(5), 127), 0)); // heltz << KS_FREQUENCY_BITS
     const u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
 
     const u32 freq_rate = (coarse * (ks_1(KS_FREQUENCY_BITS))) >> KS_PHASE_COARSE_BITS;
-    const u32 freq_rate_tuned = ((u64)freq_rate * (ks_1(KS_PHASE_FINE_BITS) + tune + fine)) >> KS_PHASE_FINE_BITS;
+    const u32 freq_rate_tuned = ((u64)freq_rate * (ks_1(KS_PHASE_FINE_BITS) + fine)) >> KS_PHASE_FINE_BITS;
 
     u64 delta_11 = (u32)(freq_11 / sampling_rate);
     delta_11 *= freq_rate_tuned;
@@ -688,11 +689,11 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
         note->wave_tables[i] = ks_get_wave_table( synth->wave_types[i] );
         if(synth->fixed_frequency[i])
         {
-            note->phase_deltas[i] = phase_delta_fix_freq(sampling_rate, synth->phase_coarses[i], synth->phase_tunes[i], synth->phase_fines[i]);
+            note->phase_deltas[i] = phase_delta_fix_freq(sampling_rate, synth->phase_coarses[i], synth->semitones[i], synth->phase_fines[i]);
         }
         else
         {
-            note->phase_deltas[i] = phase_delta(sampling_rate, notenum, synth->phase_coarses[i], synth->phase_tunes[i], synth->phase_fines[i]);
+            note->phase_deltas[i] = phase_delta(sampling_rate, notenum, synth->phase_coarses[i], synth->semitones[i], synth->phase_fines[i]);
         }
 
         note->output_logs[i] = 0;
@@ -707,15 +708,17 @@ void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_
         i64 keysc = keyscale(synth, notenum, i);
 
         i64 target;
-        u32 velocity;
+        i32 velocity;
+
+        velocity = synth->velocity_sens[i];
+        velocity *=  (i32)synth->velocity_base[i]-vel;
+        velocity >>= 7;
+        velocity = (1 << KS_VELOCITY_SENS_BITS) -  velocity;
 
         //envelope
         for(u32 j=0; j < KS_ENVELOPE_NUM_POINTS; j++)
         {
-            velocity = synth->velocity_sens[i];
-            velocity *=  127-vel;
-            velocity >>= 7;
-            velocity = (1 << KS_VELOCITY_SENS_BITS) -  velocity;
+
 
             target = keysc;
             target *= synth->envelope_points[j][i];
