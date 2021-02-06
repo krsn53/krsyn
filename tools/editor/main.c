@@ -873,12 +873,7 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Semitones", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                if(op[i].fixed_frequency){
-                    text = FormatText("x %.3f", calc_semitones(op[i].semitones) * 9.0f / (float)ks_1(KS_PHASE_FINE_BITS) + 1.0f);
-                }
-                else {
-                    text = FormatText("%d", calc_semitones(op[i].semitones) - ks_1(5));
-                }
+                text = FormatText("%d", calc_semitones(op[i].semitones) - ks_1(5));
                op[i].semitones = PropertyInt(pos, text,op[i].semitones, 0, 63, 1);
                 pos.x += step_x;
             }

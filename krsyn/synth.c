@@ -114,13 +114,13 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->operators[i].level = 127;
 
         data->operators[i].envelopes[0].time= 0;
-        data->operators[i].envelopes[1].time = 20;
-        data->operators[i].envelopes[2].time = 20;
+        data->operators[i].envelopes[1].time = 31;
+        data->operators[i].envelopes[2].time = 31;
         data->operators[i].envelopes[3].time = 14;
 
         data->operators[i].envelopes[0].amp = 7;
-        data->operators[i].envelopes[1].amp= 3;
-        data->operators[i].envelopes[2].amp = 2;
+        data->operators[i].envelopes[1].amp= 7;
+        data->operators[i].envelopes[2].amp = 7;
         data->operators[i].envelopes[3].amp = 0;
 
         data->operators[i].ratescale = 1;
@@ -528,6 +528,9 @@ KS_INLINE static void synth_op_set(u32 sampling_rate, ks_synth* synth, const ks_
 {
     synth->lfo_enabled.ams= false;
     synth->lfo_enabled.filter = false;
+
+    synth->enabled = true;
+
     for(u32 i=0; i<KS_NUM_OPERATORS; i++)
     {
         synth->mod_funcs[i] = ks_get_mod_func( &data->operators[i]);
@@ -669,6 +672,8 @@ KS_INLINE static i32 keyscale(const ks_synth *synth, u8 notenum, u32 i)
 
 void ks_synth_note_on( ks_synth_note* note, const ks_synth *synth, u32 sampling_rate, u8 notenum, u8 vel)
 {
+    if(! synth->enabled) return;
+
     note->synth = synth;
     note->now_frame = 0;
 

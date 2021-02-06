@@ -209,7 +209,9 @@ typedef struct ks_synth
         bool            ams      :1;
         bool            fms      :1;
         bool            filter   :1;
-    } lfo_enabled;
+    }               lfo_enabled;
+
+    bool            enabled;
 }
 ks_synth;
 
