@@ -7,7 +7,7 @@
 #endif
 
 #define SCREEN_WIDTH 726
-#define SCREEN_HEIGHT 552
+#define SCREEN_HEIGHT 568
 
 #define SAMPLING_RATE               48000
 #define SAMPLES_PER_UPDATE          4096
@@ -324,6 +324,8 @@ void EditorUpdate(void* ptr){
         if(es->display_mode== EDIT) GuiEnable();
         else GuiDisable();
 
+        GuiSetStyle(LABEL, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
+
         Rectangle x_pos = base_pos;
         Rectangle pos = base_pos;
         Rectangle pos2;
@@ -620,7 +622,6 @@ void EditorUpdate(void* ptr){
         pos.x = x_pos.x;
         pos.y += (int)(step / 2.0);
 
-
         // common params
         {
             ks_synth_common_data * common = & es->tones_data.data[es->current_tone_index].synth.common;
@@ -825,8 +826,10 @@ void EditorUpdate(void* ptr){
             pos2.height = pos.height*2;
             pos2.width = step_x * 0.5 - margin;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-
+                bool wave_less = op[i].mod_type == KS_MOD_PASS || op[i].mod_type == KS_MOD_LPF || op[i].mod_type == KS_MOD_HPF;
+                if(wave_less) GuiDisable();
                op[i].wave_type = PropertyIntImage(pos2, es->wave_images,op[i].wave_type, 0, KS_NUM_WAVES-1, 1);
+               if(wave_less) GuiEnable();
                 pos2.x += pos2.width + margin;
                op[i].mod_type = PropertyIntImage(pos2, es->mod_images,op[i].mod_type, 0, KS_NUM_MODS-1, 1);
                 pos2.x += pos2.width + margin;
@@ -873,7 +876,12 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Semitones", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%d", calc_semitones(op[i].semitones) - ks_1(5));
+                if(op[i].fixed_frequency){
+                    text = FormatText("x %.3f",1.0 + 9*ks_v(op[i].semitones,KS_PHASE_FINE_BITS - 6) / (float)ks_1(KS_PHASE_FINE_BITS));
+                }
+                else {
+                    text = FormatText("%d", calc_semitones(op[i].semitones) - ks_1(5));
+                }
                op[i].semitones = PropertyInt(pos, text,op[i].semitones, 0, 63, 1);
                 pos.x += step_x;
             }
@@ -1013,7 +1021,33 @@ void EditorUpdate(void* ptr){
             }
             pos.x = x_pos.x; pos.y += step;
 
+            pos.x += step_x;
+            pos.x += step_x / 2;
 
+            GuiSetStyle(LABEL, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
+            if(GuiLabelButton(pos,"(Swap)")){
+                ks_synth_operator_data temp = op[0];
+                op[0] = op[1];
+                op[1] = temp;
+            }
+            pos.x += step_x;
+
+            if(GuiLabelButton(pos,"(Swap)")){
+                ks_synth_operator_data temp = op[1];
+                op[1] = op[2];
+                op[2] = temp;
+            }
+            pos.x += step_x;
+
+            if(GuiLabelButton(pos,"(Swap)")){
+                ks_synth_operator_data temp = op[2];
+                op[2] = op[3];
+                op[3] = temp;
+            }
+            pos.x += step_x;
+
+
+            pos.x = x_pos.x; pos.y += step;
         }
          GuiGroupBox((Rectangle){pos.x, x_pos.y, step_x*5, pos.y - x_pos.y}, "Operator Params");
 

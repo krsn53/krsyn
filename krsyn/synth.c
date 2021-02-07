@@ -602,7 +602,7 @@ KS_INLINE static u32 phase_delta_fix_freq(u32 sampling_rate, u32 coarse, u32 tun
     const u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
 
     const u32 freq_rate =  (ks_1(KS_FREQUENCY_BITS));
-    const u32 freq_rate_tuned = ((u64)freq_rate * (ks_1(KS_PHASE_FINE_BITS) + ks_v(tune, KS_PHASE_FINE_BITS - 6 + 3) + fine)) >> KS_PHASE_FINE_BITS;
+    const u32 freq_rate_tuned = ((u64)freq_rate * (ks_1(KS_PHASE_FINE_BITS) + 9*ks_v(tune, KS_PHASE_FINE_BITS - 6) + fine)) >> KS_PHASE_FINE_BITS;
 
     u64 delta_11 = (u32)(freq_11 / sampling_rate);
     delta_11 *= freq_rate_tuned;
