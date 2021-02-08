@@ -31,12 +31,6 @@ extern "C" {
 const i16*  ks_get_wave_table   (u8 index);
 const i16*  ks_get_noise_table   ();
 i16         ks_sin              (u32 phase);
-i16         ks_saw              (u32 phase);
-i16         ks_saw_down         (u32 phase);
-i16         ks_triangle         (u32 phase);
-i16         ks_fake_triangle    (u32 phase, u32 shift);
-i16         ks_square           (u32 phase);
-i16         ks_noise            (u32 phase);
 u32         ks_notefreq         (u8 notenumber);
 i32         ks_ratescale        (u8 notenumber);
 

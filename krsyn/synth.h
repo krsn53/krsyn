@@ -11,7 +11,7 @@ extern "C" {
 //#include <xmmintrin.h> perhaps, my implementation is so bad, so I have compiler vectorize automatically. It is faster.
 #include <stdint.h>
 #include <stdbool.h>
-#include "./math.h"
+#include "./wave.h"
 #include <ksio/io.h>
 
 #define KS_PHASE_COARSE_BITS            1u
@@ -78,13 +78,12 @@ typedef enum ks_envelope_state
 */
 typedef enum ks_mod_t{
     KS_MOD_FM,
-    KS_MOD_MIX,
     KS_MOD_ADD,
     KS_MOD_SUB,
     KS_MOD_MUL,
     KS_MOD_AM,
-    KS_MOD_LPF, // low path filter
-    KS_MOD_HPF, // high path filter
+    KS_MOD_LPF,
+    KS_MOD_HPF,
     KS_MOD_NONE,
     KS_MOD_PASS,
 
@@ -95,6 +94,7 @@ typedef enum ks_wave_t
 {
     KS_WAVE_SIN,
     KS_WAVE_TRIANGLE,
+    KS_WAVE_FAKE_TRIANGLE,
     KS_WAVE_SAW_UP,
     KS_WAVE_SAW_DOWN,
     KS_WAVE_SQUARE,

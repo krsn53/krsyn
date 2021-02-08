@@ -22,6 +22,7 @@
 #include <ksio/serial/clike.h>
 #include <ksio/serial/binary.h>
 
+
 //------------------------------------------------------------------------------------
 
 #define EVENTS_PER_UPDATE           (unsigned)(MIDIIN_RESOLUTION / 0.5f * SAMPLES_PER_UPDATE / SAMPLING_RATE)
@@ -788,7 +789,38 @@ void EditorUpdate(void* ptr){
 
                 pos2.x += step_x;
             }
+
             pos.x = x_pos.x; pos.y += step +2;
+
+            pos.x += step_x;
+            pos.x += step_x* 0.75;
+
+            pos2= pos;
+            pos2.width *= 0.5;
+
+            GuiSetStyle(LABEL, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
+            if(GuiLabelButton(pos2,"<- Swap ->")){
+                ks_synth_operator_data temp = op[0];
+                op[0] = op[1];
+                op[1] = temp;
+            }
+            pos2.x += step_x;
+
+            if(GuiLabelButton(pos2,"<- Swap ->")){
+                ks_synth_operator_data temp = op[1];
+                op[1] = op[2];
+                op[2] = temp;
+            }
+            pos2.x += step_x;
+
+            if(GuiLabelButton(pos2,"<- Swap ->")){
+                ks_synth_operator_data temp = op[2];
+                op[2] = op[3];
+                op[3] = temp;
+            }
+            pos2.x += step_x;
+
+            pos.x = x_pos.x; pos.y += step;
 
             // wave type
             GuiAlignedLabel("Ocillator Type", pos, GUI_TEXT_ALIGN_RIGHT);
@@ -1019,34 +1051,6 @@ void EditorUpdate(void* ptr){
                op[i].lfo_ams_depth = PropertyInt(pos, text,op[i].lfo_ams_depth, 0, 15, 1);
                 pos.x += step_x;
             }
-            pos.x = x_pos.x; pos.y += step;
-
-            pos.x += step_x;
-            pos.x += step_x / 2;
-
-            GuiSetStyle(LABEL, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
-            if(GuiLabelButton(pos,"(Swap)")){
-                ks_synth_operator_data temp = op[0];
-                op[0] = op[1];
-                op[1] = temp;
-            }
-            pos.x += step_x;
-
-            if(GuiLabelButton(pos,"(Swap)")){
-                ks_synth_operator_data temp = op[1];
-                op[1] = op[2];
-                op[2] = temp;
-            }
-            pos.x += step_x;
-
-            if(GuiLabelButton(pos,"(Swap)")){
-                ks_synth_operator_data temp = op[2];
-                op[2] = op[3];
-                op[3] = temp;
-            }
-            pos.x += step_x;
-
-
             pos.x = x_pos.x; pos.y += step;
         }
          GuiGroupBox((Rectangle){pos.x, x_pos.y, step_x*5, pos.y - x_pos.y}, "Operator Params");

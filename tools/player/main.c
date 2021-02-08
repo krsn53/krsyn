@@ -568,7 +568,7 @@ void update(void* ptr){
 
     DrawCursor();
 #ifndef NDEBUG
-    DrawText(TextFormat("%2i FPS", GetFPS()), 1, screenHeight - 11, 10, LIME);
+    DrawText(TextFormat("%2i FPS", GetFPS()), 4, screenHeight - 76, 10, LIME);
 #endif
     EndDrawing();
     //----------------------------------------------------------------------------------

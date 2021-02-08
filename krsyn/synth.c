@@ -69,8 +69,7 @@ ks_io_end_custom_func(ks_synth_operator_data)
 
 ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
-    if((__SERIAL_TYPE == KS_IO_DESERIALIZER &&(__METHODS == &binary_big_endian_deserializer || __METHODS == &binary_little_endian_deserializer))||
-        (__SERIAL_TYPE == KS_IO_SERIALIZER &&(__METHODS == &binary_big_endian_serializer || __METHODS == &binary_little_endian_serializer))){
+    if(__METHODS->type == KS_SERIAL_BINARY){
         __RETURN += ks_io_binary_as_array(io, __METHODS, __OBJECT, sizeof(ks_synth_data), __SERIAL_TYPE);
     } else {
         ks_arr_obj(operators, ks_synth_operator_data);
@@ -226,9 +225,6 @@ KS_FORCEINLINE static i32 ks_wave_func_default(u8 op,  ks_synth_note* note, u32 
     return note->wave_tables[op][ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
 }
 
-KS_FORCEINLINE static i32 ks_wave_func_minus(u8 op,  ks_synth_note* note, u32 phase){
-    return -note->wave_tables[op][ks_mask(phase >> KS_PHASE_BITS, KS_TABLE_BITS)];
-}
 
 KS_FORCEINLINE static i32 ks_wave_func_noise(u8 op,  ks_synth_note* note, u32 phase){
     const i16* table = ks_get_noise_table();
@@ -240,10 +236,6 @@ KS_FORCEINLINE static i32 ks_wave_func_noise(u8 op,  ks_synth_note* note, u32 ph
         note->wave_tables[op] = (const i16*)(i64)note->phases[op];
     }
     return ret;
-}
-
-KS_FORCEINLINE static i32 ks_wave_func_square(u8 op,  ks_synth_note* note, u32 phase){
-    return note->wave_tables[op][ks_mask(((phase) >> KS_PHASE_BITS), KS_TABLE_BITS)] - note->wave_tables[op][ks_mask(((phase + ks_1(KS_PHASE_MAX_BITS-1)) >> KS_PHASE_BITS), KS_TABLE_BITS)];
 }
 
 KS_FORCEINLINE static i32 ks_envelope_apply(u32 amp, i32 in)
@@ -261,13 +253,6 @@ KS_FORCEINLINE static i32 ks_fm_mod(ks_wave_func wave_func, u8 op, ks_synth_note
 }
 
 
-KS_FORCEINLINE static i32 ks_mix_mod(ks_wave_func wave_func, u8 op, ks_synth_note* note, i32 in){
-    i32 ret = wave_func(op, note, note->phases[op]);
-    ret = ks_envelope_apply(note->envelope_now_amps[op], ret);
-    u32 in_f = ks_1(KS_ENVELOPE_BITS) - note->envelope_now_amps[op];
-    ret += ks_envelope_apply(in_f, in);
-    return ret;
-}
 
 
 KS_FORCEINLINE static i32 ks_am_mod(ks_wave_func wave_func, u8 op, ks_synth_note* note, i32 in){
@@ -417,18 +402,13 @@ static i32 ks_output_hpf_f(u8 op, ks_synth_note* note, i32 in){
 
 #define ks_output_wave_impl(mod) \
 ks_output_mod_impl(ks_wave_func_default, mod) \
-ks_output_mod_impl(ks_wave_func_minus, mod) \
-ks_output_mod_impl(ks_wave_func_square, mod) \
 ks_output_mod_impl(ks_wave_func_noise, mod)
 
 #define ks_output_wave_syncless_impl(mod) \
 ks_output_mod_syncless_impl(ks_wave_func_default, mod) \
-ks_output_mod_syncless_impl(ks_wave_func_minus, mod) \
-ks_output_mod_syncless_impl(ks_wave_func_square, mod) \
 ks_output_mod_syncless_impl(ks_wave_func_noise, mod)
 
 ks_output_wave_impl(ks_fm_mod)
-ks_output_wave_impl(ks_mix_mod)
 ks_output_wave_impl(ks_mul_mod)
 ks_output_wave_impl(ks_add_mod)
 ks_output_wave_impl(ks_sub_mod)
@@ -442,9 +422,10 @@ ks_output_wave_impl(ks_none_mod)
 switch (wave_type) { \
 case KS_WAVE_SIN: \
 case KS_WAVE_SAW_UP: \
-case KS_WAVE_TRIANGLE: return ks_output_mod_func(ks_wave_func_default, mod, false); \
-case KS_WAVE_SAW_DOWN:return ks_output_mod_func(ks_wave_func_minus, mod, false); \
-case KS_WAVE_SQUARE: return ks_output_mod_func(ks_wave_func_square, mod, false); \
+case KS_WAVE_TRIANGLE: \
+case KS_WAVE_SAW_DOWN: \
+case KS_WAVE_FAKE_TRIANGLE: \
+case KS_WAVE_SQUARE: return ks_output_mod_func(ks_wave_func_default, mod, false); \
 case KS_WAVE_NOISE: return ks_output_mod_func(ks_wave_func_noise, mod, false); \
 }
 
@@ -453,9 +434,10 @@ case KS_WAVE_NOISE: return ks_output_mod_func(ks_wave_func_noise, mod, false); \
 switch (wave_type) { \
 case KS_WAVE_SIN: \
 case KS_WAVE_SAW_UP: \
-case KS_WAVE_TRIANGLE: return ks_mod_sync_branch(ks_wave_func_default, mod, sync); \
-case KS_WAVE_SAW_DOWN:return ks_mod_sync_branch(ks_wave_func_minus, mod, sync); \
-case KS_WAVE_SQUARE: return ks_mod_sync_branch(ks_wave_func_square, mod, sync); \
+case KS_WAVE_TRIANGLE: \
+case KS_WAVE_SAW_DOWN:\
+case KS_WAVE_FAKE_TRIANGLE: \
+case KS_WAVE_SQUARE: return ks_mod_sync_branch(ks_wave_func_default, mod, sync); \
 case KS_WAVE_NOISE: return ks_mod_sync_branch(ks_wave_func_noise, mod, sync); \
 }
 
@@ -469,8 +451,6 @@ static ks_mod_func ks_get_mod_func(const ks_synth_operator_data* op){
         ks_output_wave_branch(ks_add_mod, op->wave_type, op->mod_sync)
     case KS_MOD_SUB:
         ks_output_wave_branch(ks_sub_mod, op->wave_type, op->mod_sync)
-    case KS_MOD_MIX:
-        ks_output_wave_branch(ks_mix_mod, op->wave_type, op->mod_sync)
     case KS_MOD_MUL:
         ks_output_wave_branch(ks_mul_mod, op->wave_type, op->mod_sync)
     case KS_MOD_AM:
@@ -872,7 +852,7 @@ KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note,
 
 
             depth *= note->output_logs[j];
-            depth >>= KS_LFO_DEPTH_BITS;
+            depth >>= KS_OUTPUT_BITS;
             note->output_logs[j] = (i32)depth;
         }
     }

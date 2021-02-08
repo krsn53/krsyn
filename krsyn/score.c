@@ -1,6 +1,6 @@
 #include "score.h"
 #include "tone_list.h"
-#include "math.h"
+#include "wave.h"
 
 #include <ksio/logger.h>
 #include <ksio/vector.h>
