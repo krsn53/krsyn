@@ -136,8 +136,8 @@ void ks_score_state_free(ks_score_state* state){
     free(state);
 }
 
-bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel_number, ks_score_channel* channel, u8 note_number, u8 velocity){
-
+bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel_number,  u8 note_number, u8 velocity){
+    ks_score_channel* channel = state->channels + channel_number;
      ks_synth* synth = channel->program;
      if(synth == NULL) {
          ks_error("Failed to run note_on for not set program of channel %d at tick %d", channel_number, state->current_tick);
@@ -172,7 +172,8 @@ bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel
     return true;
 }
 
-bool ks_score_state_note_off(ks_score_state* state, u8 channel_number, ks_score_channel* channel, u8 note_number){
+bool ks_score_state_note_off(ks_score_state* state, u8 channel_number,  u8 note_number){
+    ks_score_channel* channel = state->channels + channel_number;
     ks_tone_list_bank* bank = channel->bank;
     if(bank == NULL) {
         ks_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
@@ -201,7 +202,8 @@ bool ks_score_state_note_off(ks_score_state* state, u8 channel_number, ks_score_
     return true;
 }
 
-bool ks_score_state_program_change(ks_score_state* state, const ks_tone_list* tones, int ch_number, ks_score_channel* channel, u8 program){
+bool ks_score_state_program_change(ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 program){
+    ks_score_channel* channel = state->channels + ch_number;
 
     if(channel->bank == NULL) {
         ks_error("Failed to run program_change of channel %d for not set bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
@@ -232,7 +234,9 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tone_list* to
     return true;
 }
 
-bool ks_score_state_bank_select(ks_score_state* state, const ks_tone_list* tones, int ch_number, ks_score_channel* channel, u8 msb, u8 lsb){
+bool ks_score_state_bank_select(ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 msb, u8 lsb){
+    ks_score_channel* channel = state->channels + ch_number;
+
     ks_tone_list_bank *bank = ks_tone_list_find_bank(tones, ks_tone_list_bank_number_of(msb, lsb, ch_number == 9));
     if(bank == NULL) {
         ks_error("Failed to run bank_select of channel %d for not found bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
@@ -241,23 +245,25 @@ bool ks_score_state_bank_select(ks_score_state* state, const ks_tone_list* tones
 
     channel->bank = bank;
 
-    return ks_score_state_program_change(state, tones, ch_number, channel, channel->program_number);
+    return ks_score_state_program_change(state, tones, ch_number, channel->program_number);
 }
 
-bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tone_list* tones, int ch_number, ks_score_channel* channel, u8 msb){
+bool ks_score_state_bank_select_msb(ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 msb){
+    ks_score_channel* channel = state->channels + ch_number;
     u8 lsb = 0;
     if(channel->bank != NULL){
         lsb = channel->bank->bank_number.lsb;
     }
-    return ks_score_state_bank_select(state, tones, ch_number, channel, msb, lsb);
+    return ks_score_state_bank_select(state, tones, ch_number, msb, lsb);
 }
 
-bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tone_list* tones, int ch_number, ks_score_channel* channel, u8 lsb){
+bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 lsb){
+    ks_score_channel* channel = state->channels + ch_number;
     u8 msb = 0;
     if(channel->bank != NULL){
         msb = channel->bank->bank_number.msb;
     }
-    return ks_score_state_bank_select(state, tones, ch_number, channel, msb, lsb);
+    return ks_score_state_bank_select(state, tones, ch_number,  msb, lsb);
 }
 
 bool ks_score_channel_set_panpot(ks_score_channel* channel, u8 value){
@@ -297,16 +303,18 @@ inline bool ks_score_channel_set_expression(ks_score_channel* ch, u8 value){
     return true;
 }
 
-bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* tones, int ch_number, ks_score_channel* channel, u8 type, u8 value){
+bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 type, u8 value){
+    ks_score_channel* channel = state->channels + ch_number;
+
     switch (type) {
     case 0x00:
-        return ks_score_state_bank_select_msb(state, tones, ch_number, channel, value);
+        return ks_score_state_bank_select_msb(state, tones, ch_number, value);
     case 0x07:
         return ks_score_channel_set_volume(channel, value);
     case 0x0b:
         return ks_score_channel_set_expression(channel, value);
     case 0x20:
-        return ks_score_state_bank_select_lsb(state, tones, ch_number, channel, value);
+        return ks_score_state_bank_select_lsb(state, tones, ch_number, value);
     case 0x0a:
         return ks_score_channel_set_panpot(channel, value);
     }
@@ -404,6 +412,7 @@ void ks_score_events_free(const ks_score_event* events){
 
 
 bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_score_state *state,  const ks_tone_list *tones){
+
     do{
         const ks_score_event* msg = &score->data[state->current_event];
         switch (msg->status) {
@@ -425,24 +434,24 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
             switch (msg->status >> 4) {
             // note off
             case 0x8:
-                ks_score_state_note_off(state, channel_num, channel, msg->data[0]);
+                ks_score_state_note_off(state, channel_num, msg->data[0]);
                 break;
             // note on
             case 0x9:
                 if(msg->data[1] == 0){
-                    ks_score_state_note_off(state, channel_num, channel, msg->data[0]);
+                    ks_score_state_note_off(state, channel_num,  msg->data[0]);
                 }
                 else {
-                    ks_score_state_note_on(state, sampling_rate, channel_num, channel, msg->data[0], msg->data[1]);
+                    ks_score_state_note_on(state, sampling_rate, channel_num, msg->data[0], msg->data[1]);
                 }
                 break;
             // control change
             case 0xb:
-                ks_score_state_control_change(state, tones, channel_num, channel, msg->data[0], msg->data[1]);
+                ks_score_state_control_change(state, tones, channel_num, msg->data[0], msg->data[1]);
                 break;
             // program change
             case 0xc:
-                ks_score_state_program_change(state, tones, channel_num, channel, msg->data[0]);
+                ks_score_state_program_change(state, tones, channel_num, msg->data[0]);
                 break;
             // pich wheel change
             case 0xe:
@@ -476,7 +485,7 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones
         memset(&state->channels[i], 0 , sizeof(ks_score_channel));
         ks_score_channel_set_panpot(&state->channels[i], 64);
         ks_score_channel_set_picthbend(&state->channels[i], 64, 0);
-        ks_score_state_bank_select(state, tones, i, &state->channels[i], 0, 0);
+        ks_score_state_bank_select(state, tones, i, 0, 0);
         state->channels[i].volume= 100;
         state->channels[i].expression= 127;
         set_channel_volume_cache(&state->channels[i]);
