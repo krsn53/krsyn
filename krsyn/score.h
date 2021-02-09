@@ -146,18 +146,18 @@ ks_score_data*      ks_score_data_new               (u32 resolution, u32 num_eve
 ks_score_data*      ks_score_data_from_midi         (ks_midi_file *file);
 void                ks_score_data_free              (ks_score_data* song);
 
-float               ks_score_data_calc_score_length (ks_score_data* data, u32 sampling_rate);
+float               ks_score_data_calc_score_length (ks_score_data* data, const ks_synth_context* ctx);
 
 
 ks_score_state*     ks_score_state_new              (u32 polyphony_bits);
 void                ks_score_state_free             (ks_score_state* state);
 
-bool                ks_score_state_note_on          (ks_score_state* state, u32 sampling_rate, u8 channel_number, u8 note_number, u8 velocity);
+bool                ks_score_state_note_on          (ks_score_state* state, const ks_synth_context* ctx, u8 channel_number, u8 note_number, u8 velocity);
 bool                ks_score_state_note_off         (ks_score_state* state, u8 channel_number,  u8 note_number);
 bool                ks_score_state_program_change   (ks_score_state* state, const ks_tone_list*tones,int ch_number,  u8 program);
-bool                ks_score_state_tempo_change     (ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* data);
-bool                ks_score_state_control_change   (ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 type, u8 value);
-bool                ks_score_channel_set_panpot     (ks_score_channel* ch, u8 value);
+bool                ks_score_state_tempo_change     (ks_score_state* state, const ks_synth_context*ctx, const ks_score_data* score, const u8* data);
+bool                ks_score_state_control_change   (ks_score_state* state, const ks_tone_list* tones, const ks_synth_context*ctx, int ch_number,  u8 type, u8 value);
+bool                ks_score_channel_set_panpot     (ks_score_channel* ch, const ks_synth_context*ctx, u8 value);
 bool                ks_score_channel_set_picthbend  (ks_score_channel* ch, u8 msb, u8 lsb);
 bool                ks_score_channel_set_volume     (ks_score_channel* ch, u8 value);
 bool                ks_score_channel_set_expression (ks_score_channel* ch, u8 value);
@@ -165,10 +165,10 @@ bool                ks_score_state_bank_select      (ks_score_state* state, cons
 bool                ks_score_state_bank_select_msb  (ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 msb);
 bool                ks_score_state_bank_select_lsb  (ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 lsb);
 
-void                ks_score_data_render            (const ks_score_data* score, u32 sampling_rate, ks_score_state *state, const ks_tone_list *tones, i32 *buf, u32 len);
-bool                ks_score_data_event_run         (const ks_score_data* score, u32 sampling_rate, ks_score_state* state,  const ks_tone_list* tones);
+void                ks_score_data_render            (const ks_score_data* score, const ks_synth_context*ctx, ks_score_state *state, const ks_tone_list *tones, i32 *buf, u32 len);
+bool                ks_score_data_event_run         (const ks_score_data* score, const ks_synth_context*ctx , ks_score_state* state,  const ks_tone_list* tones);
 
-void                ks_score_state_set_default      (ks_score_state *state, const ks_tone_list *tones, u32 sampling_rate, u32 resolution);
+void                ks_score_state_set_default      (ks_score_state *state, const ks_tone_list *tones, const ks_synth_context *ctx, u32 resolution);
 
 ks_score_event*     ks_score_events_new             (u32 num_events, ks_score_event events[]);
 void                ks_score_events_free            (const ks_score_event *events);
@@ -180,7 +180,7 @@ bool                ks_score_note_info_equals       (ks_score_note_info i1, ks_s
 i16                 ks_score_note_info_hash         (ks_score_note_info id);
 ks_score_note_info  ks_score_note_info_of           (u8 note_number, u8 channel);
 
-void                ks_score_state_add_volume_analizer      (ks_score_state* state, u32 sampling_rate, u32 duration);
+void                ks_score_state_add_volume_analizer      (ks_score_state* state, const ks_synth_context* ctx, u32 duration);
 
 void                ks_effect_volume_analize                (ks_effect* effect, ks_score_state* state, i32 *buf, u32 len, bool channels_enabled[]);
 void                ks_effect_list_data_free                (u32 length, ks_effect* data);
@@ -190,7 +190,7 @@ void                ks_effect_volume_analizer_clear         (ks_effect* effect);
 const u32 *         ks_effect_calc_volume                   (ks_effect* effect);
 
 u32                 ks_calc_quarter_time                    (const u8* data);
-u32                 ks_calc_frames_per_event                (u32 sampling_rate, u16 quarter_time, u16 resolution);
+u32                 ks_calc_frames_per_event                (const ks_synth_context* ctx, u16 quarter_time, u16 resolution);
 
 
 #ifdef __cplusplus

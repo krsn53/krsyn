@@ -52,7 +52,7 @@ ks_io_decl_custom_func(ks_tone_list_data);
 ks_tone_list_data*          ks_tone_list_data_new               ();
 void                        ks_tone_list_data_free              (ks_tone_list_data* d);
 
-ks_tone_list*               ks_tone_list_new_from_data          (u32 sampling_rate, const ks_tone_list_data *bin);
+ks_tone_list*               ks_tone_list_new_from_data          (const ks_synth_context *ctx, const ks_tone_list_data *bin);
 ks_tone_list*               ks_tone_list_new                    ();
 void                        ks_tone_list_free                   (ks_tone_list* tones);
 void                        ks_tone_list_reserve                (ks_tone_list* tones, u32 capacity);

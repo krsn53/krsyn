@@ -69,7 +69,7 @@
 								.amp=6,
 							},
 							{
-								.time=26,
+								.time=24,
 								.amp=5,
 							},
 							{
@@ -78,7 +78,7 @@
 							},
 						},
 						.level=44,
-						.ratescale=4,
+						.ratescale=2,
 						.keyscale_mid_point=12,
 						.keyscale_left=2,
 						.keyscale_right=0,
@@ -107,7 +107,7 @@
 								.amp=3,
 							},
 							{
-								.time=26,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -145,7 +145,7 @@
 								.amp=3,
 							},
 							{
-								.time=26,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -154,7 +154,7 @@
 							},
 						},
 						.level=92,
-						.ratescale=4,
+						.ratescale=2,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
 						.keyscale_right=0,
@@ -204,7 +204,7 @@
 								.amp=2,
 							},
 							{
-								.time=25,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -242,7 +242,7 @@
 								.amp=4,
 							},
 							{
-								.time=25,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -251,7 +251,7 @@
 							},
 						},
 						.level=84,
-						.ratescale=3,
+						.ratescale=2,
 						.keyscale_mid_point=10,
 						.keyscale_left=2,
 						.keyscale_right=0,
@@ -280,7 +280,7 @@
 								.amp=4,
 							},
 							{
-								.time=25,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -318,7 +318,7 @@
 								.amp=2,
 							},
 							{
-								.time=23,
+								.time=22,
 								.amp=7,
 							},
 							{
@@ -327,7 +327,7 @@
 							},
 						},
 						.level=127,
-						.ratescale=3,
+						.ratescale=2,
 						.keyscale_mid_point=10,
 						.keyscale_left=0,
 						.keyscale_right=2,
@@ -386,7 +386,7 @@
 							},
 						},
 						.level=15,
-						.ratescale=0,
+						.ratescale=1,
 						.keyscale_mid_point=17,
 						.keyscale_left=2,
 						.keyscale_right=0,
@@ -424,7 +424,7 @@
 							},
 						},
 						.level=9,
-						.ratescale=0,
+						.ratescale=1,
 						.keyscale_mid_point=17,
 						.keyscale_left=2,
 						.keyscale_right=0,
@@ -559,7 +559,7 @@
 							},
 						},
 						.level=19,
-						.ratescale=1,
+						.ratescale=2,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
 						.keyscale_right=0,
@@ -597,7 +597,7 @@
 							},
 						},
 						.level=23,
-						.ratescale=1,
+						.ratescale=2,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
 						.keyscale_right=0,
@@ -635,7 +635,7 @@
 							},
 						},
 						.level=21,
-						.ratescale=1,
+						.ratescale=2,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
 						.keyscale_right=0,
@@ -673,7 +673,7 @@
 							},
 						},
 						.level=127,
-						.ratescale=1,
+						.ratescale=3,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
 						.keyscale_right=0,
@@ -900,7 +900,7 @@
 								.amp=0,
 							},
 							{
-								.time=18,
+								.time=16,
 								.amp=0,
 							},
 						},
@@ -938,7 +938,7 @@
 								.amp=0,
 							},
 							{
-								.time=18,
+								.time=16,
 								.amp=0,
 							},
 						},
@@ -1014,11 +1014,11 @@
 								.amp=7,
 							},
 							{
-								.time=20,
+								.time=18,
 								.amp=7,
 							},
 						},
-						.level=102,
+						.level=106,
 						.ratescale=3,
 						.keyscale_mid_point=8,
 						.keyscale_left=0,
@@ -1073,7 +1073,7 @@
 								.amp=0,
 							},
 							{
-								.time=18,
+								.time=14,
 								.amp=0,
 							},
 						},
@@ -1111,7 +1111,7 @@
 								.amp=0,
 							},
 							{
-								.time=18,
+								.time=14,
 								.amp=0,
 							},
 						},
@@ -1149,7 +1149,7 @@
 								.amp=0,
 							},
 							{
-								.time=18,
+								.time=14,
 								.amp=0,
 							},
 						},
@@ -1187,7 +1187,7 @@
 								.amp=0,
 							},
 							{
-								.time=18,
+								.time=14,
 								.amp=0,
 							},
 						},
@@ -1310,7 +1310,7 @@
 						.semitones=32,
 						.envelopes={
 							{
-								.time=14,
+								.time=12,
 								.amp=7,
 							},
 							{
@@ -1327,7 +1327,7 @@
 							},
 						},
 						.level=78,
-						.ratescale=1,
+						.ratescale=0,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
 						.keyscale_right=0,
@@ -1348,7 +1348,7 @@
 						.semitones=32,
 						.envelopes={
 							{
-								.time=15,
+								.time=12,
 								.amp=7,
 							},
 							{
@@ -1365,7 +1365,7 @@
 							},
 						},
 						.level=66,
-						.ratescale=1,
+						.ratescale=0,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
 						.keyscale_right=0,
@@ -2342,7 +2342,7 @@
 						.mod_sync=0,
 						.wave_type=6,
 						.fixed_frequency=1,
-						.phase_coarse=32,
+						.phase_coarse=43,
 						.phase_offset=8,
 						.phase_fine=8,
 						.semitones=0,
@@ -2360,7 +2360,7 @@
 								.amp=0,
 							},
 							{
-								.time=16,
+								.time=14,
 								.amp=0,
 							},
 						},
@@ -2390,7 +2390,7 @@
 								.amp=7,
 							},
 							{
-								.time=16,
+								.time=14,
 								.amp=0,
 							},
 							{
@@ -2398,7 +2398,7 @@
 								.amp=0,
 							},
 							{
-								.time=16,
+								.time=14,
 								.amp=0,
 							},
 						},
@@ -2515,7 +2515,7 @@
 						.mod_sync=0,
 						.wave_type=6,
 						.fixed_frequency=1,
-						.phase_coarse=27,
+						.phase_coarse=40,
 						.phase_offset=8,
 						.phase_fine=8,
 						.semitones=22,
@@ -2525,7 +2525,7 @@
 								.amp=7,
 							},
 							{
-								.time=16,
+								.time=14,
 								.amp=0,
 							},
 							{
@@ -2533,7 +2533,7 @@
 								.amp=0,
 							},
 							{
-								.time=16,
+								.time=14,
 								.amp=0,
 							},
 						},
@@ -2563,7 +2563,7 @@
 								.amp=7,
 							},
 							{
-								.time=16,
+								.time=14,
 								.amp=7,
 							},
 							{
@@ -2571,7 +2571,7 @@
 								.amp=0,
 							},
 							{
-								.time=16,
+								.time=14,
 								.amp=0,
 							},
 						},

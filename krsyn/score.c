@@ -1,6 +1,5 @@
 #include "score.h"
 #include "tone_list.h"
-#include "wave.h"
 
 #include <ksio/logger.h>
 #include <ksio/vector.h>
@@ -86,8 +85,8 @@ KS_INLINE u32 ks_calc_quarter_time(const u8* data){
     return data[1] + ks_v(data[2], KS_QUARTER_TIME_BITS);
 }
 
-KS_INLINE u32 ks_calc_frames_per_event(u32 sampling_rate, u16 quarter_time, u16 resolution){
-    u64 ret = sampling_rate;
+KS_INLINE u32 ks_calc_frames_per_event(const ks_synth_context *ctx, u16 quarter_time, u16 resolution){
+    u64 ret = ctx->sampling_rate;
     ret *= quarter_time;
     ret /= resolution;
     ret >>= KS_QUARTER_TIME_BITS;
@@ -95,9 +94,9 @@ KS_INLINE u32 ks_calc_frames_per_event(u32 sampling_rate, u16 quarter_time, u16 
 }
 
 
-float ks_score_data_calc_score_length(ks_score_data* score, u32 sampling_rate){
+float ks_score_data_calc_score_length(ks_score_data* score, const ks_synth_context *ctx){
     u16 quarter_time = KS_DEFAULT_QUARTER_TIME;
-    u32 frames_per_event = ks_calc_frames_per_event(sampling_rate, quarter_time, score->resolution);
+    u32 frames_per_event = ks_calc_frames_per_event(ctx, quarter_time, score->resolution);
 
     u32 tick = 0;
     double time = 0;
@@ -105,12 +104,12 @@ float ks_score_data_calc_score_length(ks_score_data* score, u32 sampling_rate){
     for(u32 i=0; i< score->length; i++){
         tick = tick+ score->data[i].delta;
         const u64 delta_frame = (u64)score->data[i].delta* frames_per_event;
-        const double delta_time =  (double)delta_frame / sampling_rate;
+        const double delta_time =  (double)delta_frame / ctx->sampling_rate;
         time = time + delta_time;
         // tempo change
         if(score->data[i].status ==  0xff && score->data[i].data[0] == 0x51){
             quarter_time = ks_calc_quarter_time(score->data[i].data);
-            frames_per_event= ks_calc_frames_per_event(sampling_rate, quarter_time, score->resolution);
+            frames_per_event= ks_calc_frames_per_event(ctx, quarter_time, score->resolution);
         }
     }
 
@@ -136,7 +135,7 @@ void ks_score_state_free(ks_score_state* state){
     free(state);
 }
 
-bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel_number,  u8 note_number, u8 velocity){
+bool ks_score_state_note_on(ks_score_state* state, const ks_synth_context* ctx, u8 channel_number,  u8 note_number, u8 velocity){
     ks_score_channel* channel = state->channels + channel_number;
      ks_synth* synth = channel->program;
      if(synth == NULL) {
@@ -167,7 +166,7 @@ bool ks_score_state_note_on(ks_score_state* state, u32 sampling_rate, u8 channel
 
     }
     state->notes[index].info = id;
-    ks_synth_note_on(&state->notes[index].note, synth, sampling_rate, note_number, velocity);
+    ks_synth_note_on(&state->notes[index].note, synth, ctx, note_number, velocity);
 
     return true;
 }
@@ -266,8 +265,8 @@ bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tone_list* t
     return ks_score_state_bank_select(state, tones, ch_number,  msb, lsb);
 }
 
-bool ks_score_channel_set_panpot(ks_score_channel* channel, u8 value){
-    ks_calc_panpot(&channel->panpot_left, &channel->panpot_right, value);
+bool ks_score_channel_set_panpot(ks_score_channel* channel, const ks_synth_context* ctx, u8 value){
+    ks_calc_panpot(ctx, &channel->panpot_left, &channel->panpot_right, value);
     return true;
 }
 
@@ -277,9 +276,9 @@ bool ks_score_channel_set_picthbend(ks_score_channel* channel, u8 msb, u8 lsb){
     return true;
 }
 
-bool ks_score_state_tempo_change(ks_score_state* state, u32 sampling_rate, const ks_score_data* score, const u8* data){
+bool ks_score_state_tempo_change(ks_score_state* state, const ks_synth_context* ctx, const ks_score_data* score, const u8* data){
     state->quarter_time = ks_calc_quarter_time(data);
-    state->frames_per_event= ks_calc_frames_per_event(sampling_rate, state->quarter_time, score->resolution);
+    state->frames_per_event= ks_calc_frames_per_event(ctx, state->quarter_time, score->resolution);
     for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
         state->channels[i].output_log = realloc(state->channels[i].output_log, state->frames_per_event * 2 * sizeof(i32));
     }
@@ -303,7 +302,7 @@ inline bool ks_score_channel_set_expression(ks_score_channel* ch, u8 value){
     return true;
 }
 
-bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* tones, int ch_number,  u8 type, u8 value){
+bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* tones, const ks_synth_context* ctx, int ch_number,  u8 type, u8 value){
     ks_score_channel* channel = state->channels + ch_number;
 
     switch (type) {
@@ -316,12 +315,12 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* to
     case 0x20:
         return ks_score_state_bank_select_lsb(state, tones, ch_number, value);
     case 0x0a:
-        return ks_score_channel_set_panpot(channel, value);
+        return ks_score_channel_set_panpot(channel, ctx, value);
     }
     return true;
 }
 
-void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_score_state* state, const ks_tone_list*tones, i32* buf, u32 len){
+void ks_score_data_render(const ks_score_data *score, const ks_synth_context* ctx, ks_score_state* state, const ks_tone_list*tones, i32* buf, u32 len){
     u32 i=0;
     memset(buf, 0, sizeof(i32)*len);
     do{
@@ -383,7 +382,7 @@ void ks_score_data_render(const ks_score_data *score, u32 sampling_rate, ks_scor
         if(state->remaining_frame == 0){
             if((u32)state->passed_tick >= score->data[state->current_event].delta){
                 state->passed_tick -= score->data[state->current_event].delta;
-                if(ks_score_data_event_run(score, sampling_rate, state, tones)){
+                if(ks_score_data_event_run(score, ctx, state, tones)){
                     state->passed_tick = INT32_MIN;
                 }
             }
@@ -411,7 +410,7 @@ void ks_score_events_free(const ks_score_event* events){
 
 
 
-bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_score_state *state,  const ks_tone_list *tones){
+bool ks_score_data_event_run(const ks_score_data* score, const ks_synth_context* ctx, ks_score_state *state,  const ks_tone_list *tones){
 
     do{
         const ks_score_event* msg = &score->data[state->current_event];
@@ -419,7 +418,7 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
         case 0xff:
             // tempo
             if(msg->data[0] == 0x51){
-                ks_score_state_tempo_change(state, sampling_rate, score, msg->data);
+                ks_score_state_tempo_change(state, ctx, score, msg->data);
             }
             // end of track
             else if(msg->data[0] == 0x2f){
@@ -442,12 +441,12 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
                     ks_score_state_note_off(state, channel_num,  msg->data[0]);
                 }
                 else {
-                    ks_score_state_note_on(state, sampling_rate, channel_num, msg->data[0], msg->data[1]);
+                    ks_score_state_note_on(state, ctx, channel_num, msg->data[0], msg->data[1]);
                 }
                 break;
             // control change
             case 0xb:
-                ks_score_state_control_change(state, tones, channel_num, msg->data[0], msg->data[1]);
+                ks_score_state_control_change(state, tones, ctx, channel_num, msg->data[0], msg->data[1]);
                 break;
             // program change
             case 0xc:
@@ -467,9 +466,9 @@ bool ks_score_data_event_run(const ks_score_data* score, u32 sampling_rate, ks_s
 }
 
 
-void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones, u32 sampling_rate, u32 resolution){
+void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones, const ks_synth_context*ctx, u32 resolution){
     state->quarter_time = KS_DEFAULT_QUARTER_TIME; // 0.5
-    state->frames_per_event = ks_calc_frames_per_event(sampling_rate, state->quarter_time, resolution);
+    state->frames_per_event = ks_calc_frames_per_event(ctx, state->quarter_time, resolution);
     state->remaining_frame = 0;
     state->current_event = 0;
     state->passed_tick = 0;
@@ -483,7 +482,7 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones
         }
 
         memset(&state->channels[i], 0 , sizeof(ks_score_channel));
-        ks_score_channel_set_panpot(&state->channels[i], 64);
+        ks_score_channel_set_panpot(&state->channels[i], ctx, 64);
         ks_score_channel_set_picthbend(&state->channels[i], 64, 0);
         ks_score_state_bank_select(state, tones, i, 0, 0);
         state->channels[i].volume= 100;
@@ -563,8 +562,8 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
     return ret;
 }
 
-void ks_score_state_add_volume_analizer (ks_score_state* state, u32 sampling_rate, u32 duration){
-    u64 frame = (u64)duration * sampling_rate;
+void ks_score_state_add_volume_analizer (ks_score_state* state, const ks_synth_context *ctx, u32 duration){
+    u64 frame = (u64)duration * ctx->sampling_rate;
     frame >>= KS_TIME_BITS;
     frame *= 2; // channel
 

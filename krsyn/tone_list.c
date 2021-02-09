@@ -56,7 +56,7 @@ KS_INLINE ks_tone_list_bank_number ks_tone_list_bank_number_of(u8 msb, u8 lsb, b
     };
 }
 
-ks_tone_list* ks_tone_list_new_from_data(u32 sampling_rate, const ks_tone_list_data* bin){
+ks_tone_list* ks_tone_list_new_from_data(const ks_synth_context* ctx, const ks_tone_list_data* bin){
     ks_tone_list* ret= ks_tone_list_new();
 
     u32 length = bin->length;
@@ -79,7 +79,7 @@ ks_tone_list* ks_tone_list_new_from_data(u32 sampling_rate, const ks_tone_list_d
         else {
             bank->programs[bin->data[i].program] = malloc(sizeof(ks_synth));
         }
-        ks_synth_set( &bank->programs[bin->data[i].program][bin->data[i].note & 0x7f], sampling_rate, &bin->data[i].synth);
+        ks_synth_set( &bank->programs[bin->data[i].program][bin->data[i].note & 0x7f], ctx, &bin->data[i].synth);
     }
 
     return ret;

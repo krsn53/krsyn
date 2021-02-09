@@ -11,8 +11,31 @@ extern "C" {
 //#include <xmmintrin.h> perhaps, my implementation is so bad, so I have compiler vectorize automatically. It is faster.
 #include <stdint.h>
 #include <stdbool.h>
-#include "./wave.h"
 #include <ksio/io.h>
+
+// macro utils
+// a * 2^x
+#define ks_v(a, x)                      ((a) << (x))
+// 2^x
+#define ks_1(x)                         ks_v(1, x)
+// 2^x -1
+#define ks_m(x)                         (ks_1(x) - 1)
+// a & (2^x - 1)
+#define ks_mask(a, x)                   ((a) & ks_m(x))
+
+// fixed point macros
+#define KS_TABLE_BITS                   10u
+#define KS_OUTPUT_BITS                  15u
+
+#define KS_FREQUENCY_BITS               16u
+#define KS_RATESCALE_BITS               16u
+
+#define KS_PHASE_BITS                   (30u - KS_TABLE_BITS)
+#define KS_PHASE_MAX_BITS               (KS_PHASE_BITS + KS_TABLE_BITS)
+#define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 5)
+
+
+#define KS_SAMPLING_RATE_INV_BITS       30u
 
 #define KS_PHASE_COARSE_BITS            1u
 #define KS_PHASE_FINE_BITS              (KS_FREQUENCY_BITS)
@@ -104,6 +127,15 @@ typedef enum ks_wave_t
 }ks_synth_wave_t;
 
 
+typedef struct ks_synth_context{
+    u32         sampling_rate;
+    u32         sampling_rate_inv;
+    u32         note_deltas[128];
+    u32         ratescales[128];
+    //u16         num_waves;
+    i16         wave_tables[KS_NUM_WAVES][ks_1(KS_TABLE_BITS)];
+}ks_synth_context;
+
 typedef struct ks_synth_envelope_data{
     u8 time : 5;
     u8 amp: 3;
@@ -191,7 +223,7 @@ typedef struct ks_synth
     i16             panpot_left,     panpot_right;
 
     u32             lfo_offset;
-    u32             lfo_freq;
+    u32             lfo_delta;
     u32             lfo_fms_depth;
 
     u8              semitones                   [KS_NUM_OPERATORS];
@@ -250,6 +282,7 @@ typedef  struct ks_synth_note
     i32                 lfo_log;
     const i16*          lfo_wave_table;
     ks_lfo_wave_func    lfo_func;
+    u32                 lfo_func_log;
 
     u32                 now_frame;
 
@@ -261,13 +294,16 @@ ks_io_decl_custom_func(ks_synth_common_data);
 ks_io_decl_custom_func(ks_synth_envelope_data);
 ks_io_decl_custom_func(ks_synth_operator_data);
 
-ks_synth*                   ks_synth_new                    (ks_synth_data* data, u32 sampling_rate);
-ks_synth*                   ks_synth_array_new              (u32 length, ks_synth_data data[], u32 sampling_rate);
+ks_synth_context*           ks_synth_context_new            (u32 sampling_rate);
+void                        ks_synth_context_free           (ks_synth_context* ctx);
+
+ks_synth*                   ks_synth_new                    (ks_synth_data* data, const ks_synth_context *ctx);
+ks_synth*                   ks_synth_array_new              (u32 length, ks_synth_data data[], const ks_synth_context *ctx);
 void                        ks_synth_free                   (ks_synth* synth);
 void                        ks_synth_data_set_default       (ks_synth_data* data);
-void                        ks_synth_set                    (ks_synth* synth, u32 sampling_rate, const ks_synth_data* data);
+void                        ks_synth_set                    (ks_synth* synth, const ks_synth_context *ctx, const ks_synth_data* data);
 void                        ks_synth_render                 (ks_synth_note* note, u32 volume, u32 pitchbend, i32 *buf, u32 len);
-void                        ks_synth_note_on                (ks_synth_note* note, const ks_synth *synth, u32 sampling_rate,  u8 notenum, u8 velocity);
+void                        ks_synth_note_on                (ks_synth_note* note, const ks_synth *synth, const ks_synth_context* ctx,  u8 notenum, u8 velocity);
 void                        ks_synth_note_off               (ks_synth_note* note);
 bool                        ks_synth_note_is_enabled        (const ks_synth_note* note);
 bool                        ks_synth_note_is_on             (const ks_synth_note* note);
@@ -281,7 +317,7 @@ i64                         ks_linear                       (u8 val, i32 MIN, i3
 
 u32                         ks_fms_depth                    (i32 depth);
 
-void                        ks_calc_panpot                  (i16* left, i16* right, u8 val);
+void                        ks_calc_panpot                  (const ks_synth_context *ctx, i16* left, i16* right, u8 val);
 i32                         ks_apply_panpot                 (i32 in, i16 pan);
 
 #define ks_linear_i         (i32)ks_linear

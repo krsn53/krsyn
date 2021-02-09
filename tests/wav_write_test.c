@@ -17,6 +17,7 @@ int main( void )
   i32 *buf =   malloc(sizeof(i32) * buf_len);
   i16 *writebuf = malloc( buf_size );
 
+  ks_synth_context* ctx = ks_synth_context_new(SAMPLING_RATE);
 
   {
       ks_tone_list_data tonebin =
@@ -25,7 +26,7 @@ int main( void )
 
 
 
-      ks_tone_list* tones = ks_tone_list_new_from_data(SAMPLING_RATE, &tonebin);
+      ks_tone_list* tones = ks_tone_list_new_from_data(ctx, &tonebin);
 
       ks_score_data song = {
           // Magic number : KSCR
@@ -171,8 +172,8 @@ int main( void )
 
 
       ks_score_state* state = ks_score_state_new(4);
-      ks_score_state_set_default(state, tones, SAMPLING_RATE, song.resolution);
-      ks_score_data_render(&song, SAMPLING_RATE, state, tones, buf, buf_len);
+      ks_score_state_set_default(state, tones, ctx, song.resolution);
+      ks_score_data_render(&song, ctx, state, tones, buf, buf_len);
 
       for(i32 i=0; i<buf_len; i++){
           writebuf[i] = buf[i];
@@ -207,6 +208,8 @@ int main( void )
 
     ks_io_free(io);
   }
+
+  ks_synth_context_free(ctx);
 
   free(buf);
   free(writebuf);

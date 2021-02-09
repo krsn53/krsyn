@@ -38,6 +38,7 @@ static const float line_width = 12;
 #define base_pos (Rectangle){ margin, margin, base_width,  line_width }
 
 typedef struct editor_state{
+    ks_synth_context* ctx;
     ks_tone_list_data tones_data;
     ks_tone_list *tones;
     int tone_list_scroll;
@@ -206,12 +207,12 @@ static void program_number_increment(u8* msb, u8* lsb, u8* program, u8* note){
 
 
 
-static void update_tone_list(ks_tone_list ** ptr, ks_tone_list_data* dat, ks_score_state* score_state){
+static void update_tone_list(const ks_synth_context* ctx, ks_tone_list ** ptr, ks_tone_list_data* dat, ks_score_state* score_state){
     if(*ptr != NULL)ks_tone_list_free(*ptr);
-    *ptr = ks_tone_list_new_from_data(SAMPLING_RATE ,dat);
+    *ptr = ks_tone_list_new_from_data(ctx ,dat);
     u32 tmptick = score_state->current_tick;
     u32 tmpptick = score_state->passed_tick;
-    ks_score_state_set_default(score_state, *ptr, SAMPLING_RATE, MIDIIN_RESOLUTION);
+    ks_score_state_set_default(score_state, *ptr, ctx, MIDIIN_RESOLUTION);
     score_state->current_tick = tmptick;
     score_state->passed_tick = tmpptick;
 }
@@ -281,7 +282,7 @@ void EditorUpdate(void* ptr){
 
            i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
             memset(tmpbuf, 0, sizeof(tmpbuf));
-            if(es->midi_clock != 0)ks_score_data_render(&es->score, SAMPLING_RATE, es->score_state, es->tones, tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+            if(es->midi_clock != 0)ks_score_data_render(&es->score, es->ctx, es->score_state, es->tones, tmpbuf, BUFFER_LENGTH_PER_UPDATE);
             for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
                 es->buf[i] = tmpbuf[i] / (float)INT16_MAX;
             }
@@ -367,7 +368,7 @@ void EditorUpdate(void* ptr){
                 } else {
                     if(save_load_tone_list(&es->tones_data, es, true)){
                         es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
-                        update_tone_list(&es->tones, &es->tones_data, es->score_state);
+                        update_tone_list(es->ctx, &es->tones, &es->tones_data, es->score_state);
                     }
                     else {
                         es->dialog_message = "Failed to save tone list";
@@ -447,7 +448,7 @@ void EditorUpdate(void* ptr){
                             es->dialog_message = "Failed to load synth";
                             es->display_mode = ERROR_DIALOG;
                         } else {
-                             update_tone_list(&es->tones, &es->tones_data, es->score_state);
+                             update_tone_list(es->ctx, &es->tones, &es->tones_data, es->score_state);
                         }
                     }
                 }
@@ -482,7 +483,7 @@ void EditorUpdate(void* ptr){
                 if(new_select  != es->current_tone_index && new_select >= 0 && (u32)new_select < es->tones_data.length){
                     es->current_tone_index = new_select;
                     es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
-                    update_tone_list(&es->tones, &es->tones_data, es->score_state);
+                    update_tone_list(es->ctx, &es->tones, &es->tones_data, es->score_state);
                 }
             }
             free(buf);
@@ -1158,14 +1159,14 @@ void EditorUpdate(void* ptr){
 
             if(noteonb != -1){
                 if(noteonb != es->noteon_number){
-                    ks_synth_set(&es->synth, SAMPLING_RATE, &es->tones_data.data[es->current_tone_index].synth);
-                    ks_synth_note_on(&es->note, &es->synth, SAMPLING_RATE, noteonb, velocity);
+                    ks_synth_set(&es->synth, es->ctx, &es->tones_data.data[es->current_tone_index].synth);
+                    ks_synth_note_on(&es->note, &es->synth, es->ctx, noteonb, velocity);
                     es->noteon_number = noteonb;
                 }
             } else if(noteonw != -1){
                 if(noteonw != es->noteon_number){
-                    ks_synth_set(&es->synth, SAMPLING_RATE, &es->tones_data.data[es->current_tone_index].synth);
-                    ks_synth_note_on(&es->note, &es->synth, SAMPLING_RATE, noteonw, velocity);
+                    ks_synth_set(&es->synth, es->ctx, &es->tones_data.data[es->current_tone_index].synth);
+                    ks_synth_note_on(&es->note, &es->synth, es->ctx, noteonw, velocity);
                     es->noteon_number = noteonw;
                 }
             }
@@ -1222,7 +1223,7 @@ void EditorUpdate(void* ptr){
                         es->tones_data = load;
                         es->current_tone_index = 0;
                         es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
-                        update_tone_list(&es->tones, &es->tones_data, es->score_state);
+                        update_tone_list(es->ctx, &es->tones, &es->tones_data, es->score_state);
 
                         es->display_mode= EDIT;
                     }
@@ -1262,7 +1263,7 @@ void EditorUpdate(void* ptr){
             if(es->file_dialog_state.fileDialogActiveState == DIALOG_DEACTIVE){
                 if(es->file_dialog_state.SelectFilePressed){
                     if(save_load_tone_list(&es->tones_data, es, true)){
-                        update_tone_list(&es->tones, &es->tones_data, es->score_state);
+                        update_tone_list(es->ctx, &es->tones, &es->tones_data, es->score_state);
                         es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                         es->display_mode= EDIT;
                     }
@@ -1418,6 +1419,8 @@ void EditorUpdate(void* ptr){
 }
 
 void init(editor_state* es){
+    es->ctx = ks_synth_context_new(SAMPLING_RATE);
+
     es->tone_list_scroll=0;
     es->testbox_focus = -1;
     es->current_tone_index =-1;
@@ -1441,7 +1444,7 @@ void init(editor_state* es){
 
     es->score_state= ks_score_state_new(MIDIIN_POLYPHONY_BITS);
 
-    update_tone_list(&es->tones, &es->tones_data, es->score_state);
+    update_tone_list(es->ctx, &es->tones, &es->tones_data, es->score_state);
 
     PlayAudioStream(es->audiostream);
 
@@ -1497,6 +1500,8 @@ void deinit(editor_state* es){
     CloseWindow();
     CloseAudioDevice();
 
+    ks_synth_context_free(es->ctx);
+
     ks_score_state_free(es->score_state);
 #ifdef PLATFORM_DESKTOP
     if(es->midiin != NULL){
@@ -1549,7 +1554,7 @@ int main(int argc, char** argv)
             } else {
                 es.current_tone_index = 0;
                 es.temp_synth = es.tones_data.data[es.current_tone_index].synth;
-                update_tone_list(&es.tones, &es.tones_data, es.score_state);
+                update_tone_list(es.ctx, &es.tones, &es.tones_data, es.score_state);
             }
         }
         else if(IsFileExtension(argv[1], synth_ext)){
@@ -1569,7 +1574,7 @@ int main(int argc, char** argv)
                 es.dialog_message = "Failed to load synth";
                 es.display_mode = ERROR_DIALOG;
             } else{
-                update_tone_list(&es.tones, &es.tones_data, es.score_state);
+                update_tone_list(es.ctx, &es.tones, &es.tones_data, es.score_state);
             }
         }
         else {

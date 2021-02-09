@@ -23,6 +23,7 @@
 #define BUFFER_LENGTH_PER_EXPORT    BUFFER_LENGTH_PER_UPDATE
 
 typedef struct player_state{
+    ks_synth_context* ctx;
     ks_score_data *score;
     ks_score_state* score_state;
     const ks_tone_list_data *tones_data;
@@ -161,14 +162,14 @@ bool load_file(player_state* ps, const char* file){
     }
 
     if(state == 1) {
-        ks_score_data_calc_score_length(ps->score, SAMPLING_RATE);
-        ks_score_state_set_default(ps->score_state, ps->tones, SAMPLING_RATE, ps->score->resolution);
+        ks_score_data_calc_score_length(ps->score, ps->ctx);
+        ks_score_state_set_default(ps->score_state, ps->tones, ps->ctx, ps->score->resolution);
         SetWindowTitle( GetFileName(file) );
         strcpy(ps->score_file, file);
     }
     else if(state == 2){
         ks_tone_list_free((ks_tone_list*)ps->tones);
-        ps->tones = ks_tone_list_new_from_data(SAMPLING_RATE, ps->tones_data);
+        ps->tones = ks_tone_list_new_from_data(ps->ctx, ps->tones_data);
     }
 
     return state != 0;
@@ -176,19 +177,20 @@ bool load_file(player_state* ps, const char* file){
 
 void stop(player_state* ps){
     ps->player_state = STOP;
-    ks_score_state_set_default(ps->score_state, ps->tones, SAMPLING_RATE, ps->score->resolution);
+    ks_score_state_set_default(ps->score_state, ps->tones, ps->ctx, ps->score->resolution);
     ks_effect_volume_analizer_clear(ps->score_state->effects.data);
     ps->time = 0;
     ps->tick = 0;
 }
 
 void init(player_state* ps){
+    ps->ctx = ks_synth_context_new(SAMPLING_RATE);
     ps->score = ks_score_data_new(96, 0, NULL);
     ps->score_state = ks_score_state_new(POLYPHONY_BITS);
     ps->tones_data = &default_tone_list;
-    ps->tones = ks_tone_list_new_from_data(SAMPLING_RATE, ps->tones_data);
+    ps->tones = ks_tone_list_new_from_data(ps->ctx, ps->tones_data);
 
-    ks_score_state_add_volume_analizer(ps->score_state, SAMPLING_RATE, VOLUME_LOG);
+    ks_score_state_add_volume_analizer(ps->score_state, ps->ctx, VOLUME_LOG);
 
     ps->stream = InitAudioStream(SAMPLING_RATE, 32, BUFFER_CHANNELS);
     ps->buf = calloc(BUFFER_LENGTH_PER_UPDATE, sizeof(i32));
@@ -199,6 +201,7 @@ void init(player_state* ps){
 }
 
 void deinit(player_state* ps){
+    ks_synth_context_free(ps->ctx);
     ks_score_data_free(ps->score);
     ks_score_state_free(ps->score_state);
 
@@ -219,7 +222,7 @@ void update(void* ptr){
             if(ps->score_state->passed_tick < 0) {
                 stop(ps);
             } else {
-                ks_score_data_render(ps->score, SAMPLING_RATE, ps->score_state, ps->tones, ps->buf, BUFFER_LENGTH_PER_UPDATE);
+                ks_score_data_render(ps->score, ps->ctx, ps->score_state, ps->tones, ps->buf, BUFFER_LENGTH_PER_UPDATE);
             }
         } else {
             memset(ps->buf, 0, sizeof(i32)*BUFFER_LENGTH_PER_UPDATE);
@@ -305,7 +308,7 @@ void update(void* ptr){
         float now_seek = MIN(ps->time,  ps->score->score_length);
         float seek = GuiSliderBar(sr, "", "", now_seek, 0.0f, ps->score->score_length);
         if(ps->score->length != 0 && seek != now_seek){
-            ks_score_state_set_default(ps->score_state, ps->tones, SAMPLING_RATE, ps->score->resolution);
+            ks_score_state_set_default(ps->score_state, ps->tones, ps->ctx, ps->score->resolution);
 
             double time = 0;
             u64 tick = 0;
@@ -321,7 +324,7 @@ void update(void* ptr){
                 // event run
                 if(ps->score->data[i].status >= 0xb0){
                      ps->score_state->current_event = i;
-                    ks_score_data_event_run(ps->score, SAMPLING_RATE, ps->score_state, ps->tones);
+                    ks_score_data_event_run(ps->score, ps->ctx, ps->score_state, ps->tones);
                 }
             }
 
@@ -478,7 +481,7 @@ void update(void* ptr){
             ps->tick = ps->time = 0;
             ps->export_len = (ps->score->score_length+1)*SAMPLING_RATE*BUFFER_CHANNELS;
             ps->export_buf = calloc(ps->export_len, sizeof(i16));
-            ks_score_state_set_default(ps->score_state, ps->tones, SAMPLING_RATE, ps->score->resolution);
+            ks_score_state_set_default(ps->score_state, ps->tones, ps->ctx, ps->score->resolution);
             ps->export_seek = 0;
             ps->export_begin = GetTime();
             ps->player_state = EXPORT_WAIT;
@@ -499,7 +502,7 @@ void update(void* ptr){
 
            i32* tmp_buf = calloc(write_len, sizeof(i32));
 
-           ks_score_data_render(ps->score, SAMPLING_RATE, ps->score_state, ps->tones, tmp_buf, write_len);
+           ks_score_data_render(ps->score, ps->ctx, ps->score_state, ps->tones, tmp_buf, write_len);
            for(u32 i = 0; i< write_len; i++){
                ps->export_buf[ps->export_seek] = tmp_buf[i] >> 1;
                ps->export_seek++;
