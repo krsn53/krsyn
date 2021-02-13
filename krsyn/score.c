@@ -139,7 +139,7 @@ bool ks_score_state_note_on(ks_score_state* state, const ks_synth_context* ctx, 
     ks_score_channel* channel = state->channels + channel_number;
      ks_synth* synth = channel->program;
      if(synth == NULL) {
-         ks_error("Failed to run note_on for not set program of channel %d at tick %d", channel_number, state->current_tick);
+         ks_error("Note on Failed for not set program of channel %d at tick %d", channel_number, state->current_tick);
          return false;
      }
 
@@ -157,7 +157,7 @@ bool ks_score_state_note_on(ks_score_state* state, const ks_synth_context* ctx, 
         index = ks_mask(index, state->polyphony_bits);
 
         if(index == begin) {
-            ks_warning("Failed to run note_on for exceeded maximum of polyphony at tick %d", channel_number, state->current_tick);
+            ks_warning("Note on failed for exceeded maximum of polyphony at tick %d", channel_number, state->current_tick);
             return false;
         }
     }
@@ -175,12 +175,12 @@ bool ks_score_state_note_off(ks_score_state* state, u8 channel_number,  u8 note_
     ks_score_channel* channel = state->channels + channel_number;
     ks_tone_list_bank* bank = channel->bank;
     if(bank == NULL) {
-        ks_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
+        ks_error("Note off failed for not set bank of channel %d at tick %d", channel_number, state->current_tick);
         return false;
     }
 
     if(ks_tone_list_bank_is_empty(bank)) {
-        ks_error("Failed to run note_off for not set bank of channel %d at tick %d", channel_number, state->current_tick);
+        ks_error("Note off Failed for not set bank of channel %d at tick %d", channel_number, state->current_tick);
         return false;
     }
     ks_score_note_info info =ks_score_note_info_of(note_number, channel_number);
@@ -191,7 +191,7 @@ bool ks_score_state_note_off(ks_score_state* state, u8 channel_number,  u8 note_
         index++;
         index = ks_mask(index, state->polyphony_bits);
         if(index == begin) {
-            ks_warning("Failed to run note_off for not found note with note number %d and channel %d at tick %d", note_number, channel_number, state->current_tick);
+            ks_warning("Note off Failed for not found note with note number %d and channel %d at tick %d", note_number, channel_number, state->current_tick);
             return false;
         }
     }
@@ -205,7 +205,7 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tone_list* to
     ks_score_channel* channel = state->channels + ch_number;
 
     if(channel->bank == NULL) {
-        ks_error("Failed to run program_change of channel %d for not set bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
+        ks_error("Program change of channel %d failed for not set bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
         return false;
     }
 
@@ -223,7 +223,7 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tone_list* to
             it++;
             it %= tones->length;
             if(it == 0){
-                ks_error("Failed to run program_change of channel %d for not found program %d at tick %d",(channel - state->channels) / sizeof(ks_score_channel), program,state->current_tick);
+                ks_error("Program change of channel %d failed for not found program %d at tick %d",(channel - state->channels) / sizeof(ks_score_channel), program,state->current_tick);
                 return  false;
             }
         }
@@ -238,7 +238,7 @@ bool ks_score_state_bank_select(ks_score_state* state, const ks_tone_list* tones
 
     ks_tone_list_bank *bank = ks_tone_list_find_bank(tones, ks_tone_list_bank_number_of(msb, lsb, ch_number == 9));
     if(bank == NULL) {
-        ks_error("Failed to run bank_select of channel %d for not found bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
+        ks_error("Bank select of channel %d failed for not found bank at tick %d", (channel - state->channels) / sizeof(ks_score_channel),state->current_tick);
         return false;
     }
 

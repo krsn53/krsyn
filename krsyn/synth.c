@@ -277,8 +277,8 @@ KS_FORCEINLINE static i32 ks_wave_func_default(u8 op,  ks_synth_note* note, u32 
 KS_FORCEINLINE static i32 ks_wave_func_noise(u8 op,  ks_synth_note* note, u32 phase){
     i16 ret = note->wave_tables[op][ks_mask((((phase + note->mod_func_logs[op][0]) >> KS_NOISE_PHASE_BITS)), KS_TABLE_BITS)];
     // noise
-    if(((note->phases[op]) >> KS_NOISE_PHASE_BITS) > ks_1(5)) {
-        note->phases[op] -= ks_1(5 + KS_NOISE_PHASE_BITS);
+    if(((note->phases[op]) >> KS_NOISE_PHASE_BITS) > ks_1(10)) {
+        note->phases[op] -= ks_1(10 + KS_NOISE_PHASE_BITS);
         srand((unsigned)note->mod_func_logs[op][0]);
         note->mod_func_logs[op][0] = rand();
     }

@@ -32,7 +32,7 @@ extern "C" {
 
 #define KS_PHASE_BITS                   (30u - KS_TABLE_BITS)
 #define KS_PHASE_MAX_BITS               (KS_PHASE_BITS + KS_TABLE_BITS)
-#define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 5)
+#define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 10)
 
 
 #define KS_SAMPLING_RATE_INV_BITS       30u

@@ -1413,8 +1413,10 @@ void EditorUpdate(void* ptr){
             break;
     }
 
-    DrawCursor();
     DrawText(TextFormat("%2i FPS", GetFPS()), 1,SCREEN_HEIGHT - 11, 10, LIME);
+
+    DrawCursor();
+
     EndDrawing();
 }
 
