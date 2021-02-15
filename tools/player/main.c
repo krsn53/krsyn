@@ -336,7 +336,7 @@ void update(void* ptr){
             ps->tick = tick - remaining_tick;
             ps->score_state->current_tick = ps->tick;
             ps->score_state->passed_tick = passed_tick;
-            ps->score_state->current_event = i-1;
+            ps->score_state->current_event = MAX((int)i-1, 0);
         }
         GuiLabel(sr, FormatText("%02d:%02d / %02d:%02d", now_min, now_sec, song_min, song_sec));
     }

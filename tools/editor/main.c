@@ -659,7 +659,7 @@ void EditorUpdate(void* ptr){
                 pos.x += step_x;
 
                 text = FormatText("%.3f", 2.0f * (calc_panpot(common->panpot)) / ks_1(KS_PANPOT_BITS) - 1.0f);
-                common->panpot = PropertyInt(pos, text, common->panpot, 1, 15, 1);
+                common->panpot = PropertyInt(pos, text, common->panpot, 0, 14, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -761,7 +761,7 @@ void EditorUpdate(void* ptr){
             for(int i=0; i<samp; i+=2){
                 float base_x = wave_rec.x + x;
 
-                DrawLineV((Vector2){base_x, y - ((i32)es->buf[i] + es->buf[i+1])*amp}, (Vector2){base_x+dx, y - ((i32)es->buf[i+2] + es->buf[i+3])*amp}, GREEN);
+                DrawLineV((Vector2){base_x, y - (es->buf[i] + es->buf[i+1])*amp}, (Vector2){base_x+dx, y - (es->buf[i+2] + es->buf[i+3])*amp}, GREEN);
                 x+= dx;
             }
 

@@ -32,7 +32,7 @@ extern "C" {
 
 #define KS_PHASE_BITS                   (30u - KS_TABLE_BITS)
 #define KS_PHASE_MAX_BITS               (KS_PHASE_BITS + KS_TABLE_BITS)
-#define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 10)
+#define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 5)
 
 
 #define KS_SAMPLING_RATE_INV_BITS       30u
@@ -90,7 +90,10 @@ enum ks_keyscale_curve_t
 typedef enum ks_envelope_state
 {
     KS_ENVELOPE_OFF = 0,
-    KS_ENVELOPE_ON,
+    KS_ENVELOPE_ON = 1,
+    KS_ENVELOPE_DIV_1 = 0x00,
+    KS_ENVELOPE_DIV_2 = 0x04,
+    KS_ENVELOPE_DIV_3 = 0x08,
     KS_ENVELOPE_SUSTAINED,
     KS_ENVELOPE_RELEASED = 0x80,
 }ks_synth_envelope_state;
@@ -344,7 +347,7 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_lfo_ams_depths(value)                      ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_LFO_DEPTH_BITS)+ ks_1(KS_LFO_DEPTH_BITS-4))
 #define calc_output(value)                              (value)
 #define calc_feedback_level(value)                      ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_FEEDBACK_LEVEL_BITS))
-#define calc_panpot(value)                              ks_linear_u(ks_v(value, (7-4)), 0, ks_1(8))
+#define calc_panpot(value)                              ks_linear_u(ks_v(value, (7-4)), 0, 293)
 #define calc_lfo_wave_type(value)                      (value)
 #define calc_lfo_fms_depth(value)                       ks_exp_u(ks_v(value, (8-5)), (ks_1(KS_LFO_DEPTH_BITS-11)), 4)
 #define calc_lfo_freq(value)                            ks_exp_u(ks_v(value+4, (8-4)), ks_1(KS_FREQUENCY_BITS), 6)

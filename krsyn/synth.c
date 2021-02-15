@@ -107,7 +107,7 @@ ks_synth_context* ks_synth_context_new(u32 sampling_rate){
         ret->wave_tables[KS_WAVE_FAKE_TRIANGLE][i] = ret->wave_tables[KS_WAVE_TRIANGLE][i] >> 13 << 13;
 
         ret->wave_tables[KS_WAVE_SAW_DOWN][i] = INT16_MIN + ks_mask(ks_1(16) * p / ks_1(KS_TABLE_BITS), 16);
-        ret->wave_tables[KS_WAVE_SAW_UP][i] = -ret->wave_tables[KS_WAVE_SAW_UP][i];
+        ret->wave_tables[KS_WAVE_SAW_UP][i] = -ret->wave_tables[KS_WAVE_SAW_DOWN][i];
 
         ret->wave_tables[KS_WAVE_SQUARE][i] = i < ks_1(KS_TABLE_BITS-1) ? INT16_MAX: -INT16_MAX;
         ret->wave_tables[KS_WAVE_NOISE][i] = rand();
@@ -179,7 +179,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
 
     data->common.output = 0;
     data->common.feedback_level = 0;
-    data->common.panpot = 8;
+    data->common.panpot = 7;
 
     data->common.lfo_wave_type = KS_WAVE_TRIANGLE;
     data->common.lfo_fms_depth = 0;
@@ -275,10 +275,10 @@ KS_FORCEINLINE static i32 ks_wave_func_default(u8 op,  ks_synth_note* note, u32 
 
 
 KS_FORCEINLINE static i32 ks_wave_func_noise(u8 op,  ks_synth_note* note, u32 phase){
-    i16 ret = note->wave_tables[op][ks_mask((((phase + note->mod_func_logs[op][0]) >> KS_NOISE_PHASE_BITS)), KS_TABLE_BITS)];
+    i16 ret = note->wave_tables[op][ks_mask((((phase + note->mod_func_logs[op][0]) >> (KS_NOISE_PHASE_BITS))), KS_TABLE_BITS)];
     // noise
-    if(((note->phases[op]) >> KS_NOISE_PHASE_BITS) > ks_1(10)) {
-        note->phases[op] -= ks_1(10 + KS_NOISE_PHASE_BITS);
+    if(((note->phases[op]) >> (KS_PHASE_BITS)) > ks_1(10)) {
+        note->phases[op] -= ks_1(10 + KS_PHASE_BITS);
         srand((unsigned)note->mod_func_logs[op][0]);
         note->mod_func_logs[op][0] = rand();
     }
@@ -536,6 +536,7 @@ static ks_lfo_wave_func ks_get_lfo_wave_func(u8 index){
     case KS_WAVE_SAW_UP:
     case KS_WAVE_SAW_DOWN:
     case KS_WAVE_SQUARE:
+    case KS_WAVE_FAKE_TRIANGLE:
     case KS_WAVE_TRIANGLE:return ks_lfo_wave_func_default;
     case KS_WAVE_NOISE: return ks_lfo_wave_func_noise;
     }
@@ -602,7 +603,7 @@ KS_INLINE static void synth_common_set(const ks_synth_context* ctx, ks_synth* sy
     delta_11 >>= KS_SAMPLING_RATE_INV_BITS-(KS_PHASE_BITS - KS_FREQUENCY_BITS);
 
     synth->lfo_delta= delta_11;
-    synth->lfo_offset =calc_lfo_offset(ks_v(data->common.lfo_offset, (8-4)));
+    synth->lfo_offset =calc_lfo_offset(data->common.lfo_offset);
 }
 
 
