@@ -139,7 +139,7 @@ bool ks_score_state_note_on(ks_score_state* state, const ks_synth_context* ctx, 
     ks_score_channel* channel = state->channels + channel_number;
      ks_synth* synth = channel->program;
      if(synth == NULL) {
-         ks_error("Note on Failed for not set program of channel %d at tick %d", channel_number, state->current_tick);
+         ks_error("Note on failed for not set program of channel %d at tick %d", channel_number, state->current_tick);
          return false;
      }
 

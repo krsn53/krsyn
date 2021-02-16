@@ -23,6 +23,7 @@ extern "C" {
 // a & (2^x - 1)
 #define ks_mask(a, x)                   ((a) & ks_m(x))
 
+
 // fixed point macros
 #define KS_TABLE_BITS                   10u
 #define KS_OUTPUT_BITS                  15u
@@ -130,13 +131,14 @@ typedef enum ks_wave_t
 }ks_synth_wave_t;
 
 
+#define KS_MAX_WAVES             (128u)
+
 typedef struct ks_synth_context{
     u32         sampling_rate;
     u32         sampling_rate_inv;
     u32         note_deltas[128];
     u32         ratescales[128];
-    //u16         num_waves;
-    i16         wave_tables[KS_NUM_WAVES][ks_1(KS_TABLE_BITS)];
+    i16         *(wave_tables[KS_MAX_WAVES]);
 }ks_synth_context;
 
 typedef struct ks_synth_envelope_data{
@@ -149,7 +151,8 @@ typedef struct ks_synth_operator_data{
     u8                      mod_type                : 4;
     u8                      mod_src                 : 2;
     u8                      mod_sync                : 1;
-    u8                      wave_type               : 3;
+    u8                      use_custom_wave         : 1;
+    u8                      wave_type               : 7;
     u8                      velocity_sens           : 5;
     u8                      fixed_frequency         : 1;
     u8                      phase_coarse            : 6;
@@ -157,6 +160,7 @@ typedef struct ks_synth_operator_data{
     u8                      phase_fine              : 4;
     u8                      semitones               : 6;
     u8                      level                   : 7;
+    u8                      repeat_envelope         : 1;
     ks_synth_envelope_data  envelopes               [KS_ENVELOPE_NUM_POINTS];
     u8                      ratescale               : 3;
     u8                      keyscale_mid_point      : 5;
@@ -168,13 +172,14 @@ typedef struct ks_synth_operator_data{
 }ks_synth_operator_data;
 
 typedef struct ks_synth_common_data{
-    u8                     feedback_level   : 4;
-    u8                     panpot           : 4;
-    u8                     output           : 2;
-    u8                     lfo_freq         : 5;
-    u8                     lfo_fms_depth    : 5;
-    u8                     lfo_wave_type    : 3;
-    u8                     lfo_offset       : 4;
+    u8                     feedback_level       : 4;
+    u8                     panpot               : 4;
+    u8                     output               : 2;
+    u8                     lfo_freq             : 5;
+    u8                     lfo_fms_depth        : 5;
+    u8                     lfo_use_custom_wave  : 1;
+    u8                     lfo_wave_type        : 7;
+    u8                     lfo_offset           : 4;
 
 }ks_synth_common_data;
 
@@ -207,6 +212,7 @@ typedef struct ks_synth
 
     u32             levels                      [KS_NUM_OPERATORS];
 
+    bool            repeat_envelopes            [KS_NUM_OPERATORS];
     i32             envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
     u32             envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
 
@@ -233,12 +239,13 @@ typedef struct ks_synth
 
     bool            fixed_frequency             [KS_NUM_OPERATORS];
 
-    u8              wave_types                  [KS_NUM_OPERATORS];
+    const i16*      wave_tables                 [KS_NUM_OPERATORS];
     ks_mod_func     mod_funcs                   [KS_NUM_OPERATORS];
     u8              mod_srcs                    [KS_NUM_OPERATORS];
     bool            mod_syncs                   [KS_NUM_OPERATORS];
 
-    u8              lfo_wave_type;
+    const i16*          lfo_wave_table;
+    ks_lfo_wave_func    lfo_func;
 
     struct {
         bool            ams      :1;
@@ -260,7 +267,6 @@ typedef  struct ks_synth_note
 
     i32                 output_logs                 [KS_NUM_OPERATORS];
 
-    const i16*          wave_tables                 [KS_NUM_OPERATORS];
     i32                 mod_func_logs               [KS_NUM_OPERATORS][2];
 
     u32                 phases                      [KS_NUM_OPERATORS];
@@ -283,8 +289,7 @@ typedef  struct ks_synth_note
     u32                 lfo_phase;
     u32                 lfo_delta;
     i32                 lfo_log;
-    const i16*          lfo_wave_table;
-    ks_lfo_wave_func    lfo_func;
+
     u32                 lfo_func_log;
 
     u32                 now_frame;
@@ -326,6 +331,8 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define ks_linear_i         (i32)ks_linear
 #define ks_linear_u         (u32)ks_linear
 #define ks_linear_u16       (u32)ks_linear16
+
+#define ks_wave_index(use_custom, wave_type)            (wave_type | ks_v(use_custom, 3))
 
 #define calc_fixed_frequency(value)                     (value)
 #define calc_frequency_fixed(value)                     ks_exp_u(value << 2, 40, 5)

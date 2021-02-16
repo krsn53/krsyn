@@ -56,30 +56,77 @@ KS_INLINE ks_tone_list_bank_number ks_tone_list_bank_number_of(u8 msb, u8 lsb, b
     };
 }
 
-ks_tone_list* ks_tone_list_new_from_data(const ks_synth_context* ctx, const ks_tone_list_data* bin){
+void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data* bin){
+    ks_synth synth;
+    ks_synth_data data = bin->synth;
+
+    // reset not require parametors
+    data.common.panpot = 0;
+    for(u32 i=0; i< KS_NUM_OPERATORS; i++){
+        data.operators[i].keyscale_high_depth = 0;
+        data.operators[i].keyscale_low_depth = 0;
+        data.operators[i].ratescale = 0;
+    }
+    ks_synth_set(&synth, ctx, &data);
+
+    const u8 index = bin->program - KS_PROGRAM_CUSTOM_WAVE;
+    const u8 velocity = bin->note;
+
+    ks_synth_note note;
+    ks_synth_note_on(&note, &synth, ctx,  69, velocity); // 440 helz, 1 cycle= sampling_rate/440
+
+    const u64 f = ks_v((u64)ctx->sampling_rate, 30) / 440;
+
+    for(u32 i=0; i< KS_NUM_OPERATORS; i++){
+        u64 p = note.phase_deltas[i];
+        p *= f;
+        p >>= 30 + KS_TABLE_BITS;
+
+        note.phase_deltas[i] = p; // normalize 1 cycle = 1024
+    }
+
+    if(ctx->wave_tables[ks_wave_index(1, index)] != NULL){
+        ks_warning("Already set wave table %d, table is overrided", ks_wave_index(1, index));
+        free(ctx->wave_tables[ks_wave_index(1, index)]);
+    }
+    i16* table = ctx->wave_tables[ks_wave_index(1, index)] = malloc(sizeof(i16) * ks_1(KS_TABLE_BITS));
+    i32 tmp[ks_v(2, KS_TABLE_BITS) + 2];
+
+    // render and write to table
+    ks_synth_render(&note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmp, ks_v(2, KS_TABLE_BITS) + 2);
+    for(u32 i=0 ;i< ks_1(KS_TABLE_BITS); i++){
+         table[i] = (tmp[2*i + 2]) << 2;
+    }
+}
+
+ks_tone_list* ks_tone_list_new_from_data(ks_synth_context* ctx, const ks_tone_list_data* bin){
     ks_tone_list* ret= ks_tone_list_new();
 
     u32 length = bin->length;
 
     for(u32 i = 0; i< length; i++){
-        ks_tone_list_bank_number bank_number = ks_tone_list_bank_number_of(bin->data[i].msb, bin->data[i].lsb, bin->data[i].note != KS_NOTENUMBER_ALL);
-        ks_tone_list_bank* bank = ks_tone_list_find_bank(ret, bank_number);
-        if(bank == NULL){
-            bank = ks_tone_list_emplace_bank(ret, bank_number);
-        }
-        if(!bank_number.percussion && bank->programs[bin->data[i].program] != NULL){
-            ks_warning("Already exist synth with msb %d, lsb %d and program %d", bin->data[i].msb, bin->data[i].lsb, bin->data[i].program);
-            continue;
-        }
-        if(bank_number.percussion){
-            if(bank->programs[bin->data[i].program] == NULL){
-                bank->programs[bin->data[i].program] = calloc(128, sizeof(ks_synth));
+        if(bin->data[i].program >= KS_PROGRAM_CUSTOM_WAVE){
+            ks_synth_context_add_custom_wave(ctx, &bin->data[i]);
+        } else {
+            ks_tone_list_bank_number bank_number = ks_tone_list_bank_number_of(bin->data[i].msb, bin->data[i].lsb, bin->data[i].note != KS_NOTENUMBER_ALL);
+            ks_tone_list_bank* bank = ks_tone_list_find_bank(ret, bank_number);
+            if(bank == NULL){
+                bank = ks_tone_list_emplace_bank(ret, bank_number);
             }
+            if(!bank_number.percussion && bank->programs[bin->data[i].program] != NULL){
+                ks_warning("Already exist synth with msb %d, lsb %d and program %d", bin->data[i].msb, bin->data[i].lsb, bin->data[i].program);
+                continue;
+            }
+            if(bank_number.percussion){
+                if(bank->programs[bin->data[i].program] == NULL){
+                    bank->programs[bin->data[i].program] = calloc(128, sizeof(ks_synth));
+                }
+            }
+            else {
+                bank->programs[bin->data[i].program] = malloc(sizeof(ks_synth));
+            }
+            ks_synth_set( &bank->programs[bin->data[i].program][bin->data[i].note & 0x7f], ctx, &bin->data[i].synth);
         }
-        else {
-            bank->programs[bin->data[i].program] = malloc(sizeof(ks_synth));
-        }
-        ks_synth_set( &bank->programs[bin->data[i].program][bin->data[i].note & 0x7f], ctx, &bin->data[i].synth);
     }
 
     return ret;

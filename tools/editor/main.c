@@ -207,7 +207,7 @@ static void program_number_increment(u8* msb, u8* lsb, u8* program, u8* note){
 
 
 
-static void update_tone_list(const ks_synth_context* ctx, ks_tone_list ** ptr, ks_tone_list_data* dat, ks_score_state* score_state){
+static void update_tone_list(ks_synth_context* ctx, ks_tone_list ** ptr, ks_tone_list_data* dat, ks_score_state* score_state){
     if(*ptr != NULL)ks_tone_list_free(*ptr);
     *ptr = ks_tone_list_new_from_data(ctx ,dat);
     u32 tmptick = score_state->current_tick;
@@ -930,7 +930,7 @@ void EditorUpdate(void* ptr){
             }
              pos.x = x_pos.x; pos.y += step;
 
-            // phase det
+            // level
              GuiAlignedLabel("Level", pos, GUI_TEXT_ALIGN_RIGHT);
              pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
@@ -940,9 +940,19 @@ void EditorUpdate(void* ptr){
             }
             pos.x = x_pos.x; pos.y += step;
 
+
+            GuiAlignedLabel("Envelope Repeat", pos, GUI_TEXT_ALIGN_RIGHT);
+            pos.x += step_x;
+           for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
+               op[i].repeat_envelope = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "",op[i].repeat_envelope);
+               pos.x += step_x;
+           }
+           pos.x = x_pos.x; pos.y += step;
+
+
             {
                 const char *envelope_texts[4] ={
-                    "Envelope Attack",
+                    "Attack",
                     "Decay",
                     "Sustain",
                     "Release",
@@ -992,7 +1002,7 @@ void EditorUpdate(void* ptr){
 
             // keyscale curve type
             pos2 = pos;
-            pos2.height = pos.height*4;
+            pos2.height = pos.height*2;
             GuiAlignedLabel("Keyscale Curve", pos2, GUI_TEXT_ALIGN_RIGHT);
             pos2.width = (base_width - margin)/ 2.0;
             pos2.x += step_x;
@@ -1432,7 +1442,7 @@ void init(editor_state* es){
     es->display_mode= EDIT;
 
     es->audiostream = InitAudioStream(SAMPLING_RATE, 32, NUM_CHANNELS);
-    es->buf = malloc(sizeof(float)*BUFFER_LENGTH_PER_UPDATE);
+    es->buf = calloc(BUFFER_LENGTH_PER_UPDATE, sizeof(float));
 
     ks_vector_init(&es->tones_data);
     ks_tone_list_insert_empty(&es->tones_data, &es->current_tone_index);

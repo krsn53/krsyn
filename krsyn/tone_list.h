@@ -12,6 +12,7 @@ extern "C" {
 
 #define KS_NUM_MAX_PROGRAMS          128u
 #define KS_NOTENUMBER_ALL            0x80
+#define KS_PROGRAM_CUSTOM_WAVE       0x80
 
 typedef struct ks_tone_list_bank_number{
     u16         msb: 7;
@@ -23,8 +24,8 @@ typedef struct ks_tone_list_bank_number{
 typedef struct ks_tone_data{
     u8              msb;
     u8              lsb;
-    u8              program;
-    u8              note;
+    u8              program; // if bigger than 128, custom wave table
+    u8              note; // if program is begger than 128, custom wave table velocity, for delicate wave
     char            name    [32];
     ks_synth_data   synth;
 }ks_tone_data;
@@ -52,7 +53,7 @@ ks_io_decl_custom_func(ks_tone_list_data);
 ks_tone_list_data*          ks_tone_list_data_new               ();
 void                        ks_tone_list_data_free              (ks_tone_list_data* d);
 
-ks_tone_list*               ks_tone_list_new_from_data          (const ks_synth_context *ctx, const ks_tone_list_data *bin);
+ks_tone_list*               ks_tone_list_new_from_data          (ks_synth_context *ctx, const ks_tone_list_data *bin);
 ks_tone_list*               ks_tone_list_new                    ();
 void                        ks_tone_list_free                   (ks_tone_list* tones);
 void                        ks_tone_list_reserve                (ks_tone_list* tones, u32 capacity);
