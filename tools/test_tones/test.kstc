@@ -23,6 +23,7 @@
 						.phase_fine=1,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -63,6 +64,7 @@
 						.phase_fine=5,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -103,6 +105,7 @@
 						.phase_fine=6,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -143,6 +146,7 @@
 						.phase_fine=12,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -205,6 +209,7 @@
 						.phase_fine=12,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -245,6 +250,7 @@
 						.phase_fine=3,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -285,6 +291,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -325,6 +332,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -387,6 +395,7 @@
 						.phase_fine=11,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -427,6 +436,7 @@
 						.phase_fine=5,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -467,6 +477,7 @@
 						.phase_fine=1,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -507,6 +518,7 @@
 						.phase_fine=15,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -569,6 +581,7 @@
 						.phase_fine=8,
 						.semitones=39,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=9,
@@ -609,6 +622,7 @@
 						.phase_fine=5,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=5,
@@ -649,6 +663,7 @@
 						.phase_fine=11,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -689,6 +704,7 @@
 						.phase_fine=5,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=7,
@@ -751,6 +767,7 @@
 						.phase_fine=8,
 						.semitones=22,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -791,6 +808,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -831,6 +849,7 @@
 						.phase_fine=6,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -871,6 +890,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -933,6 +953,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -973,6 +994,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1013,6 +1035,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1053,6 +1076,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1115,6 +1139,7 @@
 						.phase_fine=9,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1155,6 +1180,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=15,
@@ -1195,6 +1221,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=15,
@@ -1235,6 +1262,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=16,
@@ -1297,6 +1325,7 @@
 						.phase_fine=6,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1337,6 +1366,7 @@
 						.phase_fine=10,
 						.semitones=35,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=2,
@@ -1377,6 +1407,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1417,6 +1448,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1479,6 +1511,7 @@
 						.phase_fine=7,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=12,
@@ -1519,6 +1552,7 @@
 						.phase_fine=11,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=11,
@@ -1559,6 +1593,7 @@
 						.phase_fine=5,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=10,
@@ -1599,6 +1634,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=11,
@@ -1661,6 +1697,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=8,
@@ -1696,11 +1733,12 @@
 						.use_custom_wave=0,
 						.wave_type=0,
 						.fixed_frequency=0,
-						.phase_coarse=4,
+						.phase_coarse=2,
 						.phase_offset=0,
 						.phase_fine=7,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=9,
@@ -1741,6 +1779,7 @@
 						.phase_fine=9,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=11,
@@ -1781,6 +1820,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=12,
@@ -1843,6 +1883,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1883,6 +1924,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1923,6 +1965,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -1963,6 +2006,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2025,6 +2069,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2065,6 +2110,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2105,6 +2151,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2145,6 +2192,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2207,6 +2255,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2247,6 +2296,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2287,6 +2337,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2327,6 +2378,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2389,6 +2441,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2429,6 +2482,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2469,6 +2523,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2509,6 +2564,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2571,6 +2627,7 @@
 						.phase_fine=7,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2611,6 +2668,7 @@
 						.phase_fine=11,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=9,
@@ -2651,6 +2709,7 @@
 						.phase_fine=9,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=7,
@@ -2691,6 +2750,7 @@
 						.phase_fine=10,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=2,
@@ -2753,6 +2813,7 @@
 						.phase_fine=1,
 						.semitones=32,
 						.repeat_envelope=1,
+						.repeat_envelope_amp=10,
 						.envelopes={
 							{
 								.time=0,
@@ -2793,6 +2854,7 @@
 						.phase_fine=12,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=8,
@@ -2833,6 +2895,7 @@
 						.phase_fine=13,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=9,
@@ -2873,6 +2936,7 @@
 						.phase_fine=10,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=6,
@@ -2935,6 +2999,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -2975,6 +3040,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3015,6 +3081,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3055,6 +3122,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3117,6 +3185,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3157,6 +3226,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3197,6 +3267,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3237,6 +3308,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3299,6 +3371,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3339,6 +3412,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3379,6 +3453,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3419,6 +3494,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3481,6 +3557,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3521,6 +3598,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3561,6 +3639,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3601,6 +3680,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3663,6 +3743,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3703,6 +3784,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3743,6 +3825,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3783,6 +3866,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3845,6 +3929,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3885,6 +3970,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3925,6 +4011,7 @@
 						.phase_fine=8,
 						.semitones=22,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -3965,6 +4052,7 @@
 						.phase_fine=8,
 						.semitones=37,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -4027,6 +4115,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -4067,6 +4156,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -4107,6 +4197,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -4147,6 +4238,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -4209,6 +4301,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -4249,6 +4342,7 @@
 						.phase_fine=8,
 						.semitones=55,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -4289,6 +4383,7 @@
 						.phase_fine=8,
 						.semitones=0,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,
@@ -4329,6 +4424,7 @@
 						.phase_fine=8,
 						.semitones=32,
 						.repeat_envelope=0,
+						.repeat_envelope_amp=0,
 						.envelopes={
 							{
 								.time=0,

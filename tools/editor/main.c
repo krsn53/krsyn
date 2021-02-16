@@ -943,9 +943,15 @@ void EditorUpdate(void* ptr){
 
             GuiAlignedLabel("Envelope Repeat", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
+            pos2 = pos;
+            pos2.width -= pos2.height + margin;
            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-               op[i].repeat_envelope = GuiCheckBox((Rectangle){pos.x, pos.y, pos.height, pos.height}, "",op[i].repeat_envelope);
-               pos.x += step_x;
+               op[i].repeat_envelope = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos2.height, pos2.height}, "",op[i].repeat_envelope);
+               pos2.x += pos2.height + margin;
+
+               text = FormatText("%.3f", calc_repeat_envelope_amp(op[i].repeat_envelope_amp) / (float)ks_1(KS_ENVELOPE_BITS));
+               op[i].repeat_envelope_amp = PropertyInt(pos2, text, op[i].repeat_envelope_amp , 0, 15, 1);
+               pos2.x += pos2.width + margin;
            }
            pos.x = x_pos.x; pos.y += step;
 
@@ -969,7 +975,7 @@ void EditorUpdate(void* ptr){
                     pos2.width /= 2.0f;
                     for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
                         text = FormatText("%.3f", calc_envelope_points(op[i].envelopes[e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                       op[i].envelopes[e].amp = PropertyInt(pos2, text,op[i].envelopes[e].amp, 0, amp_max, 1);
+                        op[i].envelopes[e].amp = PropertyInt(pos2, text,op[i].envelopes[e].amp, 0, amp_max, 1);
                         pos2.x += step_x / 2.0f;
 
                         float sec = calc_envelope_times(op[i].envelopes[e].time) / (float)ks_1(16);

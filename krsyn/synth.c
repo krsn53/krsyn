@@ -62,6 +62,7 @@ ks_io_begin_custom_func(ks_synth_operator_data)
     ks_bit_u8(phase_fine);
     ks_bit_u8(semitones);
     ks_bit_u8(repeat_envelope);
+    ks_bit_u8(repeat_envelope_amp);
     ks_arr_obj(envelopes, ks_synth_envelope_data);
     ks_bit_u8(level);
     ks_bit_u8(ratescale);
@@ -560,6 +561,7 @@ KS_INLINE static void synth_op_set(const ks_synth_context* ctx, ks_synth* synth,
         synth->levels[i] = calc_levels(data->operators[i].level);
 
         synth->repeat_envelopes[i] = data->operators[i].repeat_envelope;
+        synth->repeat_envelope_amps[i] = calc_repeat_envelope_amp(data->operators[i].repeat_envelope_amp);
         for(u32 e=0; e< KS_ENVELOPE_NUM_POINTS; e++){
             synth->envelope_samples[e][i] = calc_envelope_samples(ctx->sampling_rate, data->operators[i].envelopes[e].time);
             synth->envelope_points[e][i] = calc_envelope_points(data->operators[i].envelopes[e].amp);
@@ -919,17 +921,31 @@ KS_FORCEINLINE static void ks_synth_envelope_process(ks_synth_note* note){
         {
             if(--note->envelope_now_times[i] <= 0)
             {
+                const ks_synth* synth = note->synth;
+
                 note->envelope_now_remains[i] = ks_1(KS_ENVELOPE_BITS);
                 switch(note->envelope_states[i])
                 {
                 case KS_ENVELOPE_ON:
                     if(note->envelope_now_points[i] == KS_ENVELOPE_RELEASE_INDEX-1)
                     {
-                        if(note->synth->repeat_envelopes[i]){
+                        if(synth->repeat_envelopes[i]){
                             note->envelope_now_points[i] =0;
                             note->envelope_now_deltas[i] = note->envelope_deltas[0][i];
                             note->envelope_now_times[i] = note->envelope_samples[0][i];
                             note->envelope_now_diffs[i] = note->envelope_diffs[0][i];
+
+                            for(u32 e =0; e<KS_ENVELOPE_NUM_POINTS-1; e++){
+                                u64 a = note->envelope_points[e][i];
+                                a *= synth->repeat_envelope_amps[i];
+                                a >>= KS_ENVELOPE_BITS;
+                                note->envelope_points[e][i] = a;
+
+                                a = note->envelope_diffs[e][i];
+                                a *= synth->repeat_envelope_amps[i];
+                                a >>= KS_ENVELOPE_BITS;
+                                note->envelope_diffs[e][i] = a;
+                            }
                         } else {
                             note->envelope_states[i] = KS_ENVELOPE_SUSTAINED;
                             note->envelope_now_deltas[i] = 0;
