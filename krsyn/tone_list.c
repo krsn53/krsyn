@@ -234,13 +234,30 @@ ks_tone_list_bank ks_tone_list_bank_of(u8 msb, u8 lsb, bool percussion, ks_synth
 }
 
 static int ks_tone_data_compare1(const ks_tone_data* t1, const ks_tone_data* t2){
-    int ret = t1->note - t2->note;
-    if(ret != 0) return -ret;
-    ret = t1->program - t2->program;
-    if(ret != 0) return ret;
-    ret = t1->lsb - t1->lsb;
-    if(ret != 0) return ret;
-    ret = t1->msb - t2->msb;
+    if(t1->program >= KS_PROGRAM_CUSTOM_WAVE && t2->program < KS_PROGRAM_CUSTOM_WAVE){
+        return -1;
+    }
+    else if(t1->program < KS_PROGRAM_CUSTOM_WAVE && t2->program >= KS_PROGRAM_CUSTOM_WAVE){
+        return 1;
+    }
+    if(t1->program >= KS_PROGRAM_CUSTOM_WAVE){
+        int ret = t1->program - t2->program;
+        if(ret != 0) return ret;
+        ret = t1->lsb - t2->lsb;
+        if(ret != 0) return ret;
+        ret = t1->note - t2->note;
+        if(ret != 0) return ret;
+    }
+    else {
+        int ret = t1->note - t2->note;
+        if(ret != 0) return -ret;
+        ret = t1->program - t2->program;
+        if(ret != 0) return ret;
+        ret = t1->lsb - t2->lsb;
+        if(ret != 0) return ret;
+        ret = t1->msb - t2->msb;
+        if(ret != 0) return ret;
+    }
     return strcmp(t1->name, t2->name);
 }
 

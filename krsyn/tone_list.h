@@ -23,9 +23,9 @@ typedef struct ks_tone_list_bank_number{
 
 typedef struct ks_tone_data{
     u8              msb;
-    u8              lsb;
-    u8              program; // if bigger than 128, custom wave table
-    u8              note; // if program is begger than 128, custom wave table velocity, for delicate wave
+    u8              lsb; // if program is begger than 128, custom wave table preority
+    u8              program;  // if bigger than 128, custom wave table
+    u8              note;// if program is begger than 128, custom wave table velocity, for delicate wave
     char            name    [32];
     ks_synth_data   synth;
 }ks_tone_data;

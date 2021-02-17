@@ -7,7 +7,7 @@
 #endif
 
 #define SCREEN_WIDTH 726
-#define SCREEN_HEIGHT 568
+#define SCREEN_HEIGHT 548
 
 #define SAMPLING_RATE               48000
 #define SAMPLES_PER_UPDATE          4096
@@ -300,10 +300,12 @@ void EditorUpdate(void* ptr){
 
         i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
         memset(tmpbuf, 0, sizeof(tmpbuf));
-        ks_synth_render(&es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+        if(es->note.synth && es->note.synth->enabled){
+            ks_synth_render(&es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
 
-        for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
-            es->buf[i] += tmpbuf[i] / (float)INT16_MAX;
+            for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
+                es->buf[i] += tmpbuf[i] / (float)INT16_MAX;
+            }
         }
         UpdateAudioStream(es->audiostream, es->buf, BUFFER_LENGTH_PER_UPDATE);
 
@@ -463,7 +465,7 @@ void EditorUpdate(void* ptr){
         {
             pos2 = pos;
             pos2.width = base_width*2;
-            pos2.height = 300;
+            pos2.height = 290;
             int start, end;
 
             GuiListViewGetInfo(pos2, es->tones_data.length, es->tone_list_scroll, &start, &end);
@@ -471,10 +473,15 @@ void EditorUpdate(void* ptr){
             char *buf = calloc(es->tones_data.length, 48);
             char **ptr = malloc(sizeof(char**)*es->tones_data.length);
             for(i32 i=start; i< end; i++){
-                if(es->tones_data.data[i].note == KS_NOTENUMBER_ALL){
-                    snprintf(ptr[i] = buf + 48*i, 48, "0x%02x%02x%4d%4s%20s", es->tones_data.data[i].msb, es->tones_data.data[i].lsb, es->tones_data.data[i].program, "    ", es->tones_data.data[i].name);
-                } else {
-                    snprintf(ptr[i] = buf + 48*i, 48, "0x%02x%02x%4d%4d%20s", es->tones_data.data[i].msb, es->tones_data.data[i].lsb, es->tones_data.data[i].program, es->tones_data.data[i].note, es->tones_data.data[i].name);
+                if(es->tones_data.data[i].program < KS_PROGRAM_CUSTOM_WAVE){
+                    if(es->tones_data.data[i].note == KS_NOTENUMBER_ALL){
+                        snprintf(ptr[i] = buf + 48*i, 48, "S:%02x%02x%4d%4s%20s", es->tones_data.data[i].msb, es->tones_data.data[i].lsb, es->tones_data.data[i].program, "    ", es->tones_data.data[i].name);
+                    } else {
+                        snprintf(ptr[i] = buf + 48*i, 48, "P:%02x%02x%4d%4d%20s", es->tones_data.data[i].msb, es->tones_data.data[i].lsb, es->tones_data.data[i].program, es->tones_data.data[i].note, es->tones_data.data[i].name);
+                    }
+                }
+                else {
+                    snprintf(ptr[i] = buf + 48*i, 48, "W:%02x%4d%4d%20s", es->tones_data.data[i].lsb, es->tones_data.data[i].program & 0x7f, es->tones_data.data[i].note, es->tones_data.data[i].name);
                 }
             }
             {
@@ -549,6 +556,7 @@ void EditorUpdate(void* ptr){
             int id = 0;
             int tmp_focus = -1;
             bool mouse_button_pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+            // name
             {
                 GuiAlignedLabel("Name", pos2, GUI_TEXT_ALIGN_RIGHT);
                 pos2.x += (int)(base_width*0.75f);
@@ -561,51 +569,101 @@ void EditorUpdate(void* ptr){
             }
             pos2.y += pos2.height + margin;
             pos2.x += (int)(pos.width*0.75f);
+
+
             {
-                int tmp_val = es->tones_data.data[es->current_tone_index].msb;
-                if(GuiValueBox(pos2, "MSB", &tmp_val, 0, 127, es->testbox_focus == id)){
-                    if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
-                }
-                es->tones_data.data[es->current_tone_index].msb = tmp_val & 0x7f;
-                id++;
-            }
-            pos2.y += pos2.height + margin;
-            {
-                int tmp_val = es->tones_data.data[es->current_tone_index].lsb;
-                if(GuiValueBox(pos2, "LSB", &tmp_val, 0, 127, es->testbox_focus == id)){
-                    if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
-                }
-                es->tones_data.data[es->current_tone_index].lsb = tmp_val & 0x7f;
-                id++;
-            }
-            pos2.y += pos2.height + margin;
-            {
-                int tmp_val = es->tones_data.data[es->current_tone_index].program;
-                if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, es->testbox_focus == id)){
-                   if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2))  tmp_focus = id;
-                }
-                es->tones_data.data[es->current_tone_index].program = tmp_val & 0x7f;
-                id++;
-            }
-            pos2.y += pos2.height + margin;
-            {
-                bool tmp = es->tones_data.data[es->current_tone_index].note != KS_NOTENUMBER_ALL;
-                tmp = GuiCheckBox((Rectangle){pos2.x, pos2.y, base_pos.height, base_pos.height}, "Is Percussion", tmp);
-                if(!tmp) {
-                    es->tones_data.data[es->current_tone_index].note = KS_NOTENUMBER_ALL;
-                } else {
-                    es->tones_data.data[es->current_tone_index].note &= 0x7f;
+                const int before_val = es->tones_data.data[es->current_tone_index].program >= KS_PROGRAM_CUSTOM_WAVE;
+                int tmp_val = es->tones_data.data[es->current_tone_index].program >= KS_PROGRAM_CUSTOM_WAVE;
+                tmp_val = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "As User Wave Table", tmp_val);
+                if(before_val != tmp_val){
+                    if(tmp_val){
+                        es->tones_data.data[es->current_tone_index].program = (es->tones_data.data[es->current_tone_index].program & 0x7f) |  KS_PROGRAM_CUSTOM_WAVE;
+                        es->tones_data.data[es->current_tone_index].note = 127;
+                    }
+                    else {
+                        es->tones_data.data[es->current_tone_index].program = (es->tones_data.data[es->current_tone_index].program & 0x7f);
+                        es->tones_data.data[es->current_tone_index].note = KS_NOTENUMBER_ALL;
+                    }
                 }
             }
+
             pos2.y += step;
 
-            if(es->tones_data.data[es->current_tone_index].note != KS_NOTENUMBER_ALL){
-                int tmp_val = es->tones_data.data[es->current_tone_index].note;
-                if(GuiValueBox(pos2, "Note Number", &tmp_val, 0, 127, es->testbox_focus == id)){
-                    if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+
+            if(es->tones_data.data[es->current_tone_index].program < KS_PROGRAM_CUSTOM_WAVE){
+                {
+                    int tmp_val = es->tones_data.data[es->current_tone_index].msb;
+                    if(GuiValueBox(pos2, "MSB", &tmp_val, 0, 127, es->testbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    es->tones_data.data[es->current_tone_index].msb = tmp_val & 0x7f;
+                    id++;
                 }
-                es->tones_data.data[es->current_tone_index].note = tmp_val & 0x7f;
-                id++;
+                pos2.y += pos2.height + margin;
+                {
+                    int tmp_val = es->tones_data.data[es->current_tone_index].lsb;
+                    if(GuiValueBox(pos2, "LSB", &tmp_val, 0, 127, es->testbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    es->tones_data.data[es->current_tone_index].lsb = tmp_val & 0x7f;
+                    id++;
+                }
+                pos2.y += pos2.height + margin;
+                {
+                    int tmp_val = es->tones_data.data[es->current_tone_index].program;
+                    if(GuiValueBox(pos2, "Program", &tmp_val, 0, 127, es->testbox_focus == id)){
+                       if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2))  tmp_focus = id;
+                    }
+                    es->tones_data.data[es->current_tone_index].program = tmp_val & 0x7f;
+                    id++;
+                }
+                pos2.y += pos2.height + margin;
+                {
+                    bool tmp = es->tones_data.data[es->current_tone_index].note != KS_NOTENUMBER_ALL;
+                    tmp = GuiCheckBox((Rectangle){pos2.x, pos2.y, base_pos.height, base_pos.height}, "Is Percussion", tmp);
+                    if(!tmp) {
+                        es->tones_data.data[es->current_tone_index].note = KS_NOTENUMBER_ALL;
+                    } else {
+                        es->tones_data.data[es->current_tone_index].note &= 0x7f;
+                    }
+                }
+                pos2.y += step;
+
+                if(es->tones_data.data[es->current_tone_index].note != KS_NOTENUMBER_ALL){
+                    int tmp_val = es->tones_data.data[es->current_tone_index].note;
+                    if(GuiValueBox(pos2, "Note Number", &tmp_val, 0, 127, es->testbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    es->tones_data.data[es->current_tone_index].note = tmp_val & 0x7f;
+                    id++;
+                }
+            } else {
+                {
+                    int tmp_val = es->tones_data.data[es->current_tone_index].lsb;
+                    if(GuiValueBox(pos2, "Priority", &tmp_val, 0, 127, es->testbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    es->tones_data.data[es->current_tone_index].lsb = tmp_val & 0x7f;
+                    id++;
+                }
+                pos2.y += pos2.height + margin;
+                {
+                    int tmp_val = es->tones_data.data[es->current_tone_index].program & 0x7f;
+                    if(GuiValueBox(pos2, "Wave ID", &tmp_val, 0, 127, es->testbox_focus == id)){
+                       if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2))  tmp_focus = id;
+                    }
+                    es->tones_data.data[es->current_tone_index].program = tmp_val | KS_PROGRAM_CUSTOM_WAVE;
+                    id++;
+                }
+                pos2.y += pos2.height + margin;
+                {
+                    int tmp_val = es->tones_data.data[es->current_tone_index].note;
+                    if(GuiValueBox(pos2, "Velocity", &tmp_val, 0, 127, es->testbox_focus == id)){
+                        if(mouse_button_pressed && CheckCollisionPointRec(GetMousePosition(), pos2)) tmp_focus = id;
+                    }
+                    es->tones_data.data[es->current_tone_index].note = tmp_val & 0x7f;
+                    id++;
+                }
             }
 
             if(mouse_button_pressed){
@@ -630,7 +688,7 @@ void EditorUpdate(void* ptr){
             // output
             {
                 pos2 = pos;
-                pos2.height = 20;
+                pos2.height = 14;
                 GuiAlignedLabel("Outputs", pos2, GUI_TEXT_ALIGN_RIGHT);
                 pos2.x += step_x;
                 common->output = PropertyIntImage(pos2, es->output_images, common->output, 0, KS_NUM_OPERATORS-1, 1);
@@ -666,12 +724,19 @@ void EditorUpdate(void* ptr){
             // wave_type
             {
                 pos2 = pos;
-                pos2.height = pos.height*2;
-                GuiAlignedLabel("LFO Wave", pos2, GUI_TEXT_ALIGN_RIGHT);
+                pos2.height = pos.height+2;
+                GuiAlignedLabel("LFO Wave Type", pos2, GUI_TEXT_ALIGN_RIGHT);
                 pos2.x += step_x;
 
-
-                common->lfo_wave_type = PropertyIntImage(pos2, es->wave_images, common->lfo_wave_type, 0, KS_NUM_WAVES-1, 1);
+                pos2.width = (pos.width- margin) / 2;
+                if(common->lfo_use_custom_wave){
+                    common->lfo_wave_type = PropertyInt((Rectangle){pos2.x, pos2.y, pos2.width, pos.height}, FormatText("%d", common->lfo_wave_type), common->lfo_wave_type, 0, KS_MAX_WAVES - ks_1(KS_CUSTOM_WAVE_BITS), 1);
+                }
+                else {
+                    common->lfo_wave_type = PropertyIntImage(pos2, es->wave_images, common->lfo_wave_type, 0, KS_NUM_WAVES-1, 1);
+                }
+                pos2.x += pos2.width + margin;
+                common->lfo_use_custom_wave = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "UsrTb", common->lfo_use_custom_wave);
 
             }
             pos.x = x_pos.x;
@@ -824,23 +889,14 @@ void EditorUpdate(void* ptr){
             pos.x = x_pos.x; pos.y += step;
 
             // wave type
-            GuiAlignedLabel("Ocillator Type", pos, GUI_TEXT_ALIGN_RIGHT);
+            GuiAlignedLabel("Modulation Src", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
 
             for(unsigned i=0; i<KS_NUM_OPERATORS; i++){
                 pos2 = pos;
-                pos2.width =pos2.height;
-                const bool sync_less = op[i].mod_type == KS_MOD_PASS || op[i].mod_type == KS_MOD_LPF || op[i].mod_type == KS_MOD_HPF ;
-                if(sync_less){
-                    GuiDisable();
-                }
-                op[i].mod_sync = GuiCheckBox(pos2, "Sync", op[i].mod_sync);
-                if(sync_less){
-                    GuiEnable();
-                }
+
                 pos2.width =(int)(pos.width * 0.5) - 2;
                 pos2.height += 2;
-                pos2.x += pos2.width + margin;
 
                 const bool in_less = op[i].mod_type == KS_MOD_PASS ;
                 if(in_less){
@@ -850,22 +906,93 @@ void EditorUpdate(void* ptr){
                 if(in_less){
                     GuiEnable();
                 }
+
+
+                pos2.x += pos2.width + margin;
+
+                pos2.width =pos2.height = pos.height;
+
+                const bool sync_less = op[i].mod_type == KS_MOD_PASS || op[i].mod_type == KS_MOD_LPF || op[i].mod_type == KS_MOD_HPF ;
+                if(sync_less){
+                    GuiDisable();
+                }
+                op[i].mod_sync = GuiCheckBox(pos2, "Sync", op[i].mod_sync);
+                if(sync_less){
+                    GuiEnable();
+                }
+
                  pos.x += step_x;
             }
 
-            pos.x = x_pos.x + step_x;
+
+            pos.x += step_x;
+            pos.x = x_pos.x;
             pos.y += step;
+
+            // modulation type
+            GuiAlignedLabel("Modulation Type", pos, GUI_TEXT_ALIGN_RIGHT);
+            pos.x += step_x;
             pos2 = pos;
-            pos2.height = pos.height*2;
-            pos2.width = step_x * 0.5 - margin;
+            pos2.height += 2;
+            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
+
+                switch (op[i].mod_type) {
+                case KS_MOD_FM:
+                    text = "FM";
+                    break;
+                case KS_MOD_ADD:
+                    text = "+";
+                    break;
+                case KS_MOD_SUB:
+                    text = "-";
+                    break;
+                case KS_MOD_MUL:
+                    text = "x";
+                    break;
+                case KS_MOD_AM:
+                    text = "AM";
+                    break;
+                case KS_MOD_LPF:
+                    text = "LPF";
+                    break;
+                case KS_MOD_HPF:
+                    text = "HPF";
+                    break;
+                case KS_MOD_NONE:
+                    text = "None";
+                    break;
+                default:
+                    text = "Pass";
+                    break;
+                }
+                op[i].mod_type = PropertyIntImage(pos2, GetTextureDefault(),op[i].mod_type, 0, KS_NUM_MODS-1, 1);
+                GuiLabel(pos2, text);
+                pos2.x += pos2.width + margin;
+            }
+            pos.x = x_pos.x; pos.y += pos2.height + margin;
+            // wave type
+            GuiAlignedLabel("Wave Type", pos, GUI_TEXT_ALIGN_RIGHT);
+            pos.x += step_x;
+            pos2 = pos;
+            pos2.height += 2;
+            pos2.width = (pos.width- margin) / 2;
+
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
                 bool wave_less = op[i].mod_type == KS_MOD_PASS || op[i].mod_type == KS_MOD_LPF || op[i].mod_type == KS_MOD_HPF;
                 if(wave_less) GuiDisable();
-               op[i].wave_type = PropertyIntImage(pos2, es->wave_images,op[i].wave_type, 0, KS_NUM_WAVES-1, 1);
+                if(op[i].use_custom_wave){
+                    op[i].wave_type = PropertyInt((Rectangle){pos2.x, pos2.y, pos2.width, pos.height}, FormatText("%d", op[i].wave_type), op[i].wave_type, 0, KS_MAX_WAVES - ks_1(KS_CUSTOM_WAVE_BITS), 1);
+                }
+                else {
+                    op[i].wave_type = PropertyIntImage(pos2, es->wave_images ,op[i].wave_type, 0, KS_NUM_WAVES-1, 1);
+                }
+                pos2.x += pos2.width + margin;
+                op[i].use_custom_wave = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "UsrTb", op[i].use_custom_wave);
+
                if(wave_less) GuiEnable();
-                pos2.x += pos2.width + margin;
-               op[i].mod_type = PropertyIntImage(pos2, es->mod_images,op[i].mod_type, 0, KS_NUM_MODS-1, 1);
-                pos2.x += pos2.width + margin;
+
+
+               pos2.x += pos2.width + margin;
             }
             pos.x = x_pos.x; pos.y += pos2.height + margin;
 
@@ -950,7 +1077,11 @@ void EditorUpdate(void* ptr){
                pos2.x += pos2.height + margin;
 
                text = FormatText("%.3f", calc_repeat_envelope_amp(op[i].repeat_envelope_amp) / (float)ks_1(KS_ENVELOPE_BITS));
+
+               if(!op[i].repeat_envelope) GuiDisable();
                op[i].repeat_envelope_amp = PropertyInt(pos2, text, op[i].repeat_envelope_amp , 0, 15, 1);
+               if(!op[i].repeat_envelope) GuiEnable();
+
                pos2.x += pos2.width + margin;
            }
            pos.x = x_pos.x; pos.y += step;

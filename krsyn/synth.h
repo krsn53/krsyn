@@ -131,7 +131,8 @@ typedef enum ks_wave_t
 }ks_synth_wave_t;
 
 
-#define KS_MAX_WAVES             (128u)
+#define KS_MAX_WAVES                128u
+#define KS_CUSTOM_WAVE_BITS         3u
 
 typedef struct ks_synth_context{
     u32         sampling_rate;
@@ -334,7 +335,7 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define ks_linear_u         (u32)ks_linear
 #define ks_linear_u16       (u32)ks_linear16
 
-#define ks_wave_index(use_custom, wave_type)            (wave_type | ks_v(use_custom, 3))
+#define ks_wave_index(use_custom, wave_type)            (wave_type | ks_v(use_custom, KS_CUSTOM_WAVE_BITS))
 
 #define calc_fixed_frequency(value)                     (value)
 #define calc_frequency_fixed(value)                     ks_exp_u(value << 2, 40, 5)
