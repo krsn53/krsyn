@@ -90,12 +90,12 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
         free(ctx->wave_tables[ks_wave_index(1, index)]);
     }
     i16* table = ctx->wave_tables[ks_wave_index(1, index)] = malloc(sizeof(i16) * ks_1(KS_TABLE_BITS));
-    i32 tmp[ks_v(2, KS_TABLE_BITS) + 2];
+    i32 tmp[ks_v(2, KS_TABLE_BITS)];
 
     // render and write to table
-    ks_synth_render(&note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmp, ks_v(2, KS_TABLE_BITS) + 2);
+    ks_synth_render(&note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmp, ks_v(2, KS_TABLE_BITS));
     for(u32 i=0 ;i< ks_1(KS_TABLE_BITS); i++){
-         table[i] = (tmp[2*i + 2]) << 2;
+         table[i] = MIN(MAX((tmp[2*i]) << 2, INT16_MIN), INT16_MAX);
     }
 }
 

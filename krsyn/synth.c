@@ -826,26 +826,26 @@ KS_FORCEINLINE static i32 synth_frame(const ks_synth* synth, ks_synth_note* note
 
     if(output_op == 0)
     {
-        out = note->output_logs[3];
+        out = outputs[3];
     }
     if(output_op == 1)
     {
-        out = note->output_logs[3];
-        out += note->output_logs[2];
+        out = outputs[3];
+        out += outputs[2];
     }
     if(output_op == 2)
     {
-        out = note->output_logs[3];
-        out += note->output_logs[2];
-        out += note->output_logs[1];
+        out = outputs[3];
+        out += outputs[2];
+        out += outputs[1];
 
     }
     if(output_op == 3)
     {
-        out = note->output_logs[3];
-        out += note->output_logs[2];
-        out += note->output_logs[1];
-        out += note->output_logs[0];
+        out = outputs[3];
+        out += outputs[2];
+        out += outputs[1];
+        out += outputs[0];
 
     }
 
@@ -888,12 +888,12 @@ KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note,
             i64 depth = note->lfo_log;      // -1.0 ~ 1.0
             depth *= synth->lfo_ams_depths[j];
             depth >>= KS_LFO_DEPTH_BITS;
-            depth += 1<<(KS_OUTPUT_BITS);     // 0 ~ 2.0
+            depth += ks_1(KS_OUTPUT_BITS);     // 0 ~ 2.0
+            if(depth < 0)printf("%ld\n", depth);
 
-
-            depth *= note->output_logs[j];
+            depth *= note->envelope_now_amps[j];
             depth >>= KS_OUTPUT_BITS;
-            note->output_logs[j] = (i32)depth;
+            note->envelope_now_amps[j] = (i32)depth;
         }
     }
 
@@ -903,6 +903,7 @@ KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note,
         note->lfo_phase += note->lfo_delta;
     }
 }
+
 
 KS_FORCEINLINE static void ks_synth_envelope_process(ks_synth_note* note){
     for(u32 j=0; j<KS_NUM_OPERATORS; j++)
@@ -980,12 +981,7 @@ KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note
 
     for(u32 i=0; i<len; i+=2)
     {
-        i32 out = synth_frame(synth, note, output) * volume;
-        out >>= KS_VOLUME_BITS;
-        buf[i] = buf[i+1] = out;
-        buf[i]= ks_apply_panpot(buf[i], synth->panpot_left);
-        buf[i+1]= ks_apply_panpot(buf[i+1], synth->panpot_right);
-
+        ks_synth_envelope_process(note);
         lfo_frame(synth, note, delta,  ams, fms, lfo);
 
         for(u32 j=0; j<KS_NUM_OPERATORS; j++)
@@ -996,9 +992,12 @@ KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note
 
             note->phases[j] = note->phases[j] + d;
         }
+        i32 out = synth_frame(synth, note, output) * volume;
+        out >>= KS_VOLUME_BITS;
+        buf[i] = buf[i+1] = out;
+        buf[i]= ks_apply_panpot(buf[i], synth->panpot_left);
+        buf[i+1]= ks_apply_panpot(buf[i+1], synth->panpot_right);
 
-
-        ks_synth_envelope_process(note);
 
 
         note->now_frame ++;

@@ -81,7 +81,6 @@ typedef struct editor_state{
     Texture2D output_images;
     Texture2D operator_images;
     Texture2D wave_images;
-    Texture2D mod_images;
     Texture2D keyscale_left_images;
     Texture2D keyscale_right_images;
 } editor_state;
@@ -1630,7 +1629,6 @@ void init(editor_state* es){
     es->output_images = LoadTexture("resources/images/outputs.png");
     es->operator_images= LoadTexture("resources/images/operators.png");
     es->wave_images= LoadTexture("resources/images/waves.png");
-    es->mod_images = LoadTexture("resources/images/mods.png");
     es->keyscale_left_images = LoadTexture("resources/images/keyscale_curves_l.png");
     es->keyscale_right_images =  LoadTexture("resources/images/keyscale_curves_r.png");
 
@@ -1642,7 +1640,6 @@ void deinit(editor_state* es){
     UnloadTexture(es->output_images);
     UnloadTexture(es->operator_images);
     UnloadTexture(es->wave_images);
-    UnloadTexture(es->mod_images);
     UnloadTexture(es->keyscale_left_images);
     UnloadTexture(es->keyscale_right_images);
 
