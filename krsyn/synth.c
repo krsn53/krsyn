@@ -841,7 +841,7 @@ KS_FORCEINLINE static i32 synth_frame(const ks_synth* synth, ks_synth_note* note
     return out >> 2;
 }
 
-KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 delta[], bool ams, bool fms, bool lfo)
+KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note, u32 delta[], bool ams, bool fms)
 {
     if(fms)
     {
@@ -882,7 +882,7 @@ KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note,
         }
     }
 
-    if(lfo)
+    if(ams || fms)
     {
         note->lfo_log = synth->lfo_func(note);
         note->lfo_phase += note->lfo_delta;
@@ -958,7 +958,7 @@ KS_FORCEINLINE static void ks_synth_envelope_process(ks_synth_note* note){
     }
 }
 
-KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len, u8 output, bool ams, bool fms, bool lfo)
+KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len, u8 output, bool ams, bool fms)
 {
     // NOTE: for LFO, each outputs delay 1 frame.
 
@@ -967,7 +967,7 @@ KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note
     for(u32 i=0; i<len; i+=2)
     {
         ks_synth_envelope_process(note);
-        lfo_frame(synth, note, delta,  ams, fms, lfo);
+        lfo_frame(synth, note, delta,  ams, fms);
 
         for(u32 j=0; j<KS_NUM_OPERATORS; j++)
         {
@@ -992,20 +992,17 @@ KS_FORCEINLINE static void ks_synth_process(const ks_synth* synth, ks_synth_note
 #define _output_list _(0) _(1) _(2) _(3)
 
 #define ks_synth_define_synth_render_aw(output) \
-void KS_NOINLINE ks_synth_render_ ## output ## _ ## _0_0_0( ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
-    ks_synth_process(note->synth, note, volume, pitchbend, buf, len, output, false, false, false); \
+void KS_NOINLINE ks_synth_render_ ## output ## _ ## _0_0( ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
+    ks_synth_process(note->synth, note, volume, pitchbend, buf, len, output, false, false); \
 } \
-void KS_NOINLINE ks_synth_render_ ## output ## _ ## _0_0_1( ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
-    ks_synth_process(note->synth, note, volume, pitchbend, buf, len, output, false, false, true); \
+void KS_NOINLINE ks_synth_render_ ## output ## _ ##_0_1(ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
+    ks_synth_process(note->synth, note, volume, pitchbend,  buf, len, output, false, true); \
 } \
-void KS_NOINLINE ks_synth_render_ ## output ## _ ##_0_1_1(ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
-    ks_synth_process(note->synth, note, volume, pitchbend,  buf, len, output, false, true, true); \
+void KS_NOINLINE ks_synth_render_ ## output ## _ ## _1_0( ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
+    ks_synth_process(note->synth, note, volume, pitchbend, buf, len, output, true, false); \
 } \
-void KS_NOINLINE ks_synth_render_ ## output ## _ ## _1_0_1( ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len) {\
-    ks_synth_process(note->synth, note, volume, pitchbend, buf, len, output, true, false, true); \
-} \
-void  KS_NOINLINE ks_synth_render_ ## output ## _ ## _1_1_1(ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
-    ks_synth_process(note->synth, note, volume, pitchbend, buf, len, output, true, true, true); \
+void  KS_NOINLINE ks_synth_render_ ## output ## _ ## _1_1(ks_synth_note* note, u32 volume, u32 pitchbend, i32* buf, u32 len){ \
+    ks_synth_process(note->synth, note, volume, pitchbend, buf, len, output, true, true); \
 }
 
 
@@ -1023,23 +1020,22 @@ _output_list
     { \
         if(synth->lfo_enabled.fms) \
         { \
-            ks_synth_render_ ## output ## _ ##  _1_1_1 (note, volume, pitchbend,  buf, len); \
+            ks_synth_render_ ## output ## _ ##  _1_1 (note, volume, pitchbend,  buf, len); \
         } \
         else \
         { \
-            ks_synth_render_ ## output ## _ ## _1_0_1 (note, volume, pitchbend, buf, len); \
+            ks_synth_render_ ## output ## _ ## _1_0 (note, volume, pitchbend, buf, len); \
         } \
     } \
     else \
     { \
         if(synth->lfo_enabled.fms) \
         { \
-            ks_synth_render_ ## output ## _ ##  _0_1_1 (note, volume, pitchbend, buf, len); \
+            ks_synth_render_ ## output ## _ ##  _0_1 (note, volume, pitchbend, buf, len); \
         } \
         else \
         { \
-            if(synth->lfo_enabled.filter) ks_synth_render_ ## output ## _ ##  _0_0_1 (note, volume, pitchbend, buf, len); \
-            else ks_synth_render_ ## output ## _ ##  _0_0_0 (note, volume, pitchbend, buf, len); \
+            ks_synth_render_ ## output ## _ ##  _0_0 (note, volume, pitchbend, buf, len); \
         } \
     }
 

@@ -77,7 +77,7 @@ bool load_file(player_state* ps, const char* file){
         return false;
     }
 
-    const char* ext = GetFileExtension(file);
+    const char* ext =TextToLower(GetFileExtension(file));
     if(ext == NULL) ext = "";
     //midifile
     if(strcmp(ext,  "mid")  == 0 || strcmp(ext,"midi") == 0 ){
