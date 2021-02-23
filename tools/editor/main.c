@@ -1388,7 +1388,7 @@ void EditorUpdate(void* ptr){
             const int msgbox_res = GuiMessageBox(window, "Save Tone List", "", "OK;Cancel");
             if(msgbox_res == 1){
                 if(save_load_tone_list(&es->tones_data, es, true)){
-                    update_tone_list(&es->tones, &es->tones_data, es->score_state);
+                    update_tone_list(es->ctx, &es->tones, &es->tones_data, es->score_state);
                     es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
                     es->display_mode= EDIT;
                 }
