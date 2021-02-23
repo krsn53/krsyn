@@ -576,10 +576,10 @@
 						.use_custom_wave=0,
 						.wave_type=0,
 						.fixed_frequency=0,
-						.phase_coarse=14,
+						.phase_coarse=20,
 						.phase_offset=0,
 						.phase_fine=1,
-						.semitones=27,
+						.semitones=32,
 						.repeat_envelope=0,
 						.repeat_envelope_amp=0,
 						.envelopes={
@@ -600,7 +600,7 @@
 								.amp=0,
 							},
 						},
-						.level=22,
+						.level=23,
 						.ratescale=1,
 						.keyscale_mid_point=11,
 						.keyscale_left=2,
@@ -641,7 +641,7 @@
 								.amp=0,
 							},
 						},
-						.level=48,
+						.level=18,
 						.ratescale=1,
 						.keyscale_mid_point=12,
 						.keyscale_left=2,
@@ -658,7 +658,7 @@
 						.use_custom_wave=0,
 						.wave_type=0,
 						.fixed_frequency=0,
-						.phase_coarse=1,
+						.phase_coarse=2,
 						.phase_offset=0,
 						.phase_fine=6,
 						.semitones=32,
@@ -670,7 +670,7 @@
 								.amp=7,
 							},
 							{
-								.time=16,
+								.time=17,
 								.amp=0,
 							},
 							{
@@ -707,7 +707,7 @@
 						.repeat_envelope_amp=0,
 						.envelopes={
 							{
-								.time=0,
+								.time=15,
 								.amp=7,
 							},
 							{
@@ -737,7 +737,7 @@
 				.common={
 					.feedback_level=0,
 					.panpot=7,
-					.output=2,
+					.output=1,
 					.lfo_fms_depth=0,
 					.lfo_use_custom_wave=0,
 					.lfo_wave_type=0,
@@ -775,19 +775,19 @@
 							},
 							{
 								.time=20,
+								.amp=3,
+							},
+							{
+								.time=22,
 								.amp=0,
 							},
 							{
-								.time=0,
-								.amp=0,
-							},
-							{
-								.time=18,
+								.time=20,
 								.amp=0,
 							},
 						},
 						.level=22,
-						.ratescale=1,
+						.ratescale=5,
 						.keyscale_mid_point=13,
 						.keyscale_left=2,
 						.keyscale_right=0,
@@ -816,19 +816,19 @@
 							},
 							{
 								.time=20,
+								.amp=3,
+							},
+							{
+								.time=22,
 								.amp=0,
 							},
 							{
-								.time=24,
-								.amp=5,
-							},
-							{
-								.time=18,
+								.time=20,
 								.amp=0,
 							},
 						},
 						.level=48,
-						.ratescale=2,
+						.ratescale=6,
 						.keyscale_mid_point=12,
 						.keyscale_left=2,
 						.keyscale_right=0,
@@ -856,7 +856,7 @@
 								.amp=7,
 							},
 							{
-								.time=20,
+								.time=22,
 								.amp=0,
 							},
 							{
@@ -864,17 +864,17 @@
 								.amp=0,
 							},
 							{
-								.time=18,
+								.time=20,
 								.amp=0,
 							},
 						},
 						.level=88,
-						.ratescale=1,
+						.ratescale=5,
 						.keyscale_mid_point=14,
 						.keyscale_left=0,
 						.keyscale_right=0,
 						.keyscale_low_depth=0,
-						.keyscale_high_depth=5,
+						.keyscale_high_depth=3,
 						.velocity_sens=19,
 						.lfo_ams_depth=0,
 					},
@@ -893,24 +893,24 @@
 						.repeat_envelope_amp=0,
 						.envelopes={
 							{
-								.time=0,
+								.time=15,
 								.amp=7,
+							},
+							{
+								.time=22,
+								.amp=0,
+							},
+							{
+								.time=0,
+								.amp=0,
 							},
 							{
 								.time=20,
 								.amp=0,
 							},
-							{
-								.time=0,
-								.amp=0,
-							},
-							{
-								.time=18,
-								.amp=0,
-							},
 						},
 						.level=41,
-						.ratescale=2,
+						.ratescale=6,
 						.keyscale_mid_point=17,
 						.keyscale_left=0,
 						.keyscale_right=0,
