@@ -10,7 +10,11 @@ add_subdirectory(ksio)
 file(GLOB krsyn_src krsyn/*.c krsyn/*.h)
 add_library(krsyn ${krsyn_src})
 target_include_directories(krsyn PUBLIC .)
-target_link_libraries(krsyn ksio m)
+target_link_libraries(krsyn ksio)
+if(NOT MSVC)
+    target_link_libraries(krsyn m)
+endif()
+
 set_property(TARGET krsyn PROPERTY C_STANDARD 11)
 
 if(${KRSYN_BUILD_TESTS})

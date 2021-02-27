@@ -43,11 +43,19 @@ ks_io_begin_custom_func(ks_score_data)
     ks_arr_obj_len(data, ks_score_event, ks_access(length));
 ks_io_end_custom_func(ks_score_data)
 
-inline bool ks_score_note_is_enabled(const ks_score_note* note){
+KS_INLINE  bool  ks_synth_note_is_enabled     (const ks_synth_note* note){
+    return *((u32*)note->envelope_states) != 0;
+}
+
+KS_INLINE bool ks_synth_note_is_on (const ks_synth_note* note){
+    return (*((u32*)note->envelope_states) & 0x0f0f0f0f) != 0;
+}
+
+KS_INLINE bool ks_score_note_is_enabled(const ks_score_note* note){
     return ks_synth_note_is_enabled(&note->note);
 }
 
-inline bool ks_score_note_is_on(const ks_score_note* note){
+KS_INLINE  bool ks_score_note_is_on(const ks_score_note* note){
     return ks_synth_note_is_on(&note->note);
 }
 

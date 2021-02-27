@@ -214,13 +214,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
     data->common.lfo_offset = 0;
 }
 
-KS_INLINE  bool  ks_synth_note_is_enabled     (const ks_synth_note* note){
-    return *((u32*)note->envelope_states) != 0;
-}
 
-KS_INLINE bool ks_synth_note_is_on (const ks_synth_note* note){
-    return (*((u32*)note->envelope_states) & 0x0f0f0f0f) != 0;
-}
 
 KS_INLINE  u64 ks_u2f(u32 val, int num_v){
     u32 v = ks_mask(val, num_v);
@@ -302,11 +296,11 @@ KS_FORCEINLINE static i32 ks_wave_func_default(u8 op,  ks_synth_note* note, u32 
 
 
 KS_FORCEINLINE static i32 ks_wave_func_noise(u8 op,  ks_synth_note* note, u32 phase){
-    i16 ret = note->synth->wave_tables[op][ks_mask((((phase + note->mod_func_logs[op][0]) >> (KS_NOISE_PHASE_BITS))), KS_TABLE_BITS)];
+    i16 ret = note->synth->wave_tables[op][ks_mask((((phase >> (KS_NOISE_PHASE_BITS)) + note->mod_func_logs[op][0])), KS_TABLE_BITS)];
     // noise
     if(((note->phases[op]) >> (KS_PHASE_BITS)) > ks_1(10)) {
         note->phases[op] -= ks_1(10 + KS_PHASE_BITS);
-        srand((unsigned)note->mod_func_logs[op][0]);
+        //srand((unsigned)note->mod_func_logs[op][0]);
         note->mod_func_logs[op][0] = rand();
     }
     return ret;
@@ -510,7 +504,7 @@ static i32 ks_lfo_wave_func_default(ks_synth_note* note){
 }
 
 static i32 ks_lfo_wave_func_noise(ks_synth_note* note){
-    i16 ret = note->synth->lfo_wave_table[ks_mask((((note->lfo_phase + note->lfo_func_log) >> KS_NOISE_PHASE_BITS)), KS_TABLE_BITS)];
+    i16 ret = note->synth->lfo_wave_table[ks_mask((((note->lfo_phase >> (KS_NOISE_PHASE_BITS)) + note->lfo_func_log)), KS_TABLE_BITS)];
     // noise
     if(((note->lfo_phase) >> KS_NOISE_PHASE_BITS) > ks_1(5)) {
         note->lfo_phase -= ks_1(5 + KS_NOISE_PHASE_BITS);
@@ -874,7 +868,6 @@ KS_FORCEINLINE static void lfo_frame(const ks_synth* synth, ks_synth_note* note,
             depth *= synth->lfo_ams_depths[j];
             depth >>= KS_LFO_DEPTH_BITS;
             depth += ks_1(KS_OUTPUT_BITS);     // 0 ~ 2.0
-            if(depth < 0)printf("%ld\n", depth);
 
             depth *= note->envelope_now_amps[j];
             depth >>= KS_OUTPUT_BITS;
