@@ -942,7 +942,7 @@ KS_FORCEINLINE static void ks_synth_envelope_process(ks_synth_note* note){
                 case KS_ENVELOPE_RELEASED:
                     note->envelope_now_deltas[i] = 0;
                     note->envelope_now_diffs[i] = 0;
-                    note->envelope_now_point_amps[i] =  note->envelope_points[note->envelope_now_points[KS_ENVELOPE_RELEASE_INDEX]][i];
+                    note->envelope_now_point_amps[i] =  note->envelope_points[note->envelope_now_points[i]][i];
                     note->envelope_states[i] = KS_ENVELOPE_OFF;
                     break;
                 }
