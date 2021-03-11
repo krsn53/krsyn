@@ -684,32 +684,7 @@ void EditorUpdate(void* ptr){
         // common params
         {
             ks_synth_common_data * common = & es->tones_data.data[es->current_tone_index].synth.common;
-            // output
-            {
-                pos2 = pos;
-                pos2.height = 14;
-                GuiAlignedLabel("Outputs", pos2, GUI_TEXT_ALIGN_RIGHT);
-                pos2.x += step_x;
-                common->output = PropertyIntImage(pos2, es->output_images, common->output, 0, KS_NUM_OPERATORS-1, 1);
-            }
-            pos.x = x_pos.x;
-            pos.y += (int)pos2.height + margin;
-            // feedback_level
-            {
-                GuiAlignedLabel("Feedback", pos, GUI_TEXT_ALIGN_RIGHT);
-                pos.x += step_x;
 
-                pos2 = pos;
-                pos2.width = (int)(pos2.width );
-
-                text = FormatText("%.2f PI", 4.0f *calc_feedback_level(common->feedback_level) / ks_1(KS_FEEDBACK_LEVEL_BITS));
-                common->feedback_level = PropertyInt(pos2, text, common->feedback_level, 0, 15, 1);
-
-
-                pos.x += step_x;
-            }
-            pos.x = x_pos.x;
-            pos.y += step + 2;
             // panpot
             {
                 GuiAlignedLabel("Panpot", pos, GUI_TEXT_ALIGN_RIGHT);
@@ -887,31 +862,16 @@ void EditorUpdate(void* ptr){
 
             pos.x = x_pos.x; pos.y += step;
 
-            // wave type
-            GuiAlignedLabel("Modulation Src", pos, GUI_TEXT_ALIGN_RIGHT);
+            // sync
             pos.x += step_x;
 
             for(unsigned i=0; i<KS_NUM_OPERATORS; i++){
                 pos2 = pos;
 
-                pos2.width =(int)(pos.width * 0.5) - 2;
-                pos2.height += 2;
-
-                const bool in_less = op[i].mod_type == KS_MOD_PASS ;
-                if(in_less){
-                    GuiDisable();
-                }
-                op[i].mod_src = PropertyIntImage(pos2, es->operator_images,op[i].mod_src, 0, KS_NUM_OPERATORS-1, 1);
-                if(in_less){
-                    GuiEnable();
-                }
-
-
-                pos2.x += pos2.width + margin;
 
                 pos2.width =pos2.height = pos.height;
 
-                const bool sync_less = op[i].mod_type == KS_MOD_PASS || op[i].mod_type == KS_MOD_LPF || op[i].mod_type == KS_MOD_HPF ;
+                const bool sync_less = op[i].mod_type == KS_MOD_PASS ;
                 if(sync_less){
                     GuiDisable();
                 }
@@ -951,12 +911,6 @@ void EditorUpdate(void* ptr){
                 case KS_MOD_AM:
                     text = "AM";
                     break;
-                case KS_MOD_LPF:
-                    text = "LPF";
-                    break;
-                case KS_MOD_HPF:
-                    text = "HPF";
-                    break;
                 case KS_MOD_NONE:
                     text = "None";
                     break;
@@ -977,7 +931,7 @@ void EditorUpdate(void* ptr){
             pos2.width = (pos.width- margin) / 2;
 
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                bool wave_less = op[i].mod_type == KS_MOD_PASS || op[i].mod_type == KS_MOD_LPF || op[i].mod_type == KS_MOD_HPF;
+                bool wave_less = op[i].mod_type == KS_MOD_PASS ;
                 if(wave_less) GuiDisable();
                 if(op[i].use_custom_wave){
                     op[i].wave_type = PropertyInt((Rectangle){pos2.x, pos2.y, pos2.width, pos.height}, FormatText("%d", op[i].wave_type), op[i].wave_type, 0, KS_MAX_WAVES - ks_1(KS_CUSTOM_WAVE_BITS), 1);
@@ -1135,50 +1089,6 @@ void EditorUpdate(void* ptr){
                pos.x += step_x;
            }
            pos.x = x_pos.x; pos.y += step; 
-
-            // keyscale curve type
-            pos2 = pos;
-            pos2.height = pos.height*2;
-            GuiAlignedLabel("Keyscale Curve", pos2, GUI_TEXT_ALIGN_RIGHT);
-            pos2.width = (base_width - margin)/ 2.0;
-            pos2.x += step_x;
-            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-               op[i].keyscale_left = PropertyIntImage(pos2, es->keyscale_left_images,op[i].keyscale_left, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
-                pos2.x += pos2.width  +margin;
-               op[i].keyscale_right = PropertyIntImage(pos2, es->keyscale_right_images,op[i].keyscale_right, 0, KS_KEYSCALE_CURVE_NUM_TYPES-1, 1);
-                pos2.x +=  pos2.width +margin;
-            }
-            pos.x = x_pos.x; pos.y += (pos2.height + margin);
-
-            // keyscale low depth
-            GuiAlignedLabel("Keyscale Depth", pos, GUI_TEXT_ALIGN_RIGHT);
-            pos.x += step_x;
-
-            pos2 = pos;
-            pos2.width /=2.0f;
-
-            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_keyscale_low_depths(op[i].keyscale_low_depth) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
-               op[i].keyscale_low_depth = PropertyInt(pos2, text,op[i].keyscale_low_depth, 0, 15, 1);
-
-                pos2.x += step_x/2.0f;
-
-                text = FormatText("%.1f %%", 100*calc_keyscale_high_depths(op[i].keyscale_high_depth) / (float)ks_1(KS_KEYSCALE_DEPTH_BITS));
-               op[i].keyscale_high_depth = PropertyInt(pos2, text,op[i].keyscale_high_depth, 0, 15, 1);
-                pos2.x += step_x / 2.0f;
-            }
-            pos.x = x_pos.x; pos.y += step;
-
-
-            // keyscale mid point
-            GuiAlignedLabel("Keyscale Mid Key", pos, GUI_TEXT_ALIGN_RIGHT);
-            pos.x += step_x;
-            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%d", calc_keyscale_mid_points(op[i].keyscale_mid_point));
-               op[i].keyscale_mid_point = PropertyInt(pos, text,op[i].keyscale_mid_point, 0, 31, 1);
-                pos.x += step_x;
-            }
-            pos.x = x_pos.x; pos.y += step;
 
             // velocity sensitive
             GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);

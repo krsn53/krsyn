@@ -63,8 +63,6 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
     // reset not require parametors
     data.common.panpot = 0;
     for(u32 i=0; i< KS_NUM_OPERATORS; i++){
-        data.operators[i].keyscale_high_depth = 0;
-        data.operators[i].keyscale_low_depth = 0;
         data.operators[i].ratescale = 0;
     }
     ks_synth_set(&synth, ctx, &data);

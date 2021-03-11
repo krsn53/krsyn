@@ -106,8 +106,6 @@ typedef enum ks_mod_t{
     KS_MOD_SUB,
     KS_MOD_MUL,
     KS_MOD_AM,
-    KS_MOD_LPF,
-    KS_MOD_HPF,
     KS_MOD_NONE,
     KS_MOD_PASS,
 
@@ -147,7 +145,6 @@ typedef struct ks_synth_envelope_data{
 
 typedef struct ks_synth_operator_data{
     u8                      mod_type                : 4;
-    u8                      mod_src                 : 2;
     u8                      mod_sync                : 1;
     u8                      use_custom_wave         : 1;
     u8                      wave_type               : 7;
@@ -162,18 +159,11 @@ typedef struct ks_synth_operator_data{
     u8                      repeat_envelope_amp     : 4;
     ks_synth_envelope_data  envelopes               [KS_ENVELOPE_NUM_POINTS];
     u8                      ratescale               : 3;
-    u8                      keyscale_mid_point      : 5;
-    u8                      keyscale_left           : 2;
-    u8                      keyscale_right          : 2;
-    u8                      keyscale_low_depth      : 4;
-    u8                      keyscale_high_depth     : 4;
     u8                      lfo_ams_depth           : 4;
 }ks_synth_operator_data;
 
 typedef struct ks_synth_common_data{
-    u8                     feedback_level       : 4;
     u8                     panpot               : 4;
-    u8                     output               : 2;
     u8                     lfo_freq             : 5;
     u8                     lfo_fms_depth        : 5;
     u8                     lfo_use_custom_wave  : 1;
@@ -221,13 +211,6 @@ typedef struct ks_synth
     u32             lfo_ams_depths              [KS_NUM_OPERATORS];
 
     u32             ratescales                  [KS_NUM_OPERATORS];
-    u32             keyscale_low_depths         [KS_NUM_OPERATORS];
-    u32             keyscale_high_depths        [KS_NUM_OPERATORS];
-    u8              keyscale_mid_points         [KS_NUM_OPERATORS];
-    u8              keyscale_curve_types        [2][KS_NUM_OPERATORS];
-
-    u8              output;
-    u32             feedback_level;
 
     i16             panpot_left,     panpot_right;
 
@@ -241,7 +224,6 @@ typedef struct ks_synth
 
     const i16*      wave_tables                 [KS_NUM_OPERATORS];
     ks_mod_func     mod_funcs                   [KS_NUM_OPERATORS];
-    u8              mod_srcs                    [KS_NUM_OPERATORS];
     bool            mod_syncs                   [KS_NUM_OPERATORS];
 
     const i16*          lfo_wave_table;
@@ -250,7 +232,6 @@ typedef struct ks_synth
     struct {
         bool            ams      :1;
         bool            fms      :1;
-        bool            filter   :1;
     }               lfo_enabled;
 
     bool            enabled;
@@ -267,7 +248,7 @@ typedef  struct ks_synth_note
 
     i32                 output_logs                 [KS_NUM_OPERATORS];
 
-    i32                 mod_func_logs               [KS_NUM_OPERATORS][2];
+    i32                 mod_func_logs               [KS_NUM_OPERATORS];
 
     u32                 phases                      [KS_NUM_OPERATORS];
     u32                 phase_deltas                [KS_NUM_OPERATORS];
@@ -347,14 +328,8 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_envelope_times(value)                      ks_calc_envelope_times( ks_v(value, (8-5)))
 #define calc_velocity_sens(value)                       ks_linear_i(ks_v(value, 8-5), -ks_1(KS_VELOCITY_SENS_BITS), ks_1(KS_VELOCITY_SENS_BITS)+9)
 #define calc_ratescales(value)                          ks_exp_u(ks_v(value, (8-3)), ks_v(341, KS_RATESCALE_BITS -10) , 6)
-#define calc_keyscale_low_depths(value)                 ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_KEYSCALE_DEPTH_BITS)+ks_v(1100, KS_KEYSCALE_DEPTH_BITS - 14))
-#define calc_keyscale_high_depths(value)                ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_KEYSCALE_DEPTH_BITS)+ks_v(1100, KS_KEYSCALE_DEPTH_BITS - 14))
-#define calc_keyscale_mid_points(value)                 ks_v(value, (8-6))
-#define calc_keyscale_curve_types_left(value)           (value)
-#define calc_keyscale_curve_types_right(value)          (value)
 #define calc_lfo_ams_depths(value)                      ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_LFO_DEPTH_BITS)+ ks_v(1090, KS_LFO_DEPTH_BITS-14))
 #define calc_output(value)                              (value)
-#define calc_feedback_level(value)                      ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_FEEDBACK_LEVEL_BITS))
 #define calc_panpot(value)                              ks_linear_u(ks_v(value, (7-4)), 0, 293)
 #define calc_lfo_wave_type(value)                      (value)
 #define calc_lfo_fms_depth(value)                       (((i64)(ks_exp_u(ks_v(value, (8-5)), (ks_1(KS_LFO_DEPTH_BITS-11)), 4))* 43691) >> 16)
