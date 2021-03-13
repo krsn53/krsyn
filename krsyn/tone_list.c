@@ -62,9 +62,8 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
 
     // reset not require parametors
     data.common.panpot = 0;
-    for(u32 i=0; i< KS_NUM_OPERATORS; i++){
-        data.operators[i].ratescale = 0;
-    }
+    data.common.amp_ratescale = 0;
+    data.common.filter_ratescale = 0;
     ks_synth_set(&synth, ctx, &data);
 
     const u8 index = bin->program - KS_PROGRAM_CUSTOM_WAVE;
@@ -91,7 +90,7 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
     i32 tmp[ks_v(2, KS_TABLE_BITS)];
 
     // render and write to table
-    ks_synth_render(&note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmp, ks_v(2, KS_TABLE_BITS));
+    ks_synth_render(ctx, &note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmp, ks_v(2, KS_TABLE_BITS));
     for(u32 i=0 ;i< ks_1(KS_TABLE_BITS); i++){
          table[i] = MIN(MAX((tmp[2*i]) << 2, INT16_MIN), INT16_MAX);
     }

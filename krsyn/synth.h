@@ -27,6 +27,7 @@ extern "C" {
 // fixed point macros
 #define KS_TABLE_BITS                   10u
 #define KS_OUTPUT_BITS                  15u
+#define KS_POWER_OF_2_BITS              11u
 
 #define KS_FREQUENCY_BITS               16u
 #define KS_RATESCALE_BITS               16u
@@ -42,17 +43,13 @@ extern "C" {
 #define KS_PHASE_FINE_BITS              (KS_FREQUENCY_BITS)
 
 #define KS_NUM_OPERATORS                4u
+#define KS_NUM_ENVELOPES                2u
 
 #define KS_ENVELOPE_BITS                30u
 #define KS_ENVELOPE_NUM_POINTS          4u
 #define KS_ENVELOPE_RELEASE_INDEX       3u
 
 #define KS_VELOCITY_SENS_BITS           7u
-
-#define KS_KEYSCALE_CURVE_TABLE_BITS    7u
-#define KS_KEYSCALE_CURVE_BITS          16u
-#define KS_KEYSCALE_CURVE_MAX_BITS      (KS_KEYSCALE_CURVE_BITS + KS_KEYSCALE_CURVE_TABLE_BITS)
-#define KS_KEYSCALE_DEPTH_BITS          16u
 
 #define KS_LFO_DEPTH_BITS               16u
 #define KS_FEEDBACK_LEVEL_BITS          16u
@@ -67,24 +64,7 @@ extern "C" {
 #define KS_TIME_BITS            16u
 #define KS_DELTA_TIME_BITS      30u
 
-/**
- * @enum ks_synth_keyscale_t
- * @brief Key scale factor curve
- * keyscale_mid_point as center, volume is changed by key by key.
- * In LD and LU, volume changes linearly with frequency.
- * In ED and EU, volume changes exponentially.
-*/
-enum ks_keyscale_curve_t
-{
-    KS_KEYSCALE_CURVE_LD,
-    KS_KEYSCALE_CURVE_ED,
-    KS_KEYSCALE_CURVE_LU,
-    KS_KEYSCALE_CURVE_EU,
-
-    KS_KEYSCALE_CURVE_NUM_TYPES,
-};
-
-/**
+/*
  * @enum ks_synth_envelope_state
  * @brief Current envelope state
 */
@@ -134,6 +114,7 @@ typedef struct ks_synth_context{
     u32         sampling_rate_inv;
     u32         note_deltas[128];
     u32         ratescales[128];
+    u16         powerof2[128];
     i16         *(wave_tables[KS_MAX_WAVES]);
 }ks_synth_context;
 
@@ -154,21 +135,19 @@ typedef struct ks_synth_operator_data{
     u8                      phase_offset            : 4;
     u8                      phase_fine              : 4;
     u8                      semitones               : 6;
-    u8                      level                   : 7;
-    u8                      repeat_envelope         : 1;
-    u8                      repeat_envelope_amp     : 4;
-    ks_synth_envelope_data  envelopes               [KS_ENVELOPE_NUM_POINTS];
-    u8                      ratescale               : 3;
     u8                      lfo_ams_depth           : 4;
 }ks_synth_operator_data;
 
 typedef struct ks_synth_common_data{
-    u8                     panpot               : 4;
-    u8                     lfo_freq             : 5;
-    u8                     lfo_fms_depth        : 5;
-    u8                     lfo_use_custom_wave  : 1;
-    u8                     lfo_wave_type        : 7;
-    u8                     lfo_offset           : 4;
+    ks_synth_envelope_data  envelopes            [2][KS_ENVELOPE_NUM_POINTS];
+    u8                      amp_ratescale        : 3;
+    u8                      filter_ratescale     : 3;
+    u8                      panpot               : 4;
+    u8                      lfo_freq             : 5;
+    u8                      lfo_fms_depth        : 5;
+    u8                      lfo_use_custom_wave  : 1;
+    u8                      lfo_wave_type        : 7;
+    u8                      lfo_offset           : 4;
 
 }ks_synth_common_data;
 
@@ -199,18 +178,14 @@ typedef struct ks_synth
     u32             phase_coarses               [KS_NUM_OPERATORS];
     i32             phase_fines                 [KS_NUM_OPERATORS];
 
-    u32             levels                      [KS_NUM_OPERATORS];
-
-    bool            repeat_envelopes            [KS_NUM_OPERATORS];
-    u32             repeat_envelope_amps        [KS_NUM_OPERATORS];
-    i32             envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32             envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    i32             envelope_points             [KS_ENVELOPE_NUM_POINTS][2];
+    u32             envelope_samples            [KS_ENVELOPE_NUM_POINTS][2];
 
     i8              velocity_base               [KS_NUM_OPERATORS];
     i16             velocity_sens               [KS_NUM_OPERATORS];
     u32             lfo_ams_depths              [KS_NUM_OPERATORS];
 
-    u32             ratescales                  [KS_NUM_OPERATORS];
+    u32             ratescales                  [KS_NUM_ENVELOPES];
 
     i16             panpot_left,     panpot_right;
 
@@ -253,19 +228,19 @@ typedef  struct ks_synth_note
     u32                 phases                      [KS_NUM_OPERATORS];
     u32                 phase_deltas                [KS_NUM_OPERATORS];
 
-    i32                 envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    u32                 envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    i32                 envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
-    i32                 envelope_diffs              [KS_ENVELOPE_NUM_POINTS][KS_NUM_OPERATORS];
+    i32                 envelope_points             [KS_ENVELOPE_NUM_POINTS][KS_NUM_ENVELOPES];
+    u32                 envelope_samples            [KS_ENVELOPE_NUM_POINTS][KS_NUM_ENVELOPES];
+    i32                 envelope_deltas             [KS_ENVELOPE_NUM_POINTS][KS_NUM_ENVELOPES];
+    i32                 envelope_diffs              [KS_ENVELOPE_NUM_POINTS][KS_NUM_ENVELOPES];
 
-    u32                 envelope_now_deltas         [KS_NUM_OPERATORS];
-    i32                 envelope_now_times          [KS_NUM_OPERATORS];
-    i32                 envelope_now_amps           [KS_NUM_OPERATORS];
-    i32                 envelope_now_remains        [KS_NUM_OPERATORS];
-    i32                 envelope_now_diffs          [KS_NUM_OPERATORS];
-    i32                 envelope_now_point_amps     [KS_NUM_OPERATORS];
-    u8                  envelope_states             [KS_NUM_OPERATORS];
-    u8                  envelope_now_points         [KS_NUM_OPERATORS];
+    u32                 envelope_now_deltas         [KS_NUM_ENVELOPES];
+    i32                 envelope_now_times          [KS_NUM_ENVELOPES];
+    i32                 envelope_now_amps           [KS_NUM_ENVELOPES];
+    i32                 envelope_now_remains        [KS_NUM_ENVELOPES];
+    i32                 envelope_now_diffs          [KS_NUM_ENVELOPES];
+    i32                 envelope_now_point_amps     [KS_NUM_ENVELOPES];
+    u8                  envelope_states             [KS_NUM_ENVELOPES];
+    u8                  envelope_now_points         [KS_NUM_ENVELOPES];
 
     u32                 lfo_phase;
     u32                 lfo_delta;
@@ -291,13 +266,13 @@ ks_synth*                   ks_synth_array_new              (u32 length, ks_synt
 void                        ks_synth_free                   (ks_synth* synth);
 void                        ks_synth_data_set_default       (ks_synth_data* data);
 void                        ks_synth_set                    (ks_synth* synth, const ks_synth_context *ctx, const ks_synth_data* data);
-void                        ks_synth_render                 (ks_synth_note* note, u32 volume, u32 pitchbend, i32 *buf, u32 len);
+void                        ks_synth_render                 (const ks_synth_context*ctx, ks_synth_note* note, u32 volume, u32 pitchbend, i32 *buf, u32 len);
 void                        ks_synth_note_on                (ks_synth_note* note, const ks_synth *synth, const ks_synth_context* ctx,  u8 notenum, u8 velocity);
 void                        ks_synth_note_off               (ks_synth_note* note);
 bool                        ks_synth_note_is_enabled        (const ks_synth_note* note);
 bool                        ks_synth_note_is_on             (const ks_synth_note* note);
 
-u64                         ks_u2f                          (u32 val, int num_v);
+u64                         ks_u2f                          (const ks_synth_context*ctx, u32 val, int num_v);
 u32                         ks_exp_u                        (u32 val, u32 base, int num_v_bit);
 u32                         ks_calc_envelope_times          (u32 val);
 u32                         ks_calc_envelope_samples        (u32 smp_freq, u8 val);
@@ -322,7 +297,6 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_semitones(value)                           (value)
 #define calc_phase_fines(value)                         ks_linear_i(ks_v(value,(8-4)), -ks_v(8,KS_PHASE_FINE_BITS - 12), ks_v(8,KS_PHASE_FINE_BITS - 12))
 #define calc_levels(value)                              ks_linear_u(ks_v(value,(8-7)), 0, ks_1(KS_LEVEL_BITS)+ks_1(KS_LEVEL_BITS-7))
-#define calc_repeat_envelope_amp(value)                 (ks_1(KS_ENVELOPE_BITS) - ks_1(KS_ENVELOPE_BITS)/ (value+1) + ks_v(64, KS_ENVELOPE_BITS-10))
 #define calc_envelope_points(value)                     ks_linear_i(ks_v(value, (8-3)), 0, ks_1(KS_ENVELOPE_BITS)+ks_v(1170, KS_ENVELOPE_BITS - 13))
 #define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, ks_v(value, (8-5)))
 #define calc_envelope_times(value)                      ks_calc_envelope_times( ks_v(value, (8-5)))

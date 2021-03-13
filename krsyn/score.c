@@ -355,7 +355,7 @@ void ks_score_data_render(const ks_score_data *score, const ks_synth_context* ct
             //if(channel->bank == NULL) continue;
             //if(channel->bank->programs[channel->program_number] == NULL) continue;
             ks_synth_note* note = &state->notes[p].note;
-            ks_synth_render(note, channel->volume_cache, channel->pitchbend, tmpbuf, frame);
+            ks_synth_render(ctx, note, channel->volume_cache, channel->pitchbend, tmpbuf, frame);
 
             for(u32 b =0; b< frame; b+=2){
                 channel->output_log[b] += tmpbuf[b];

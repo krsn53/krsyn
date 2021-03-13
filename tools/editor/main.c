@@ -300,7 +300,7 @@ void EditorUpdate(void* ptr){
         i32 tmpbuf[BUFFER_LENGTH_PER_UPDATE];
         memset(tmpbuf, 0, sizeof(tmpbuf));
         if(es->note.synth && es->note.synth->enabled){
-            ks_synth_render(&es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
+            ks_synth_render(es->ctx, &es->note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmpbuf, BUFFER_LENGTH_PER_UPDATE);
 
             for(u32 i=0; i< BUFFER_LENGTH_PER_UPDATE; i++){
                 es->buf[i] += tmpbuf[i] / (float)INT16_MAX;
@@ -679,7 +679,6 @@ void EditorUpdate(void* ptr){
         }
         x_pos.x += step_x*2;
         pos.x = x_pos.x;
-        pos.y += (int)(step / 2.0);
 
         // common params
         {
@@ -771,7 +770,7 @@ void EditorUpdate(void* ptr){
             float env_step = wave_rec.width / KS_NUM_OPERATORS;
             float env_mul = wave_rec.height / ks_1(KS_ENVELOPE_BITS);
 
-            for(unsigned i=0; i<KS_NUM_OPERATORS; i++){
+            for(unsigned i=0; i< KS_NUM_ENVELOPES; i++){
                 float w = env_mul* es->note.envelope_now_amps[i];
                 Rectangle rec ={env_x + env_step*i, env_y - w, env_width, w};
                 DrawRectangleRec(rec, BLUE);
@@ -811,9 +810,6 @@ void EditorUpdate(void* ptr){
             EndScissorMode();
         }
 
-
-        GuiGroupBox((Rectangle){pos.x, x_pos.y, step_x*2, pos.y - x_pos.y}, "Common Params");
-        pos.y += (int)(step / 2.0f);
         x_pos.y = pos.y;
 
         // operators
@@ -1010,86 +1006,6 @@ void EditorUpdate(void* ptr){
             }
              pos.x = x_pos.x; pos.y += step;
 
-            // level
-             GuiAlignedLabel("Level", pos, GUI_TEXT_ALIGN_RIGHT);
-             pos.x += step_x;
-            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f", 100.0*calc_levels(op[i].level) / (float)ks_1(KS_LEVEL_BITS));
-               op[i].level = PropertyInt(pos, text,op[i].level, 0, 127, 1);
-                pos.x += step_x;
-            }
-            pos.x = x_pos.x; pos.y += step;
-
-
-            GuiAlignedLabel("Envelope Repeat", pos, GUI_TEXT_ALIGN_RIGHT);
-            pos.x += step_x;
-            pos2 = pos;
-            pos2.width -= pos2.height + margin;
-           for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-               op[i].repeat_envelope = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos2.height, pos2.height}, "",op[i].repeat_envelope);
-               pos2.x += pos2.height + margin;
-
-               text = FormatText("%.3f", calc_repeat_envelope_amp(op[i].repeat_envelope_amp) / (float)ks_1(KS_ENVELOPE_BITS));
-
-               if(!op[i].repeat_envelope) GuiDisable();
-               op[i].repeat_envelope_amp = PropertyInt(pos2, text, op[i].repeat_envelope_amp , 0, 15, 1);
-               if(!op[i].repeat_envelope) GuiEnable();
-
-               pos2.x += pos2.width + margin;
-           }
-           pos.x = x_pos.x; pos.y += step;
-
-
-            {
-                const char *envelope_texts[4] ={
-                    "Attack",
-                    "Decay",
-                    "Sustain",
-                    "Release",
-                };
-
-                const u32 amp_max = 7;
-                const u32 time_max = 31;
-                // envelope points and times
-                for (u32 e = 0; e< KS_ENVELOPE_NUM_POINTS; e++){
-                    GuiAlignedLabel(envelope_texts[e], pos, GUI_TEXT_ALIGN_RIGHT);
-                    pos.x += step_x;
-
-                    pos2 = pos;
-                    pos2.width /= 2.0f;
-                    for(unsigned i=0; i< KS_NUM_OPERATORS; i++) {
-                        text = FormatText("%.3f", calc_envelope_points(op[i].envelopes[e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                        op[i].envelopes[e].amp = PropertyInt(pos2, text,op[i].envelopes[e].amp, 0, amp_max, 1);
-                        pos2.x += step_x / 2.0f;
-
-                        float sec = calc_envelope_times(op[i].envelopes[e].time) / (float)ks_1(16);
-                        if(sec >= 1.0f){
-                            text = FormatText("%.1f s", sec);
-                        }
-                        else if(sec< 1.0f && sec>= 0.01f){
-                            text = FormatText("%.1f ms", sec*1000.0f);
-                        }
-                        else {
-                            text = FormatText("%.3f ms", sec*1000.0f);
-                        }
-
-                       op[i].envelopes[e].time = PropertyInt(pos2, text,op[i].envelopes[e].time, 0, time_max, 1);
-                        pos2.x += step_x / 2.0f;
-                    }
-                    pos.x = x_pos.x; pos.y += step;
-                }
-
-            }
-            // rate scale
-           GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
-           pos.x += step_x;
-           for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-               text = FormatText("%.1f %%", 100.0*calc_ratescales(op[i].ratescale) / (float)ks_1(KS_RATESCALE_BITS));
-              op[i].ratescale = PropertyInt(pos, text,op[i].ratescale, 0, 7, 1);
-               pos.x += step_x;
-           }
-           pos.x = x_pos.x; pos.y += step; 
-
             // velocity sensitive
             GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
@@ -1110,7 +1026,86 @@ void EditorUpdate(void* ptr){
             }
             pos.x = x_pos.x; pos.y += step;
         }
-         GuiGroupBox((Rectangle){pos.x, x_pos.y, step_x*5, pos.y - x_pos.y}, "Operator Params");
+
+        {
+
+            pos.y += (int)(step / 2.0);
+
+            const char *envelope_points[4] ={
+                "Attack",
+                "Decay",
+                "Sustain",
+                "Release",
+            };
+
+            for(unsigned i=0; i< KS_ENVELOPE_NUM_POINTS; i++){
+                pos.x += step_x;
+                pos2 = pos;
+                GuiAlignedLabel(envelope_points[i], pos2, GUI_TEXT_ALIGN_LEFT);
+
+                pos2.x += step_x;
+            }
+
+            pos.x = x_pos.x; pos.y += step +2;
+
+            const char *envelope_types[2] ={
+                "Amplitude",
+                "Filter",
+            };
+
+            ks_synth_common_data* common = &es->tones_data.data[es->current_tone_index].synth.common;
+            const u32 amp_max = 7;
+            const u32 time_max = 31;
+            // envelope points and times
+            for(unsigned i=0; i< KS_NUM_ENVELOPES; i++) {
+                GuiAlignedLabel(envelope_types[i], pos, GUI_TEXT_ALIGN_RIGHT);
+                pos.x += step_x;
+
+                pos2 = pos;
+                pos2.width /= 2.0f;
+                for (u32 e = 0; e< KS_ENVELOPE_NUM_POINTS; e++){
+                    text = FormatText("%.3f", calc_envelope_points(common->envelopes[i][e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
+                    common->envelopes[i][e].amp = PropertyInt(pos2, text, common->envelopes[i][e].amp, 0, amp_max, 1);
+                    pos2.x += step_x / 2.0f;
+
+                    float sec = calc_envelope_times(common->envelopes[i][e].time) / (float)ks_1(16);
+                    if(sec >= 1.0f){
+                        text = FormatText("%.1f s", sec);
+                    }
+                    else if(sec< 1.0f && sec>= 0.01f){
+                        text = FormatText("%.1f ms", sec*1000.0f);
+                    }
+                    else {
+                        text = FormatText("%.3f ms", sec*1000.0f);
+                    }
+
+                   common->envelopes[i][e].time = PropertyInt(pos2, text,common->envelopes[i][e].time, 0, time_max, 1);
+                    pos2.x += step_x / 2.0f;
+                }
+                pos.x = x_pos.x; pos.y += step;
+
+                // rate scale
+               GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
+               pos.x += step_x;
+               switch (i) {
+               case 0:{
+                   text = FormatText("%.1f %%", 100.0*calc_ratescales(common->amp_ratescale) / (float)ks_1(KS_RATESCALE_BITS));
+                   common->amp_ratescale = PropertyInt(pos, text, common->amp_ratescale, 0, 7, 1);
+                   break;
+               }
+               case 1:{
+                   text = FormatText("%.1f %%", 100.0*calc_ratescales(common->filter_ratescale) / (float)ks_1(KS_RATESCALE_BITS));
+                   common->filter_ratescale = PropertyInt(pos, text, common->filter_ratescale, 0, 7, 1);
+                   break;
+               }
+               }
+
+               pos.x += step_x;
+
+               pos.x = x_pos.x; pos.y += step;
+            }
+
+        }
 
          pos.y+= margin;
 
