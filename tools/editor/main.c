@@ -81,8 +81,6 @@ typedef struct editor_state{
     Texture2D output_images;
     Texture2D operator_images;
     Texture2D wave_images;
-    Texture2D keyscale_left_images;
-    Texture2D keyscale_right_images;
 } editor_state;
 
 static void mark_dirty(bool* dirty, GuiFileDialogState* file_dialog_state){
@@ -815,6 +813,7 @@ void EditorUpdate(void* ptr){
         // operators
         {
             ks_synth_operator_data *op = es->tones_data.data[es->current_tone_index].synth.operators;
+            ks_synth_mod_data* mod = es->tones_data.data[es->current_tone_index].synth.mods;
 
             pos.y += (int)(step / 2.0f) ;
 
@@ -858,20 +857,32 @@ void EditorUpdate(void* ptr){
 
             pos.x = x_pos.x; pos.y += step;
 
+            // modulation type
+            GuiAlignedLabel("Modulation Type", pos, GUI_TEXT_ALIGN_RIGHT);
             // sync
             pos.x += step_x;
+            {
+                pos2 = pos;
+                pos2.width =pos2.height = pos.height;
 
-            for(unsigned i=0; i<KS_NUM_OPERATORS; i++){
+                GuiDisable();
+                GuiCheckBox(pos2, "Sync", false);
+                GuiEnable();
+
+                 pos.x += step_x;
+            }
+
+            for(unsigned i=0; i<KS_NUM_OPERATORS-1; i++){
                 pos2 = pos;
 
 
                 pos2.width =pos2.height = pos.height;
 
-                const bool sync_less = op[i].mod_type == KS_MOD_PASS ;
+                const bool sync_less = mod[i].type == KS_MOD_PASS ;
                 if(sync_less){
                     GuiDisable();
                 }
-                op[i].mod_sync = GuiCheckBox(pos2, "Sync", op[i].mod_sync);
+                mod[i].sync = GuiCheckBox(pos2, "Sync", mod[i].sync);
                 if(sync_less){
                     GuiEnable();
                 }
@@ -884,37 +895,38 @@ void EditorUpdate(void* ptr){
             pos.x = x_pos.x;
             pos.y += step;
 
-            // modulation type
-            GuiAlignedLabel("Modulation Type", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
-            pos2 = pos;
             pos2.height += 2;
-            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
 
-                switch (op[i].mod_type) {
+            {
+                GuiDisable();
+                pos2 = pos;
+                PropertyIntImage(pos2, GetTextureDefault(), 0 , KS_NUM_MODS, KS_NUM_MODS, 1);
+                GuiLabel(pos2, "Root");
+                GuiEnable();
+                pos2.x += pos2.width + margin;
+            }
+
+            for(unsigned i=0; i< KS_NUM_OPERATORS-1; i++){
+
+                switch (mod[i].type) {
                 case KS_MOD_FM:
                     text = "FM";
                     break;
-                case KS_MOD_ADD:
-                    text = "+";
-                    break;
-                case KS_MOD_SUB:
-                    text = "-";
+                case KS_MOD_MIX:
+                    text = "MIX";
                     break;
                 case KS_MOD_MUL:
-                    text = "x";
+                    text = "MUL";
                     break;
                 case KS_MOD_AM:
                     text = "AM";
-                    break;
-                case KS_MOD_NONE:
-                    text = "None";
                     break;
                 default:
                     text = "Pass";
                     break;
                 }
-                op[i].mod_type = PropertyIntImage(pos2, GetTextureDefault(),op[i].mod_type, 0, KS_NUM_MODS-1, 1);
+                mod[i].type = PropertyIntImage(pos2, GetTextureDefault(),mod[i].type, 0, KS_NUM_MODS-1, 1);
                 GuiLabel(pos2, text);
                 pos2.x += pos2.width + margin;
             }
@@ -927,7 +939,7 @@ void EditorUpdate(void* ptr){
             pos2.width = (pos.width- margin) / 2;
 
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                bool wave_less = op[i].mod_type == KS_MOD_PASS ;
+                bool wave_less = i != 0 && mod[i-1].type == KS_MOD_PASS ;
                 if(wave_less) GuiDisable();
                 if(op[i].use_custom_wave){
                     op[i].wave_type = PropertyInt((Rectangle){pos2.x, pos2.y, pos2.width, pos.height}, FormatText("%d", op[i].wave_type), op[i].wave_type, 0, KS_MAX_WAVES - ks_1(KS_CUSTOM_WAVE_BITS), 1);
@@ -989,7 +1001,7 @@ void EditorUpdate(void* ptr){
                     text = FormatText("x %.3f",1.0 + 9*ks_v(op[i].semitones,KS_PHASE_FINE_BITS - 6) / (float)ks_1(KS_PHASE_FINE_BITS));
                 }
                 else {
-                    text = FormatText("%d", calc_semitones(op[i].semitones) - ks_1(5));
+                    text = FormatText("%d", calc_semitones(op[i].semitones) - (ks_1(6)-13));
                 }
                op[i].semitones = PropertyInt(pos, text,op[i].semitones, 0, 63, 1);
                 pos.x += step_x;
@@ -1534,8 +1546,6 @@ void init(editor_state* es){
     es->output_images = LoadTexture("resources/images/outputs.png");
     es->operator_images= LoadTexture("resources/images/operators.png");
     es->wave_images= LoadTexture("resources/images/waves.png");
-    es->keyscale_left_images = LoadTexture("resources/images/keyscale_curves_l.png");
-    es->keyscale_right_images =  LoadTexture("resources/images/keyscale_curves_r.png");
 
 }
 
@@ -1545,8 +1555,6 @@ void deinit(editor_state* es){
     UnloadTexture(es->output_images);
     UnloadTexture(es->operator_images);
     UnloadTexture(es->wave_images);
-    UnloadTexture(es->keyscale_left_images);
-    UnloadTexture(es->keyscale_right_images);
 
     CloseWindow();
     CloseAudioDevice();

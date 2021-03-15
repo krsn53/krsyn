@@ -13,7 +13,7 @@ extern "C" {
 #define KS_CHANNEL_BITs         4u
 #define KS_NUM_CHANNELS         16u
 
-#define KS_PITCH_BEND_BITS      13u
+#define KS_PITCH_BEND_EVENT_BITS      13u
 #define KS_QUARTER_TIME_BITS    8u
 
 #define     KS_DEFAULT_QUARTER_TIME     ks_1(KS_QUARTER_TIME_BITS - 1)

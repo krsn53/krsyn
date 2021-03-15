@@ -280,10 +280,12 @@ void ks_tone_list_insert(ks_tone_list_data* v, ks_tone_data d, i32 *current){
 void ks_tone_list_insert_empty(ks_tone_list_data*v, i32 *current){
     ks_tone_data tone;
     memset(&tone, 0, sizeof(tone));
-    tone.msb = v->data[*current].msb;
-    tone.lsb = v->data[*current].lsb;
-    tone.program = v->data[*current].program;
-    tone.note = v->data[*current].note;
+    if(v->length != 0){
+        tone.msb = v->data[*current].msb;
+        tone.lsb = v->data[*current].lsb;
+        tone.program = v->data[*current].program;
+        tone.note = v->data[*current].note;
+    }
 
     strcpy(tone.name, "Noname Tone\0");
     ks_synth_data_set_default(&tone.synth);

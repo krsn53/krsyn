@@ -52,11 +52,10 @@ extern "C" {
 #define KS_VELOCITY_SENS_BITS           7u
 
 #define KS_LFO_DEPTH_BITS               16u
+#define KS_PITCH_BEND_BITS              KS_LFO_DEPTH_BITS;
 #define KS_FEEDBACK_LEVEL_BITS          16u
 
 #define KS_LEVEL_BITS                   KS_KEYSCALE_CURVE_BITS
-
-#define KS_SAMPLE_PER_FRAMES_BITS       5u
 
 #define KS_PANPOT_BITS          7u
 #define KS_VOLUME_BITS          13u
@@ -82,11 +81,9 @@ typedef enum ks_envelope_state
 */
 typedef enum ks_mod_t{
     KS_MOD_FM,
-    KS_MOD_ADD,
-    KS_MOD_SUB,
+    KS_MOD_MIX,
     KS_MOD_MUL,
     KS_MOD_AM,
-    KS_MOD_NONE,
     KS_MOD_PASS,
 
     KS_NUM_MODS,
@@ -125,8 +122,6 @@ typedef struct ks_synth_envelope_data{
 
 
 typedef struct ks_synth_operator_data{
-    u8                      mod_type                : 4;
-    u8                      mod_sync                : 1;
     u8                      use_custom_wave         : 1;
     u8                      wave_type               : 7;
     u8                      velocity_sens           : 5;
@@ -137,6 +132,13 @@ typedef struct ks_synth_operator_data{
     u8                      semitones               : 6;
     u8                      lfo_ams_depth           : 4;
 }ks_synth_operator_data;
+
+typedef struct ks_synth_mod_data{
+    u8                      type                    : 4;
+    u8                      level                   : 4;
+    u8                      sync                    : 1;
+    u8                      mix_rate                : 7;
+} ks_synth_mod_data;
 
 typedef struct ks_synth_common_data{
     ks_synth_envelope_data  envelopes            [2][KS_ENVELOPE_NUM_POINTS];
@@ -157,16 +159,14 @@ typedef struct ks_synth_common_data{
  * @brief Binary data of the synthesizer.
 */
 typedef struct ks_synth_data{
-        ks_synth_operator_data    operators[KS_NUM_OPERATORS];
-        ks_synth_common_data  common;
+        ks_synth_operator_data      operators   [KS_NUM_OPERATORS];
+        ks_synth_mod_data           mods        [KS_NUM_OPERATORS-1];
+        ks_synth_common_data        common;
 }ks_synth_data;
 
 typedef struct ks_synth_note ks_synth_note;
 typedef struct ks_synth     ks_synth;
 
-typedef i32 (* ks_wave_func)(u8, ks_synth_note*, u32);
-typedef i32 (* ks_lfo_wave_func)(ks_synth_note*);
-typedef i32 (* ks_mod_func)(u8, ks_synth_note*, i32);
 
 /**
  * @struct ks_synth_data
@@ -174,6 +174,11 @@ typedef i32 (* ks_mod_func)(u8, ks_synth_note*, i32);
 */
 typedef struct ks_synth
 {
+    u32             output_level                [KS_NUM_OPERATORS-1];
+    u32             output_mod_level            [KS_NUM_OPERATORS-1];
+    u32             mod_input                   [KS_NUM_OPERATORS-1];
+
+
     u32             phase_offsets               [KS_NUM_OPERATORS];
     u32             phase_coarses               [KS_NUM_OPERATORS];
     i32             phase_fines                 [KS_NUM_OPERATORS];
@@ -194,15 +199,13 @@ typedef struct ks_synth
     u32             lfo_fms_depth;
 
     u8              semitones                   [KS_NUM_OPERATORS];
-
+    u8              mod_types                   [KS_NUM_OPERATORS-1];
+    bool            mod_syncs                   [KS_NUM_OPERATORS-1];
     bool            fixed_frequency             [KS_NUM_OPERATORS];
 
     const i16*      wave_tables                 [KS_NUM_OPERATORS];
-    ks_mod_func     mod_funcs                   [KS_NUM_OPERATORS];
-    bool            mod_syncs                   [KS_NUM_OPERATORS];
 
     const i16*          lfo_wave_table;
-    ks_lfo_wave_func    lfo_func;
 
     struct {
         bool            ams      :1;
@@ -220,10 +223,6 @@ ks_synth;
 typedef  struct ks_synth_note
 {
     const ks_synth* synth;
-
-    i32                 output_logs                 [KS_NUM_OPERATORS];
-
-    i32                 mod_func_logs               [KS_NUM_OPERATORS];
 
     u32                 phases                      [KS_NUM_OPERATORS];
     u32                 phase_deltas                [KS_NUM_OPERATORS];
@@ -247,9 +246,6 @@ typedef  struct ks_synth_note
     i32                 lfo_log;
 
     u32                 lfo_func_log;
-
-    u32                 now_frame;
-
 }
 ks_synth_note;
 
@@ -257,6 +253,7 @@ ks_io_decl_custom_func(ks_synth_data);
 ks_io_decl_custom_func(ks_synth_common_data);
 ks_io_decl_custom_func(ks_synth_envelope_data);
 ks_io_decl_custom_func(ks_synth_operator_data);
+ks_io_decl_custom_func(ks_synth_mod_data);
 
 ks_synth_context*           ks_synth_context_new            (u32 sampling_rate);
 void                        ks_synth_context_free           (ks_synth_context* ctx);

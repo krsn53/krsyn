@@ -280,7 +280,7 @@ bool ks_score_channel_set_panpot(ks_score_channel* channel, const ks_synth_conte
 
 bool ks_score_channel_set_picthbend(ks_score_channel* channel, u8 msb, u8 lsb){
     channel->pitchbend = ks_v(msb, 7) + lsb - ks_v(64, 7);
-    channel->pitchbend = ks_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_BITS));
+    channel->pitchbend = ks_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_EVENT_BITS));
     return true;
 }
 
