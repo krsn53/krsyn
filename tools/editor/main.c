@@ -859,55 +859,28 @@ void EditorUpdate(void* ptr){
 
             // modulation type
             GuiAlignedLabel("Modulation Type", pos, GUI_TEXT_ALIGN_RIGHT);
-            // sync
             pos.x += step_x;
             {
                 pos2 = pos;
-                pos2.width =pos2.height = pos.height;
+                pos2.width = pos.width /2 - margin/2;
 
-                GuiDisable();
-                GuiCheckBox(pos2, "Sync", false);
-                GuiEnable();
+                 GuiDisable();
+
+                 PropertyIntImage(pos2, GetTextureDefault(), 0 , KS_NUM_MODS, KS_NUM_MODS, 1);
+                 GuiLabel(pos2, "Root");
+                 pos2.x += pos2.width + margin;
+                 GuiCheckBox((Rectangle){pos2.x, pos2.y, pos2.height, pos2.height}, "Sync", false);
+
+
+                 GuiEnable();
 
                  pos.x += step_x;
+
             }
 
             for(unsigned i=0; i<KS_NUM_OPERATORS-1; i++){
                 pos2 = pos;
-
-
-                pos2.width =pos2.height = pos.height;
-
-                const bool sync_less = mod[i].type == KS_MOD_PASS ;
-                if(sync_less){
-                    GuiDisable();
-                }
-                mod[i].sync = GuiCheckBox(pos2, "Sync", mod[i].sync);
-                if(sync_less){
-                    GuiEnable();
-                }
-
-                 pos.x += step_x;
-            }
-
-
-            pos.x += step_x;
-            pos.x = x_pos.x;
-            pos.y += step;
-
-            pos.x += step_x;
-            pos2.height += 2;
-
-            {
-                GuiDisable();
-                pos2 = pos;
-                PropertyIntImage(pos2, GetTextureDefault(), 0 , KS_NUM_MODS, KS_NUM_MODS, 1);
-                GuiLabel(pos2, "Root");
-                GuiEnable();
-                pos2.x += pos2.width + margin;
-            }
-
-            for(unsigned i=0; i< KS_NUM_OPERATORS-1; i++){
+                pos2.width = pos.width /2 - margin/2;
 
                 switch (mod[i].type) {
                 case KS_MOD_FM:
@@ -928,10 +901,42 @@ void EditorUpdate(void* ptr){
                 }
                 mod[i].type = PropertyIntImage(pos2, GetTextureDefault(),mod[i].type, 0, KS_NUM_MODS-1, 1);
                 GuiLabel(pos2, text);
+
+                pos2.x += pos2.width + margin;
+
+                const bool sync_less = mod[i].type == KS_MOD_PASS ;
+                if(sync_less){
+                    GuiDisable();
+                }
+                mod[i].sync = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos2.height, pos2.height}, "Sync", mod[i].sync);
+                if(sync_less){
+                    GuiEnable();
+                }
+
+                 pos.x += step_x;
+            }
+
+            pos.x = x_pos.x; pos.y += pos2.height + margin;
+
+
+            // mod level
+            GuiAlignedLabel("Modulation Level", pos, GUI_TEXT_ALIGN_RIGHT);
+            pos.x += step_x;
+            pos.x += step_x/2;
+
+            pos2 = pos;
+            pos2.width = step_x*0.5 - margin;
+
+            for(unsigned i=0; i< KS_NUM_OPERATORS-1; i++){
+                if(mod[i].type == KS_MOD_FM){
+                    mod[i].fm_level= PropertyInt(pos2, TextFormat("%.2f PI", calc_fm_levels(mod[i].fm_level)*4 / (float)ks_1(KS_LEVEL_BITS)), mod[i].fm_level, 0, 31, 1);
+                }
+                pos2.x += pos2.width + margin;
+                mod[i].mix = PropertyInt(pos2, TextFormat("%d : %d", mod[i].mix, 127-mod[i].mix), mod[i].mix, 0, 127, 1);
                 pos2.x += pos2.width + margin;
             }
-            pos.x = x_pos.x; pos.y += pos2.height + margin;
-            // wave type
+            pos.x = x_pos.x; pos.y += step;
+
             GuiAlignedLabel("Wave Type", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             pos2 = pos;
@@ -957,9 +962,7 @@ void EditorUpdate(void* ptr){
             }
             pos.x = x_pos.x; pos.y += pos2.height + margin;
 
-
             // fixed frequency
-
             // phase coarse
             GuiAlignedLabel("Phase Coarse", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
@@ -1022,8 +1025,8 @@ void EditorUpdate(void* ptr){
             GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 200*calc_velocity_sens(op[i].velocity_sens) / (float)ks_1(8));
-               op[i].velocity_sens = PropertyInt(pos, text,op[i].velocity_sens, 0, 31, 1);
+                text = FormatText("%.1f %%", 100*calc_velocity_sens(op[i].velocity_sens) / (float)ks_1(7));
+               op[i].velocity_sens = PropertyInt(pos, text,op[i].velocity_sens, 0, 15, 1);
                 pos.x += step_x;
             }
             pos.x = x_pos.x; pos.y += step;
@@ -1050,16 +1053,6 @@ void EditorUpdate(void* ptr){
                 "Release",
             };
 
-            for(unsigned i=0; i< KS_ENVELOPE_NUM_POINTS; i++){
-                pos.x += step_x;
-                pos2 = pos;
-                GuiAlignedLabel(envelope_points[i], pos2, GUI_TEXT_ALIGN_LEFT);
-
-                pos2.x += step_x;
-            }
-
-            pos.x = x_pos.x; pos.y += step +2;
-
             const char *envelope_types[2] ={
                 "Amplitude",
                 "Filter",
@@ -1070,6 +1063,16 @@ void EditorUpdate(void* ptr){
             const u32 time_max = 31;
             // envelope points and times
             for(unsigned i=0; i< KS_NUM_ENVELOPES; i++) {
+                for(unsigned i=0; i< KS_ENVELOPE_NUM_POINTS; i++){
+                    pos.x += step_x;
+                    pos2 = pos;
+                    GuiAlignedLabel(envelope_points[i], pos2, GUI_TEXT_ALIGN_LEFT);
+
+                    pos2.x += step_x;
+                }
+
+                pos.x = x_pos.x; pos.y += step;
+
                 GuiAlignedLabel(envelope_types[i], pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
@@ -1096,16 +1099,25 @@ void EditorUpdate(void* ptr){
                 }
                 pos.x = x_pos.x; pos.y += step;
 
-                // rate scale
-               GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
-               pos.x += step_x;
                switch (i) {
                case 0:{
+                   pos2 = pos;
+                   GuiAlignedLabel("Level", pos2, GUI_TEXT_ALIGN_RIGHT);
+                   pos2.x += step_x;
+                   text = FormatText("%.1f %%", 100.0*calc_levels(common->amp_level) / (float)ks_1(KS_LEVEL_BITS));
+                   common->amp_level= PropertyInt(pos2, text, common->amp_level, 0, 127, 1);
+                   pos2.x += step_x;
+                   GuiAlignedLabel("Rate Scale", pos2, GUI_TEXT_ALIGN_RIGHT);
+                   pos2.x += step_x;
                    text = FormatText("%.1f %%", 100.0*calc_ratescales(common->amp_ratescale) / (float)ks_1(KS_RATESCALE_BITS));
-                   common->amp_ratescale = PropertyInt(pos, text, common->amp_ratescale, 0, 7, 1);
+                   common->amp_ratescale = PropertyInt(pos2, text, common->amp_ratescale, 0, 7, 1);
+                   pos2.x += step_x;
+
                    break;
                }
                case 1:{
+                   GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
+                   pos.x += step_x;
                    text = FormatText("%.1f %%", 100.0*calc_ratescales(common->filter_ratescale) / (float)ks_1(KS_RATESCALE_BITS));
                    common->filter_ratescale = PropertyInt(pos, text, common->filter_ratescale, 0, 7, 1);
                    break;

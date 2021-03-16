@@ -65,12 +65,20 @@ ks_io_begin_custom_func(ks_synth_operator_data)
     ks_bit_u8(lfo_ams_depth);
 ks_io_end_custom_func(ks_synth_operator_data)
 
+ks_io_begin_custom_func(ks_synth_mod_data)
+    ks_bit_u8(type);
+    ks_bit_u8(sync);
+    ks_bit_u8(fm_level);
+    ks_bit_u8(mix);
+ks_io_end_custom_func(ks_synth_mod_data)
+
 ks_io_begin_custom_func(ks_synth_data)
     ks_magic_number("KSYN");
     if(__METHODS->type == KS_SERIAL_BINARY){
         __RETURN += ks_io_binary_as_array(io, __METHODS, __OBJECT, sizeof(ks_synth_data), __SERIAL_TYPE);
     } else {
         ks_arr_obj(operators, ks_synth_operator_data);
+        ks_arr_obj(mods, ks_synth_mod_data);
         ks_obj(common, ks_synth_common_data);
     }
 ks_io_end_custom_func(ks_synth_data)
@@ -158,13 +166,15 @@ void ks_synth_data_set_default(ks_synth_data* data)
         data->operators[i].phase_fine = 8;
         data->operators[i].semitones= ks_1(6)-13;
 
-        data->operators[i].velocity_sens = 31;
+        data->operators[i].velocity_sens = 15;
         data->operators[i].lfo_ams_depth = 0;
     }
 
     for(u32 i=0; i<KS_NUM_OPERATORS-1; i++){
         data->mods[i].sync = false;
         data->mods[i].type = KS_MOD_PASS;
+        data->mods[i].fm_level =   0;
+        data->mods[i].mix = 63;
     }
 
     data->common.panpot = 7;
@@ -176,6 +186,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
     data->common.lfo_offset = 0;
 
     // amp
+    data->common.amp_level = 127;
     data->common.amp_ratescale = 0;
     data->common.envelopes[0][0].time= 0;
     data->common.envelopes[0][1].time = 0;
@@ -280,7 +291,6 @@ KS_INLINE static void synth_op_set(const ks_synth_context* ctx, ks_synth* synth,
         synth->semitones[i] = calc_semitones(data->operators[i].semitones);
 
         synth->velocity_sens[i] = calc_velocity_sens(data->operators[i].velocity_sens);
-        synth->velocity_base[i] = synth->velocity_sens[i] < 0 ? 0: 127;
 
         synth->lfo_ams_depths[i] = calc_lfo_ams_depths(data->operators[i].lfo_ams_depth);
         synth->lfo_enabled.ams = synth->lfo_enabled.ams ||  data->operators[i].lfo_ams_depth != 0;
@@ -289,6 +299,9 @@ KS_INLINE static void synth_op_set(const ks_synth_context* ctx, ks_synth* synth,
     for(u32 i=0; i< KS_NUM_OPERATORS-1; i++){
         synth->mod_syncs[i] = data->mods[i].sync;
         synth->mod_types[i] = data->mods[i].type;
+        synth->output_mod_levels[i] = calc_mix_levels(data->mods[i].mix);
+        synth->output_levels[i] = ks_1(KS_LEVEL_BITS)-ks_1(KS_LEVEL_BITS-7) - synth->output_mod_levels[i];
+        synth->mod_fm_levels[i] = calc_fm_levels(data->mods[i].fm_level);
     }
 }
 
@@ -299,6 +312,13 @@ KS_INLINE static void synth_common_set(const ks_synth_context* ctx, ks_synth* sy
             synth->envelope_samples[e][i] = calc_envelope_samples(ctx->sampling_rate, data->common.envelopes[i][e].time);
             synth->envelope_points[e][i] = calc_envelope_points(data->common.envelopes[i][e].amp);
         }
+    }
+    u32 amp_level = calc_levels(data->common.amp_level);;
+    for(u32 e=0; e< KS_ENVELOPE_NUM_POINTS; e++){
+        u64 point = synth->envelope_points[e][0];
+        point *= amp_level;
+        point >>= KS_LEVEL_BITS;
+        synth->envelope_points[e][0] = point;
     }
     synth->ratescales[0] = calc_ratescales(data->common.amp_ratescale);
     synth->ratescales[1] = calc_ratescales(data->common.filter_ratescale);
@@ -403,9 +423,9 @@ void ks_synth_note_on(ks_synth_note* note, const ks_synth *synth, const ks_synth
         i32 velocity;
 
         velocity = synth->velocity_sens[i];
-        velocity *=  (i32)synth->velocity_base[i]-vel;
+        velocity *=  vel;
         velocity >>= 7;
-        velocity = (1 << KS_VELOCITY_SENS_BITS) -  velocity;
+        velocity += (1 << KS_VELOCITY_SENS_BITS) -  synth->velocity_sens[i];
 
         //envelope
         for(u32 j=0; j < KS_ENVELOPE_NUM_POINTS; j++)
@@ -566,35 +586,41 @@ static void KS_FORCEINLINE ks_synth_render_mod_base(const ks_synth_context* ctx,
     }
 
     for(u32 i=0; i<len; i++){
+        i32 out;
         switch (mod_type) {
-        case KS_MOD_FM:
-            buf[i] = synth->wave_tables[op][ks_mask((note->phases[op] + (buf[i] << 15)) >> KS_PHASE_BITS, KS_TABLE_BITS)];
+        case KS_MOD_FM:{
+            i32 fm = buf[i];
+            fm *= synth->mod_fm_levels[preop];
+            fm >>= (KS_LEVEL_BITS - 2);
+            out = synth->wave_tables[op][ks_mask((note->phases[op] + ks_v(fm, KS_PHASE_MAX_BITS - KS_OUTPUT_BITS)) >> KS_PHASE_BITS, KS_TABLE_BITS)];
             break;
+        }
         case KS_MOD_MIX:{
-            i32 out  = synth->wave_tables[op][ks_mask((note->phases[op]) >> KS_PHASE_BITS, KS_TABLE_BITS)];
-            out += buf[i];
-            out >>=1;
-            buf[i] = out;
+            out  = synth->wave_tables[op][ks_mask((note->phases[op]) >> KS_PHASE_BITS, KS_TABLE_BITS)];
             break;
         }
         case KS_MOD_MUL:{
-            i32 out  = synth->wave_tables[op][ks_mask((note->phases[op] + buf[i]) >> KS_PHASE_BITS, KS_TABLE_BITS)];
+            out  = synth->wave_tables[op][ks_mask((note->phases[op] + buf[i]) >> KS_PHASE_BITS, KS_TABLE_BITS)];
             out *=  buf[i];
             out >>= KS_OUTPUT_BITS;
-            buf[i] = out;
             break;
         }
         case KS_MOD_AM:{
-            i32 out  = synth->wave_tables[op][ks_mask((note->phases[op] + buf[i]) >> KS_PHASE_BITS, KS_TABLE_BITS)];
+            out  = synth->wave_tables[op][ks_mask((note->phases[op] + buf[i]) >> KS_PHASE_BITS, KS_TABLE_BITS)];
             out += ks_1(KS_OUTPUT_BITS);
             out *=  buf[i];
             out >>= KS_OUTPUT_BITS+1;
-            buf[i] = out;
             break;
         }
-        default:
+        case KS_NUM_MODS:
             buf[i] = synth->wave_tables[0][ks_mask(note->phases[0] >> KS_PHASE_BITS, KS_TABLE_BITS)];
             break;
+        }
+
+        if(mod_type != KS_NUM_MODS){
+            const i32 mod = ((i64)buf[i]* synth->output_mod_levels[preop]) >> KS_LEVEL_BITS;
+            const i32 car = ((i64)out * synth->output_levels[preop]) >> KS_LEVEL_BITS;
+            buf[i] = mod + car;
         }
 
         note->phases[op] += bended_phase_delta;
