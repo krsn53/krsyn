@@ -53,6 +53,7 @@ extern "C" {
 #define KS_MIX_BITS                     7u
 
 #define KS_LFO_DEPTH_BITS               16u
+#define KS_NUM_LFOS                     2u
 #define KS_PITCH_BEND_BITS              KS_LFO_DEPTH_BITS;
 #define KS_FEEDBACK_LEVEL_BITS          16u
 
@@ -65,7 +66,7 @@ extern "C" {
 #define KS_DELTA_TIME_BITS      30u
 
 /*
- * @enum ks_synth_envelope_state
+ * @enum ks_envelope_state
  * @brief Current envelope state
 */
 typedef enum ks_envelope_state
@@ -74,7 +75,7 @@ typedef enum ks_envelope_state
     KS_ENVELOPE_ON = 1,
     KS_ENVELOPE_SUSTAINED,
     KS_ENVELOPE_RELEASED = 0x80,
-}ks_synth_envelope_state;
+}ks_envelope_state;
 
 /**
   * @enum ks_mod_t
@@ -89,6 +90,15 @@ typedef enum ks_mod_t{
 
     KS_NUM_MODS,
 }ks_mod_t;
+
+typedef enum ks_lfo_t{
+    KS_LFO_0 = ks_1(1),
+    KS_LFO_1 = ks_1(2),
+    KS_LFO_2 = ks_1(3),
+    KS_LFO_3 = ks_1(4),
+    KS_LFO_FILTER = 0x0101,
+    KS_LFO_PANPOT = 0x0110,
+}ks_lfo_t;
 
 typedef enum ks_wave_t
 {
@@ -116,13 +126,20 @@ typedef struct ks_synth_context{
     i16         *(wave_tables[KS_MAX_WAVES]);
 }ks_synth_context;
 
-typedef struct ks_synth_envelope_data{
+
+typedef struct ks_envelope_point_data{
     u8 time : 5;
     u8 amp: 3;
-} ks_synth_envelope_data;
+} ks_envelope_point_data;
+
+typedef struct ks_envelope_data{
+    ks_envelope_point_data          points      [KS_ENVELOPE_NUM_POINTS];
+    u8                              level       :5;
+    u8                              ratescale   :3;
+} ks_envelope_data;
 
 
-typedef struct ks_synth_operator_data{
+typedef struct ks_operator_data{
     u8                      use_custom_wave         : 1;
     u8                      wave_type               : 7;
     u8                      velocity_sens           : 4;
@@ -131,29 +148,29 @@ typedef struct ks_synth_operator_data{
     u8                      phase_offset            : 4;
     u8                      phase_fine              : 4;
     u8                      semitones               : 6;
-    u8                      lfo_ams_depth           : 4;
-}ks_synth_operator_data;
+}ks_operator_data;
 
-typedef struct ks_synth_mod_data{
+typedef struct ks_mod_data{
     u8                      type                    : 3;
     u8                      fm_level                : 5;
     u8                      sync                    : 1;
     u8                      mix                     : 7;
-} ks_synth_mod_data;
+} ks_mod_data;
 
-typedef struct ks_synth_common_data{
-    ks_synth_envelope_data  envelopes            [2][KS_ENVELOPE_NUM_POINTS];
-    u8                      amp_level            : 7;
-    u8                      amp_ratescale        : 3;
-    u8                      filter_ratescale     : 3;
-    u8                      panpot               : 4;
-    u8                      lfo_freq             : 5;
-    u8                      lfo_fms_depth        : 5;
-    u8                      lfo_use_custom_wave  : 1;
-    u8                      lfo_wave_type        : 7;
-    u8                      lfo_offset           : 4;
+typedef struct ks_lfo_data{
+    u8                      op_enabled       : 4;
+    u8                      offset           : 4;
+    u8                      freq             : 5;
+    u8                      level            : 5;
+    u8                      use_custom_wave  : 1;
+    u8                      wave             : 7;
+}ks_lfo_data;
 
-}ks_synth_common_data;
+typedef struct ks_common_data{
+    ks_envelope_data  envelopes                 [KS_NUM_ENVELOPES];
+    ks_lfo_data       lfos                      [KS_NUM_LFOS];
+    u8                panpot                    : 4;
+}ks_common_data;
 
 
 /**
@@ -161,9 +178,9 @@ typedef struct ks_synth_common_data{
  * @brief Binary data of the synthesizer.
 */
 typedef struct ks_synth_data{
-        ks_synth_operator_data      operators   [KS_NUM_OPERATORS];
-        ks_synth_mod_data           mods        [KS_NUM_OPERATORS-1];
-        ks_synth_common_data        common;
+        ks_operator_data      operators   [KS_NUM_OPERATORS];
+        ks_mod_data           mods        [KS_NUM_OPERATORS-1];
+        ks_common_data        common;
 }ks_synth_data;
 
 typedef struct ks_synth_note ks_synth_note;
@@ -189,15 +206,16 @@ typedef struct ks_synth
     u32             envelope_samples            [KS_ENVELOPE_NUM_POINTS][2];
 
     i16             velocity_sens               [KS_NUM_OPERATORS];
-    u32             lfo_ams_depths              [KS_NUM_OPERATORS];
 
     u32             ratescales                  [KS_NUM_ENVELOPES];
 
     i16             panpot_left,     panpot_right;
 
-    u32             lfo_offset;
-    u32             lfo_delta;
-    u32             lfo_fms_depth;
+    u32             lfo_levels                  [KS_NUM_LFOS];
+    u32             lfo_offsets                 [KS_NUM_LFOS];
+    u32             lfo_deltas                  [KS_NUM_LFOS];
+
+    u8              lfo_op_enables              [KS_NUM_LFOS];
 
     u8              semitones                   [KS_NUM_OPERATORS];
     u8              mod_types                   [KS_NUM_OPERATORS-1];
@@ -206,12 +224,7 @@ typedef struct ks_synth
 
     const i16*      wave_tables                 [KS_NUM_OPERATORS];
 
-    const i16*          lfo_wave_table;
-
-    struct {
-        bool            ams      :1;
-        bool            fms      :1;
-    }               lfo_enabled;
+    const i16*      lfo_wave_tables             [KS_NUM_LFOS];
 
     bool            enabled;
 }
@@ -242,19 +255,17 @@ typedef  struct ks_synth_note
     u8                  envelope_states             [KS_NUM_ENVELOPES];
     u8                  envelope_now_points         [KS_NUM_ENVELOPES];
 
-    u32                 lfo_phase;
-    u32                 lfo_delta;
-    i32                 lfo_log;
-
-    u32                 lfo_func_log;
+    u32                 lfo_phases                  [KS_NUM_LFOS];
 }
 ks_synth_note;
 
 ks_io_decl_custom_func(ks_synth_data);
-ks_io_decl_custom_func(ks_synth_common_data);
-ks_io_decl_custom_func(ks_synth_envelope_data);
-ks_io_decl_custom_func(ks_synth_operator_data);
-ks_io_decl_custom_func(ks_synth_mod_data);
+ks_io_decl_custom_func(ks_common_data);
+ks_io_decl_custom_func(ks_envelope_data);
+ks_io_decl_custom_func(ks_envelope_point_data);
+ks_io_decl_custom_func(ks_operator_data);
+ks_io_decl_custom_func(ks_mod_data);
+ks_io_decl_custom_func(ks_lfo_data);
 
 ks_synth_context*           ks_synth_context_new            (u32 sampling_rate);
 void                        ks_synth_context_free           (ks_synth_context* ctx);
@@ -296,13 +307,13 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_phase_fines(value)                         ks_linear_i(ks_v(value,(8-4)), -ks_v(8,KS_PHASE_FINE_BITS - 12), ks_v(8,KS_PHASE_FINE_BITS - 12))
 #define calc_fm_levels(value)                           ks_linear_u(ks_v(value,(8-5)), ks_1(KS_LEVEL_BITS-5), ks_1(KS_LEVEL_BITS)+ks_1(KS_LEVEL_BITS-5))
 #define calc_mix_levels(value)                          ks_linear_u(ks_v(value,(8-7)), 0, ks_1(KS_LEVEL_BITS))
-#define calc_levels(value)                              ks_linear_u(ks_v(value,(8-7)), 0, ks_1(KS_LEVEL_BITS)+ks_1(KS_LEVEL_BITS-7))
+#define calc_levels(value)                              ks_linear_u(ks_v(value,(8-5)), 0, ks_1(KS_LEVEL_BITS)+ks_v(66, KS_LEVEL_BITS-11))
 #define calc_envelope_points(value)                     ks_linear_i(ks_v(value, (8-3)), 0, ks_1(KS_ENVELOPE_BITS)+ks_v(1170, KS_ENVELOPE_BITS - 13))
 #define calc_envelope_samples(smp_freq, value)          ks_calc_envelope_samples(smp_freq, ks_v(value, (8-5)))
 #define calc_envelope_times(value)                      ks_calc_envelope_times( ks_v(value, (8-5)))
 #define calc_velocity_sens(value)                       ks_linear_i(ks_v(value, 8-4), 0, ks_1(KS_VELOCITY_SENS_BITS)+9)
 #define calc_ratescales(value)                          ks_exp_u(ks_v(value, (8-3)), ks_v(341, KS_RATESCALE_BITS -10) , 6)
-#define calc_lfo_ams_depths(value)                      ks_linear_u(ks_v(value, (8-4)), 0, ks_1(KS_LFO_DEPTH_BITS)+ ks_v(1090, KS_LFO_DEPTH_BITS-14))
+#define calc_lfo_ams_depth(value)                        ks_linear_u(ks_v(value, (8-5)), 0, ks_1(KS_LFO_DEPTH_BITS)+ 2115)
 #define calc_output(value)                              (value)
 #define calc_panpot(value)                              ks_linear_u(ks_v(value, (7-4)), 0, 293)
 #define calc_lfo_wave_type(value)                      (value)

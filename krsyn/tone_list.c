@@ -62,8 +62,7 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
 
     // reset not require parametors
     data.common.panpot = 0;
-    data.common.amp_ratescale = 0;
-    data.common.filter_ratescale = 0;
+    data.common.envelopes[0].ratescale =data.common.envelopes[1].ratescale = 0;
     ks_synth_set(&synth, ctx, &data);
 
     const u8 index = bin->program - KS_PROGRAM_CUSTOM_WAVE;
@@ -74,7 +73,7 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
 
     const u64 f = ks_v((u64)ctx->sampling_rate, 30) / 440;
 
-    for(u32 i=0; i< KS_NUM_OPERATORS; i++){
+    for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
         u64 p = note.phase_deltas[i];
         p *= f;
         p >>= 30 + KS_TABLE_BITS;
@@ -91,7 +90,7 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
 
     // render and write to table
     ks_synth_render(ctx, &note, ks_1(KS_VOLUME_BITS), ks_1(KS_LFO_DEPTH_BITS), tmp, ks_v(2, KS_TABLE_BITS));
-    for(u32 i=0 ;i< ks_1(KS_TABLE_BITS); i++){
+    for(unsigned i=0 ;i< ks_1(KS_TABLE_BITS); i++){
          table[i] = MIN(MAX((tmp[2*i]) << 2, INT16_MIN), INT16_MAX);
     }
 }
@@ -101,7 +100,7 @@ ks_tone_list* ks_tone_list_new_from_data(ks_synth_context* ctx, const ks_tone_li
 
     u32 length = bin->length;
 
-    for(u32 i = 0; i< length; i++){
+    for(unsigned i = 0; i< length; i++){
         if(bin->data[i].program >= KS_PROGRAM_CUSTOM_WAVE){
             ks_synth_context_add_custom_wave(ctx, &bin->data[i]);
         } else {
@@ -150,7 +149,7 @@ void ks_tone_list_free(ks_tone_list* tones){
 }
 
 void ks_tone_list_banks_free(u32 num_banks, ks_tone_list_bank* banks){
-    for(u32 i=0; i<num_banks; i++){
+    for(unsigned i=0; i<num_banks; i++){
         for(u32 p=0; p<KS_NUM_MAX_PROGRAMS; p++){
             if(banks[i].programs[p] != NULL) {
                 free(banks[i].programs[p]);
@@ -178,7 +177,7 @@ void ks_tone_list_reserve(ks_tone_list* tones, u32 cap){
     if(cap <= tones->capacity) return;
 
     ks_tone_list_bank* banks = calloc(cap, sizeof(ks_tone_list_bank));
-    for(u32 i=0; i<tones->capacity; i++){
+    for(unsigned i=0; i<tones->capacity; i++){
         if(!tones->data[i].bank_number.enabled) continue;
         ks_tone_list_add_bank(cap, banks, tones->data[i]);
     }
@@ -222,7 +221,7 @@ ks_tone_list_bank ks_tone_list_bank_of(u8 msb, u8 lsb, bool percussion, ks_synth
     ks_tone_list_bank ret;
     ret.bank_number = ks_tone_list_bank_number_of(msb,lsb, percussion);
 
-    for(u32 i=0; i<KS_NUM_MAX_PROGRAMS; i++){
+    for(unsigned i=0; i<KS_NUM_MAX_PROGRAMS; i++){
         ret.programs[i] = programs[i];
     }
 

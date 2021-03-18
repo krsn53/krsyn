@@ -109,7 +109,7 @@ float ks_score_data_calc_score_length(ks_score_data* score, const ks_synth_conte
     u32 tick = 0;
     double time = 0;
 
-    for(u32 i=0; i< score->length; i++){
+    for(unsigned i=0; i< score->length; i++){
         tick = tick+ score->data[i].delta;
         const u64 delta_frame = (u64)score->data[i].delta* frames_per_event;
         const double delta_time =  (double)delta_frame / ctx->sampling_rate;
@@ -134,7 +134,7 @@ ks_score_state* ks_score_state_new(u32 polyphony_bits){
 }
 
 void ks_score_state_free(ks_score_state* state){
-    for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
+    for(unsigned i = 0; i< KS_NUM_CHANNELS; i++){
         if(state->channels[i].output_log != NULL){
             free(state->channels[i].output_log);
         }
@@ -226,7 +226,7 @@ bool ks_score_state_program_change(ks_score_state* state, const ks_tone_list* to
         p = channel->bank->programs[program];
 
         ks_tone_list_bank* begin = tones->data;
-        u32 it=0;
+        unsigned it=0;
         while(begin[it].programs[program] == NULL){
             it++;
             it %= tones->length;
@@ -287,7 +287,7 @@ bool ks_score_channel_set_picthbend(ks_score_channel* channel, u8 msb, u8 lsb){
 bool ks_score_state_tempo_change(ks_score_state* state, const ks_synth_context* ctx, const ks_score_data* score, const u8* data){
     state->quarter_time = ks_calc_quarter_time(data);
     state->frames_per_event= ks_calc_frames_per_event(ctx, state->quarter_time, score->resolution);
-    for(u32 i = 0; i< KS_NUM_CHANNELS; i++){
+    for(unsigned i = 0; i< KS_NUM_CHANNELS; i++){
         state->channels[i].output_log = realloc(state->channels[i].output_log, state->frames_per_event * 2 * sizeof(i32));
     }
     return true;
@@ -329,7 +329,7 @@ bool ks_score_state_control_change(ks_score_state* state, const ks_tone_list* to
 }
 
 void ks_score_data_render(const ks_score_data *score, const ks_synth_context* ctx, ks_score_state* state, const ks_tone_list*tones, i32* buf, u32 len){
-    u32 i=0;
+    unsigned i=0;
     memset(buf, 0, sizeof(i32)*len);
     do{
         u32 frame = MIN(len-i, state->remaining_frame*2);
@@ -406,7 +406,7 @@ void ks_score_data_render(const ks_score_data *score, const ks_synth_context* ct
 
 ks_score_event* ks_score_events_new(u32 num_events, ks_score_event events[]){
     ks_score_event* ret = malloc(sizeof(ks_score_event) * num_events);
-    for(u32 i=0; i<num_events; i++){
+    for(unsigned i=0; i<num_events; i++){
         ret[i] = events[i];
     }
     return ret;
@@ -481,10 +481,10 @@ void ks_score_state_set_default(ks_score_state* state, const ks_tone_list *tones
     state->current_event = 0;
     state->passed_tick = 0;
     state->current_tick = 0;
-    for(u32 i=0; i<ks_1(state->polyphony_bits); i++) {
+    for(unsigned i=0; i<ks_1(state->polyphony_bits); i++) {
         memset(&state->notes[i], 0 , sizeof(ks_score_note));
     }
-    for(u32 i =0; i<KS_NUM_CHANNELS; i++){
+    for(unsigned i =0; i<KS_NUM_CHANNELS; i++){
         if( state->channels[i].output_log != NULL) {
             free( state->channels[i].output_log );
         }
@@ -515,7 +515,7 @@ ks_score_data* ks_score_data_from_midi(ks_midi_file* file){
 
 
     u64 time=0;
-    for(u32 i=0; i< conbined->tracks[0].num_events; i++){
+    for(unsigned i=0; i< conbined->tracks[0].num_events; i++){
         ks_midi_event* msg = &conbined->tracks[0].events[i];
         switch (msg->status) {
         case 0xff:
@@ -598,7 +598,7 @@ void ks_score_state_add_volume_analizer (ks_score_state* state, const ks_synth_c
 void ks_effect_volume_analize  (ks_effect* effect, ks_score_state* state, i32* buf, u32 len, bool channels_enabled[]){
     ks_volume_analizer* dat = &effect->data.volume_analizer;
 
-    u32 i= 0;
+    unsigned i= 0;
     do{
         u32 f;
         if(dat->seek + len - i > dat->length){
@@ -634,7 +634,7 @@ void ks_effect_volume_analizer_clear(ks_effect* effect){
     ks_volume_analizer* a = &effect->data.volume_analizer;
     a->seek = 0;
     for(u32 c =0; c<KS_NUM_CHANNELS+1; c++){
-        for(u32 i=0; i< a->length; i++){
+        for(unsigned i=0; i< a->length; i++){
             a->log[c][i] = 0;
         }
         a->volume[c] = 0;
@@ -642,7 +642,7 @@ void ks_effect_volume_analizer_clear(ks_effect* effect){
 }
 
 void ks_effect_list_data_free(u32 length, ks_effect* data){
-    for(u32 i=0; i<length; i++){
+    for(unsigned i=0; i<length; i++){
         switch (data[i].type) {
         case KS_EFFECT_VOLUME_ANALIZER:
             for(u32 c=0;c<KS_NUM_CHANNELS+1;c++){
@@ -658,14 +658,14 @@ const u32*  ks_effect_calc_volume(ks_effect* effect){
     ks_volume_analizer* a = &effect->data.volume_analizer;
     for(u32 c =0; c<KS_NUM_CHANNELS; c++){
         u32 out=0;
-        for(u32 i=0; i< a->length; i++){
+        for(unsigned i=0; i< a->length; i++){
             out += a->log[c][i];
         }
         out /= a->length;
         a->volume[c] = out;
     }
     u32 out_l=0, out_r=0;
-    for(u32 i=0; i< a->length; i+=2){
+    for(unsigned i=0; i< a->length; i+=2){
         out_l += a->log[KS_NUM_CHANNELS][i];
         out_r += a->log[KS_NUM_CHANNELS][i+1];
     }
