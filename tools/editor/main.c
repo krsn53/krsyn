@@ -77,10 +77,6 @@ typedef struct editor_state{
     u32 midiin_port;
     int midiin_list_scroll;
 #endif
-
-    Texture2D output_images;
-    Texture2D operator_images;
-    Texture2D wave_images;
 } editor_state;
 
 static void mark_dirty(bool* dirty, GuiFileDialogState* file_dialog_state){
@@ -720,6 +716,8 @@ void EditorUpdate(void* ptr){
 
                 // wave_type
                 {
+                    GuiSetStyle(LABEL, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
+                    \
                     pos2 = pos;
                     pos2.height = pos.height+2;
                     GuiAlignedLabel("Wave", pos2, GUI_TEXT_ALIGN_RIGHT);
@@ -730,7 +728,31 @@ void EditorUpdate(void* ptr){
                         common->lfos[i].wave = PropertyInt((Rectangle){pos2.x, pos2.y, pos2.width, pos.height}, FormatText("%d", common->lfos[i].wave), common->lfos[i].wave, 0, KS_MAX_WAVES - ks_1(KS_CUSTOM_WAVE_BITS), 1);
                     }
                     else {
-                        common->lfos[i].wave = PropertyIntImage(pos2, es->wave_images, common->lfos[i].wave, 0, KS_NUM_WAVES-1, 1);
+                        switch (common->lfos[i].wave) {
+                        case KS_WAVE_SIN:
+                            text = "Sin";
+                            break;
+                        case KS_WAVE_TRIANGLE:
+                            text = "Tri";
+                            break;
+                        case KS_WAVE_FAKE_TRIANGLE:
+                            text = "8 Tri";
+                            break;
+                        case KS_WAVE_SAW_UP:
+                            text = "Saw +";
+                            break;
+                        case KS_WAVE_SAW_DOWN:
+                            text = "Saw -";
+                            break;
+                        case KS_WAVE_SQUARE:
+                            text = "Square";
+                            break;
+                        case KS_WAVE_NOISE:
+                            text = "Noise";
+                            break;
+                        }
+                        common->lfos[i].wave= PropertyIntImage(pos2, GetTextureDefault() ,common->lfos[i].wave, 0, i== 0 ? KS_NUM_WAVES-1 : KS_NUM_WAVES-2, 1);
+                        GuiLabel(pos2, text);
                     }
                     pos2.x += pos2.width + margin;
                     common->lfos[i].use_custom_wave = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "UsrTb", common->lfos[i].use_custom_wave);
@@ -774,7 +796,7 @@ void EditorUpdate(void* ptr){
                     GuiAlignedLabel("Level", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f %%", 100.0f*(i == 0 ? calc_lfo_ams_depth(common->lfos[i].level) : calc_lfo_fms_depth(common->lfos[i].level))/ (float)ks_1(KS_LFO_DEPTH_BITS));
+                    text = FormatText("%.3f %%", 100.0f*(calc_lfo_depth(common->lfos[i].level))/ (float)ks_1(KS_LFO_DEPTH_BITS));
                     common->lfos[i].level= PropertyInt(pos, text, common->lfos[i].level, 0, 31, 1);
                 }
                 pos.x = x_pos.x;
@@ -860,8 +882,8 @@ void EditorUpdate(void* ptr){
             pos2= pos;
             pos2.width *= 0.5;
 
+            GuiSetStyle(LABEL, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
             for(unsigned i=0; i<KS_NUM_OPERATORS-1;i++){
-                GuiSetStyle(LABEL, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
                 if(GuiLabelButton(pos2,"<- Swap ->")){
                     ks_operator_data temp = op[i];
                     op[i] = op[i+1];
@@ -899,9 +921,6 @@ void EditorUpdate(void* ptr){
                 pos2.width = pos.width /2 - margin/2;
 
                 switch (mod[i].type) {
-                case KS_MOD_FM:
-                    text = "FM";
-                    break;
                 case KS_MOD_MIX:
                     text = "MIX";
                     break;
@@ -936,7 +955,7 @@ void EditorUpdate(void* ptr){
 
 
             // mod level
-            GuiAlignedLabel("Modulation Level", pos, GUI_TEXT_ALIGN_RIGHT);
+            GuiAlignedLabel("Mod Level(FM/MIX)", pos, GUI_TEXT_ALIGN_RIGHT);
             pos.x += step_x;
             pos.x += step_x/2;
 
@@ -944,9 +963,7 @@ void EditorUpdate(void* ptr){
             pos2.width = step_x*0.5 - margin;
 
             for(unsigned i=0; i< KS_NUM_OPERATORS-1; i++){
-                if(mod[i].type == KS_MOD_FM){
-                    mod[i].fm_level= PropertyInt(pos2, TextFormat("%.2f PI", calc_fm_levels(mod[i].fm_level)*4 / (float)ks_1(KS_LEVEL_BITS)), mod[i].fm_level, 0, 31, 1);
-                }
+                mod[i].fm_level= PropertyInt(pos2, TextFormat("%.2f PI", calc_fm_levels(mod[i].fm_level)*8 / (float)ks_1(KS_LEVEL_BITS)), mod[i].fm_level, 0, 63, 1);
                 pos2.x += pos2.width + margin;
                 mod[i].mix = PropertyInt(pos2, TextFormat("%d : %d", mod[i].mix, 127-mod[i].mix), mod[i].mix, 0, 127, 1);
                 pos2.x += pos2.width + margin;
@@ -966,7 +983,31 @@ void EditorUpdate(void* ptr){
                     op[i].wave_type = PropertyInt((Rectangle){pos2.x, pos2.y, pos2.width, pos.height}, FormatText("%d", op[i].wave_type), op[i].wave_type, 0, KS_MAX_WAVES - ks_1(KS_CUSTOM_WAVE_BITS), 1);
                 }
                 else {
-                    op[i].wave_type = PropertyIntImage(pos2, es->wave_images ,op[i].wave_type, 0, KS_NUM_WAVES-1, 1);
+                    switch (op[i].wave_type) {
+                    case KS_WAVE_SIN:
+                        text = "Sin";
+                        break;
+                    case KS_WAVE_TRIANGLE:
+                        text = "Tri";
+                        break;
+                    case KS_WAVE_FAKE_TRIANGLE:
+                        text = "8 Tri";
+                        break;
+                    case KS_WAVE_SAW_UP:
+                        text = "Saw +";
+                        break;
+                    case KS_WAVE_SAW_DOWN:
+                        text = "Saw -";
+                        break;
+                    case KS_WAVE_SQUARE:
+                        text = "Square";
+                        break;
+                    case KS_WAVE_NOISE:
+                        text = "Noise";
+                        break;
+                    }
+                    op[i].wave_type = PropertyIntImage(pos2, GetTextureDefault() ,op[i].wave_type, 0, i== 0 ? KS_NUM_WAVES-1 : KS_NUM_WAVES-2, 1);
+                    GuiLabel(pos2, text);
                 }
                 pos2.x += pos2.width + margin;
                 op[i].use_custom_wave = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "UsrTb", op[i].use_custom_wave);
@@ -1550,19 +1591,9 @@ void init(editor_state* es){
     es->file_dialog_state_synth = InitGuiFileDialog(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.8, es->file_dialog_state_synth.dirPathText, false);
     strcpy(es->file_dialog_state_synth.filterExt, synth_ext);
 
-    es->output_images = LoadTexture("resources/images/outputs.png");
-    es->operator_images= LoadTexture("resources/images/operators.png");
-    es->wave_images= LoadTexture("resources/images/waves.png");
-
 }
 
 void deinit(editor_state* es){
-    //----------------------------------------------------------------------------------
-    // unload
-    UnloadTexture(es->output_images);
-    UnloadTexture(es->operator_images);
-    UnloadTexture(es->wave_images);
-
     CloseWindow();
     CloseAudioDevice();
 

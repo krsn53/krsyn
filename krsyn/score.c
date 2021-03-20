@@ -278,6 +278,14 @@ bool ks_score_channel_set_panpot(ks_score_channel* channel, const ks_synth_conte
     return true;
 }
 
+
+KS_INLINE u32 ks_fms_depth(i32 depth){
+    i64 ret = ((i64)depth*depth)>>(KS_LFO_DEPTH_BITS + 2);
+    ret += (depth >> 2) + (depth >> 1);
+    ret += ks_1(KS_LFO_DEPTH_BITS);
+    return ret;
+}
+
 bool ks_score_channel_set_picthbend(ks_score_channel* channel, u8 msb, u8 lsb){
     channel->pitchbend = ks_v(msb, 7) + lsb - ks_v(64, 7);
     channel->pitchbend = ks_fms_depth(channel->pitchbend << (KS_LFO_DEPTH_BITS - KS_PITCH_BEND_EVENT_BITS));
