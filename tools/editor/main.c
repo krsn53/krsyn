@@ -7,7 +7,7 @@
 #endif
 
 #define SCREEN_WIDTH 726
-#define SCREEN_HEIGHT 548
+#define SCREEN_HEIGHT 650
 
 #define SAMPLING_RATE               48000
 #define SAMPLES_PER_UPDATE          4096
@@ -676,15 +676,15 @@ void EditorUpdate(void* ptr){
 
         // common params
         {
-            ks_common_data * common = & es->tones_data.data[es->current_tone_index].synth.common;
+            ks_synth_data * syn = & es->tones_data.data[es->current_tone_index].synth;
 
             // panpot
             {
                 GuiAlignedLabel("Panpot", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.3f", 2.0f * (calc_panpot(common->panpot)) / ks_1(KS_PANPOT_BITS) - 1.0f);
-                common->panpot = PropertyInt(pos, text, common->panpot, 0, 14, 1);
+                text = FormatText("%.3f", 2.0f * (calc_panpot(syn->panpot)) / ks_1(KS_PANPOT_BITS) - 1.0f);
+                syn->panpot = PropertyInt(pos, text, syn->panpot, 0, 14, 1);
             }
             pos.x = x_pos.x;
             pos.y += step;
@@ -703,12 +703,12 @@ void EditorUpdate(void* ptr){
                     bool e = false;
                     u8 tmp = 0;
                     for(u32 j=0; j<KS_NUM_OPERATORS; j++){
-                        e = (common->lfos[i].op_enabled & ks_1(j)) != 0;
+                        e = (syn->lfos[i].op_enabled & ks_1(j)) != 0;
                         e = GuiCheckBox(pos2, "", e);
                         tmp |= e ? ks_1(j) : 0;
                         pos2.x += pos2.width + margin;
                     }
-                    common->lfos[i].op_enabled = tmp;
+                    syn->lfos[i].op_enabled = tmp;
                 }
 
                 pos.x = x_pos.x;
@@ -724,11 +724,11 @@ void EditorUpdate(void* ptr){
                     pos2.x += step_x;
 
                     pos2.width = (pos.width- margin) / 2;
-                    if(common->lfos[i].use_custom_wave){
-                        common->lfos[i].wave = PropertyInt((Rectangle){pos2.x, pos2.y, pos2.width, pos.height}, FormatText("%d", common->lfos[i].wave), common->lfos[i].wave, 0, KS_MAX_WAVES - ks_1(KS_CUSTOM_WAVE_BITS), 1);
+                    if(syn->lfos[i].use_custom_wave){
+                        syn->lfos[i].wave = PropertyInt((Rectangle){pos2.x, pos2.y, pos2.width, pos.height}, FormatText("%d", syn->lfos[i].wave), syn->lfos[i].wave, 0, KS_MAX_WAVES - ks_1(KS_CUSTOM_WAVE_BITS), 1);
                     }
                     else {
-                        switch (common->lfos[i].wave) {
+                        switch (syn->lfos[i].wave) {
                         case KS_WAVE_SIN:
                             text = "Sin";
                             break;
@@ -751,11 +751,11 @@ void EditorUpdate(void* ptr){
                             text = "Noise";
                             break;
                         }
-                        common->lfos[i].wave= PropertyIntImage(pos2, GetTextureDefault() ,common->lfos[i].wave, 0, i== 0 ? KS_NUM_WAVES-1 : KS_NUM_WAVES-2, 1);
+                        syn->lfos[i].wave= PropertyIntImage(pos2, GetTextureDefault() ,syn->lfos[i].wave, 0, i== 0 ? KS_NUM_WAVES-1 : KS_NUM_WAVES-2, 1);
                         GuiLabel(pos2, text);
                     }
                     pos2.x += pos2.width + margin;
-                    common->lfos[i].use_custom_wave = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "UsrTb", common->lfos[i].use_custom_wave);
+                    syn->lfos[i].use_custom_wave = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos.height, pos.height}, "UsrTb", syn->lfos[i].use_custom_wave);
 
                 }
                 pos.x = x_pos.x;
@@ -765,7 +765,7 @@ void EditorUpdate(void* ptr){
                     GuiAlignedLabel("Freqency", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    float hz = calc_lfo_freq(common->lfos[i].freq) / (float)ks_1(KS_FREQUENCY_BITS);
+                    float hz = calc_lfo_freq(syn->lfos[i].freq) / (float)ks_1(KS_FREQUENCY_BITS);
                     if(hz >= 1.0f){
                         text = FormatText("%.1f Hz", hz);
                     }
@@ -777,7 +777,7 @@ void EditorUpdate(void* ptr){
                     }
 
 
-                    common->lfos[i].freq = PropertyInt(pos, text, common->lfos[i].freq, 0, 31, 1);
+                    syn->lfos[i].freq = PropertyInt(pos, text, syn->lfos[i].freq, 0, 31, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -786,8 +786,8 @@ void EditorUpdate(void* ptr){
                     GuiAlignedLabel("Initial Phase", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.1f deg", 360.0f *common->lfos[i].offset / (float)16);
-                    common->lfos[i].offset= PropertyInt(pos, text, common->lfos[i].offset, 0, 15, 1);
+                    text = FormatText("%.1f deg", 360.0f *syn->lfos[i].offset / (float)16);
+                    syn->lfos[i].offset= PropertyInt(pos, text, syn->lfos[i].offset, 0, 15, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -796,8 +796,8 @@ void EditorUpdate(void* ptr){
                     GuiAlignedLabel("Level", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
 
-                    text = FormatText("%.3f %%", 100.0f*(calc_lfo_depth(common->lfos[i].level))/ (float)ks_1(KS_LFO_DEPTH_BITS));
-                    common->lfos[i].level= PropertyInt(pos, text, common->lfos[i].level, 0, 31, 1);
+                    text = FormatText("%.3f %%", 100.0f*(calc_lfo_depth(syn->lfos[i].level))/ (float)ks_1(KS_LFO_DEPTH_BITS));
+                    syn->lfos[i].level= PropertyInt(pos, text, syn->lfos[i].level, 0, 31, 1);
                 }
                 pos.x = x_pos.x;
                 pos.y += step;
@@ -818,9 +818,9 @@ void EditorUpdate(void* ptr){
             float env_mul = wave_rec.height / ks_1(KS_ENVELOPE_BITS);
 
             for(unsigned i=0; i< KS_NUM_ENVELOPES; i++){
-                float w = env_mul* es->note.envelope_now_amps[i];
+                float w = env_mul* abs(es->note.envelope_now_amps[i]);
                 Rectangle rec ={env_x + env_step*i, env_y - w, env_width, w};
-                DrawRectangleRec(rec, BLUE);
+                DrawRectangleRec(rec, es->note.envelope_now_amps[i] > 0 ? RED : BLUE);
                 const char *text;
                 if(es->note.envelope_states[i] == KS_ENVELOPE_RELEASED){
                     text = "Released";
@@ -1076,16 +1076,6 @@ void EditorUpdate(void* ptr){
                op[i].phase_fine = PropertyInt(pos, text,op[i].phase_fine, 1, 15, 1);
                 pos.x += step_x;
             }
-             pos.x = x_pos.x; pos.y += step;
-
-            // velocity sensitive
-            GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
-            pos.x += step_x;
-            for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-                text = FormatText("%.1f %%", 100*calc_velocity_sens(op[i].velocity_sens) / (float)ks_1(7));
-               op[i].velocity_sens = PropertyInt(pos, text,op[i].velocity_sens, 0, 15, 1);
-                pos.x += step_x;
-            }
             pos.x = x_pos.x; pos.y += step;
         }
 
@@ -1105,7 +1095,7 @@ void EditorUpdate(void* ptr){
                 "Filter",
             };
 
-            ks_common_data* common = &es->tones_data.data[es->current_tone_index].synth.common;
+            ks_synth_data* syn = &es->tones_data.data[es->current_tone_index].synth;
             const u32 amp_max = 7;
             const u32 time_max = 31;
             // envelope points and times
@@ -1126,11 +1116,11 @@ void EditorUpdate(void* ptr){
                 pos2 = pos;
                 pos2.width /= 2.0f;
                 for (u32 e = 0; e< KS_ENVELOPE_NUM_POINTS; e++){
-                    text = FormatText("%.3f", calc_envelope_points(common->envelopes[i].points[e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
-                    common->envelopes[i].points[e].amp = PropertyInt(pos2, text, common->envelopes[i].points[e].amp, 0, amp_max, 1);
+                    text = FormatText("%.3f", calc_envelope_points(syn->envelopes[i].points[e].amp) / (float)ks_1(KS_ENVELOPE_BITS));
+                    syn->envelopes[i].points[e].amp = PropertyInt(pos2, text, syn->envelopes[i].points[e].amp, 0, amp_max, 1);
                     pos2.x += step_x / 2.0f;
 
-                    float sec = calc_envelope_times(common->envelopes[i].points[e].time) / (float)ks_1(16);
+                    float sec = calc_envelope_time(syn->envelopes[i].points[e].time) / (float)ks_1(16);
                     if(sec >= 1.0f){
                         text = FormatText("%.1f s", sec);
                     }
@@ -1141,28 +1131,86 @@ void EditorUpdate(void* ptr){
                         text = FormatText("%.3f ms", sec*1000.0f);
                     }
 
-                   common->envelopes[i].points[e].time = PropertyInt(pos2, text,common->envelopes[i].points[e].time, 0, time_max, 1);
+                   syn->envelopes[i].points[e].time = PropertyInt(pos2, text,syn->envelopes[i].points[e].time, 0, time_max, 1);
                     pos2.x += step_x / 2.0f;
                 }
                 pos.x = x_pos.x; pos.y += step;
 
                GuiAlignedLabel("Level", pos, GUI_TEXT_ALIGN_RIGHT);
                pos.x += step_x;
-               text = FormatText("%.1f %%", 100.0*calc_levels(common->envelopes[i].level) / (float)ks_1(KS_LEVEL_BITS));
-               common->envelopes[i].level= PropertyInt(pos, text, common->envelopes[i].level, 0, 31, 1);
+               text = FormatText("%.1f %%", 100.0*calc_levels(syn->envelopes[i].level) / (float)ks_1(KS_LEVEL_BITS));
+               syn->envelopes[i].level= PropertyInt(pos, text, syn->envelopes[i].level, 0, 255, 1);
                pos.x += step_x;
 
+               // velocity sensitive
+               GuiAlignedLabel("Velocity Sensitive", pos, GUI_TEXT_ALIGN_RIGHT);
+               pos.x += step_x;
+               text = FormatText("%.1f %%", 100*calc_velocity_sens(syn->envelopes[i].velocity_sens) / (float)ks_1(7));
+               syn->envelopes[i].velocity_sens = PropertyInt(pos, text, syn->envelopes[i].velocity_sens, 0, 15, 1);
+               pos.x = x_pos.x; pos.y += step;
 
 
                GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
                pos.x += step_x;
-               text = FormatText("%.1f %%", 100.0*calc_ratescales(common->envelopes[i].ratescale) / (float)ks_1(KS_RATESCALE_BITS));
-               common->envelopes[i].ratescale = PropertyInt(pos, text, common->envelopes[i].ratescale, 0, 7, 1);
+               text = FormatText("%.1f %%", 100.0*calc_ratescales(syn->envelopes[i].ratescale) / (float)ks_1(KS_RATESCALE_BITS));
+               syn->envelopes[i].ratescale = PropertyInt(pos, text, syn->envelopes[i].ratescale, 0, 15, 1);
 
 
                pos.x += step_x;
 
                pos.x = x_pos.x; pos.y += step;
+            }
+
+            // filter values
+            {
+                pos.x = x_pos.x;
+                pos.x += step_x;
+
+                GuiAlignedLabel("Type", pos, GUI_TEXT_ALIGN_CENTER);
+                pos.x += step_x;
+                GuiAlignedLabel("Cutoff", pos, GUI_TEXT_ALIGN_CENTER);
+                pos.x += step_x;
+                GuiAlignedLabel("Q", pos, GUI_TEXT_ALIGN_CENTER);
+                pos.x += step_x;
+                GuiAlignedLabel("Key Sensitive", pos, GUI_TEXT_ALIGN_CENTER);
+
+                pos.x = x_pos.x; pos.y += step;
+                GuiAlignedLabel("Filter", pos, GUI_TEXT_ALIGN_CENTER);
+                pos.x += step_x;
+                pos2 = pos;
+                pos2.height += 2;
+
+
+                switch (syn->filter_type) {
+                case KS_LOW_PASS_FILTER:
+                    text = "Low Pass";
+                    break;
+                case KS_HIGH_PASS_FILTER:
+                    text = "High Pass";
+                    break;
+                case KS_BAND_PASS_FILTER:
+                    text = "Band Pass";
+                    break;
+                }
+                syn->filter_type = PropertyIntImage(pos2, GetTextureDefault() ,syn->filter_type , 0, KS_NUM_FILTER_TYPES-1, 1);
+                GuiLabel(pos2, text);
+                pos.x += step_x;
+                text = FormatText("%.1f", calc_filter_cutoff(syn->filter_cutoff ) / (float)ks_1(KS_FILTER_CUTOFF_BITS));
+                syn->filter_cutoff = PropertyInt(pos, text, syn->filter_cutoff, 0, 31, 1);
+                pos.x += step_x;
+                text = FormatText("%.2f", calc_filter_q(syn->filter_q ) / (float)ks_1(7));
+                syn->filter_q= PropertyInt(pos, text, syn->filter_q, 0, 15, 1);
+                pos.x += step_x;
+                if(syn->filter_key_sens == 0) {
+                    text = FormatText("Fix");
+                }
+                else {
+                    text = FormatText("%d Per Oct.", calc_filter_key_sens(syn->filter_key_sens));
+                }
+                syn->filter_key_sens = PropertyInt(pos, text, syn->filter_key_sens, 0, 15, 1);
+                pos.x += step_x;
+                pos.x = x_pos.x; pos.y += step;
+
             }
 
         }

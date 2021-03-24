@@ -61,8 +61,8 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
     ks_synth_data data = bin->synth;
 
     // reset not require parametors
-    data.common.panpot = 0;
-    data.common.envelopes[0].ratescale =data.common.envelopes[1].ratescale = 0;
+    data.panpot = 0;
+    data.envelopes[0].ratescale =data.envelopes[1].ratescale = 0;
     ks_synth_set(&synth, ctx, &data);
 
     const u8 index = bin->program - KS_PROGRAM_CUSTOM_WAVE;
