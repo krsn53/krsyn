@@ -284,6 +284,8 @@ void ks_tone_list_insert_empty(ks_tone_list_data*v, i32 *current){
         tone.lsb = v->data[*current].lsb;
         tone.program = v->data[*current].program;
         tone.note = v->data[*current].note;
+    } else {
+        tone.note = KS_NOTENUMBER_ALL;
     }
 
     strcpy(tone.name, "Noname Tone\0");

@@ -250,6 +250,8 @@ void EditorUpdate(void* ptr){
                         es->score.length ++;
                         es->last_event_time += delta_d;
                         es->last_event_tick += delta;
+
+                        printf("%d %d %d %d \n", message[0], message[1], message[2], message[3]);
                     }
 
                     res_midi_event = true;
@@ -483,6 +485,8 @@ void EditorUpdate(void* ptr){
                 if(new_select  != es->current_tone_index && new_select >= 0 && (u32)new_select < es->tones_data.length){
                     es->current_tone_index = new_select;
                     es->temp_synth = es->tones_data.data[es->current_tone_index].synth;
+                }
+                if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
                     update_tone_list(es->ctx, &es->tones, &es->tones_data, es->score_state);
                 }
             }
@@ -683,7 +687,7 @@ void EditorUpdate(void* ptr){
                 GuiAlignedLabel("Panpot", pos, GUI_TEXT_ALIGN_RIGHT);
                 pos.x += step_x;
 
-                text = FormatText("%.3f", 2.0f * (calc_panpot(syn->panpot)) / ks_1(KS_PANPOT_BITS) - 1.0f);
+                text = FormatText("%.3f", 2.0f * (calc_panpot(syn->panpot)) / ks_1(7) - 1.0f);
                 syn->panpot = PropertyInt(pos, text, syn->panpot, 0, 14, 1);
             }
             pos.x = x_pos.x;

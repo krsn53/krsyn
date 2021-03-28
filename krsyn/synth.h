@@ -61,7 +61,7 @@ extern "C" {
 
 #define KS_LEVEL_BITS                   16u
 
-#define KS_PANPOT_BITS                  7u
+#define KS_PANPOT_BITS                  KS_OUTPUT_BITS
 #define KS_VOLUME_BITS                  13u
 
 #define KS_TIME_BITS                    16u
@@ -251,7 +251,7 @@ typedef struct ks_synth
     ks_synth_operator   operators               [KS_NUM_OPERATORS];
     ks_synth_envelope   envelopes               [KS_NUM_ENVELOPES];
 
-    i16             panpot_left,     panpot_right;
+    u32             panpot;
 
     u32             lfo_levels                  [KS_NUM_LFOS];
     u32             lfo_offsets                 [KS_NUM_LFOS];
@@ -359,7 +359,7 @@ i64                         ks_linear                       (u8 val, i32 MIN, i3
 
 u32                         ks_fms_depth                    (i32 depth);
 
-void                        ks_calc_panpot                  (const ks_synth_context *ctx, i16* left, i16* right, u8 val);
+void                        ks_calc_panpot                  (const ks_synth_context *ctx, i16* left, i16* right, u32 val);
 i32                         ks_apply_panpot                 (i32 in, i16 pan);
 
 #define ks_linear_i         (i32)ks_linear

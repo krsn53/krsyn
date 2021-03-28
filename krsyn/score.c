@@ -48,7 +48,7 @@ KS_INLINE  bool  ks_synth_note_is_enabled     (const ks_synth_note* note){
 }
 
 KS_INLINE bool ks_synth_note_is_on (const ks_synth_note* note){
-    return note->envelopes[0].state != KS_ENVELOPE_SUSTAINED;
+    return (note->envelopes[0].state & 0x7f) != 0;
 }
 
 KS_INLINE bool ks_score_note_is_enabled(const ks_score_note* note){
@@ -274,7 +274,7 @@ bool ks_score_state_bank_select_lsb(ks_score_state* state, const ks_tone_list* t
 }
 
 bool ks_score_channel_set_panpot(ks_score_channel* channel, const ks_synth_context* ctx, u8 value){
-    ks_calc_panpot(ctx, &channel->panpot_left, &channel->panpot_right, value);
+    ks_calc_panpot(ctx, &channel->panpot_left, &channel->panpot_right, ks_v(value,(KS_PANPOT_BITS-7)));
     return true;
 }
 
