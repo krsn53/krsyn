@@ -844,19 +844,19 @@ void EditorUpdate(void* ptr){
             float env_mul = wave_rec.height / ks_1(KS_ENVELOPE_BITS);
 
             for(unsigned i=0; i< KS_NUM_ENVELOPES; i++){
-                float w = env_mul* abs(es->note.envelope_now_amps[i]);
+                float w = env_mul* abs(es->note.envelopes[i].now_amp);
                 Rectangle rec ={env_x + env_step*i, env_y - w, env_width, w};
-                DrawRectangleRec(rec, es->note.envelope_now_amps[i] > 0 ? RED : BLUE);
+                DrawRectangleRec(rec, es->note.envelopes[i].now_amp > 0 ? RED : BLUE);
                 const char *text;
-                if(es->note.envelope_states[i] == KS_ENVELOPE_RELEASED){
+                if(es->note.envelopes[i].state == KS_ENVELOPE_RELEASED){
                     text = "Released";
                 }
-                else if(es->note.envelope_states[i] == KS_ENVELOPE_OFF) {
+                else if(es->note.envelopes[i].state == KS_ENVELOPE_OFF) {
                     text = "Off";
                 }
                 else{
-                    text = FormatText(es->note.envelope_now_points[i] == 0 ?
-                                          "Attack" : es->note.envelope_now_points[i] == 1 ?
+                    text = FormatText(es->note.envelopes[i].now_point == 0 ?
+                                          "Attack" : es->note.envelopes[i].now_point == 1 ?
                                               "Decay" : "Sustain");
                 }
 
@@ -1221,7 +1221,7 @@ void EditorUpdate(void* ptr){
                 syn->filter_type = PropertyIntImage(pos2, GetTextureDefault() ,syn->filter_type , 0, KS_NUM_FILTER_TYPES-1, 1);
                 GuiLabel(pos2, text);
                 pos.x += step_x;
-                text = FormatText("%.1f", calc_filter_cutoff(es->ctx, syn->filter_cutoff ) / (float)ks_1(KS_FILTER_CUTOFF_BITS));
+                text = FormatText("%.1f Hz", calc_filter_cutoff(es->ctx, syn->filter_cutoff) *(float)es->ctx->sampling_rate / ks_1(KS_PHASE_MAX_BITS));
                 syn->filter_cutoff = PropertyInt(pos, text, syn->filter_cutoff, 0, 31, 1);
                 pos.x += step_x;
                 text = FormatText("%.2f", calc_filter_q(syn->filter_q ) / (float)ks_1(7));

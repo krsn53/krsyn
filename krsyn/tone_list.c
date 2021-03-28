@@ -74,11 +74,11 @@ void ks_synth_context_add_custom_wave(ks_synth_context* ctx, const ks_tone_data*
     const u64 f = ks_v((u64)ctx->sampling_rate, 30) / 440;
 
     for(unsigned i=0; i< KS_NUM_OPERATORS; i++){
-        u64 p = note.phase_deltas[i];
+        u64 p = note.operators[i].phase_delta;
         p *= f;
         p >>= 30 + KS_TABLE_BITS;
 
-        note.phase_deltas[i] = p; // normalize 1 cycle = 1024
+        note.operators[i].phase_delta = p; // normalize 1 cycle = 1024
     }
 
     if(ctx->wave_tables[ks_wave_index(1, index)] != NULL){

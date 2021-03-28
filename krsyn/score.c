@@ -44,11 +44,11 @@ ks_io_begin_custom_func(ks_score_data)
 ks_io_end_custom_func(ks_score_data)
 
 KS_INLINE  bool  ks_synth_note_is_enabled     (const ks_synth_note* note){
-    return *((u32*)note->envelope_states) != 0;
+    return note->envelopes[0].state != KS_ENVELOPE_OFF;
 }
 
 KS_INLINE bool ks_synth_note_is_on (const ks_synth_note* note){
-    return (*((u32*)note->envelope_states) & 0x0f0f0f0f) != 0;
+    return note->envelopes[0].state != KS_ENVELOPE_SUSTAINED;
 }
 
 KS_INLINE bool ks_score_note_is_enabled(const ks_score_note* note){
