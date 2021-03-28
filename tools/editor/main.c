@@ -697,6 +697,10 @@ void EditorUpdate(void* ptr){
                 {
                     GuiAlignedLabel("Destinations", pos, GUI_TEXT_ALIGN_RIGHT);
                     pos.x += step_x;
+                    pos2 = pos;
+                    pos2.width = pos.width/4;
+                    GuiAlignedLabel("Op", pos2, GUI_TEXT_ALIGN_CENTER);
+                    pos.x += step_x/4;
 
                     pos2 = pos;
                     pos2.width = pos2.height;
@@ -706,9 +710,31 @@ void EditorUpdate(void* ptr){
                         e = (syn->lfos[i].op_enabled & ks_1(j)) != 0;
                         e = GuiCheckBox(pos2, "", e);
                         tmp |= e ? ks_1(j) : 0;
-                        pos2.x += pos2.width + margin;
+                        pos2.x += step_x / 6;
                     }
                     syn->lfos[i].op_enabled = tmp;
+                }
+
+                pos.x = x_pos.x;
+                pos.y += step;
+
+                pos2 = pos;
+                pos2.width /=4;
+                pos2.x += step_x;
+
+                // to filter
+                {
+                    GuiAlignedLabel("Flt", pos2, GUI_TEXT_ALIGN_CENTER);
+                    pos2.x += step_x / 4;
+                    syn->lfos[i].filter_enabled = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos2.height, pos2.height}, "", syn->lfos[i].filter_enabled);
+                }
+
+                 pos2.x += step_x / 4;
+                // to filter
+                {
+                    GuiAlignedLabel("Pan", pos2, GUI_TEXT_ALIGN_CENTER);
+                    pos2.x += step_x / 4;
+                    syn->lfos[i].panpot_enabled = GuiCheckBox((Rectangle){pos2.x, pos2.y, pos2.height, pos2.height}, "", syn->lfos[i].panpot_enabled);
                 }
 
                 pos.x = x_pos.x;
@@ -1195,7 +1221,7 @@ void EditorUpdate(void* ptr){
                 syn->filter_type = PropertyIntImage(pos2, GetTextureDefault() ,syn->filter_type , 0, KS_NUM_FILTER_TYPES-1, 1);
                 GuiLabel(pos2, text);
                 pos.x += step_x;
-                text = FormatText("%.1f", calc_filter_cutoff(syn->filter_cutoff ) / (float)ks_1(KS_FILTER_CUTOFF_BITS));
+                text = FormatText("%.1f", calc_filter_cutoff(es->ctx, syn->filter_cutoff ) / (float)ks_1(KS_FILTER_CUTOFF_BITS));
                 syn->filter_cutoff = PropertyInt(pos, text, syn->filter_cutoff, 0, 31, 1);
                 pos.x += step_x;
                 text = FormatText("%.2f", calc_filter_q(syn->filter_q ) / (float)ks_1(7));

@@ -33,6 +33,8 @@ KS_FORCEINLINE i16 ks_io_bit_value(ks_io* io, const ks_io_methods* methods, u8 v
 
 ks_io_begin_custom_func(ks_lfo_data)
     ks_bit_u8(op_enabled);
+    ks_bit_u8(filter_enabled);
+    ks_bit_u8(panpot_enabled);
 
     ks_bit_u8(freq);
     ks_bit_u8(level);
@@ -100,8 +102,6 @@ ks_synth_context* ks_synth_context_new(u32 sampling_rate){
 
         u64 freq_30 = 440.0 * exp2(((double)i-69)/12) * ret->sampling_rate_inv;
         ret->note_deltas[i] = freq_30 >> (KS_SAMPLING_RATE_INV_BITS - KS_PHASE_MAX_BITS);
-
-        ret->powerof2[i] = pow(2, i*4/128.0) * ks_1(KS_POWER_OF_2_BITS);
     }
 
     for(unsigned i=0; i< KS_NUM_WAVES; i++){
@@ -124,6 +124,8 @@ ks_synth_context* ks_synth_context_new(u32 sampling_rate){
 
         ret->wave_tables[KS_WAVE_SQUARE][i] = i < ks_1(KS_TABLE_BITS-1) ? INT16_MAX: -INT16_MAX;
         ret->wave_tables[KS_WAVE_NOISE][i] = rand();
+
+        ret->powerof2[i] = pow(2, i*4/(float)ks_1(KS_TABLE_BITS)) * ks_1(KS_POWER_OF_2_BITS);
     }
 
     //ret->num_waves = KS_NUM_WAVES;
@@ -183,6 +185,8 @@ void ks_synth_data_set_default(ks_synth_data* data)
     data->panpot = 7;
 
     for(unsigned i =0 ; i<KS_NUM_LFOS; i++){
+        data->lfos[i].filter_enabled =0;
+        data->lfos[i].panpot_enabled=0;
         data->lfos[i].op_enabled = 0;
         data->lfos[i].use_custom_wave = 0;
         data->lfos[i].wave = KS_WAVE_TRIANGLE;
@@ -221,7 +225,7 @@ void ks_synth_data_set_default(ks_synth_data* data)
 
     data->filter_type = KS_LOW_PASS_FILTER;
     data->filter_cutoff = 31;
-    data->filter_key_sens = 15;
+    data->filter_key_sens = 9;
     data->filter_q = 2;
 }
 
@@ -311,13 +315,14 @@ void ks_synth_set(ks_synth* synth, const ks_synth_context* ctx, const ks_synth_d
 
     for(unsigned i=0; i< KS_NUM_ENVELOPES; i++) {
         synth->ratescales[i] = calc_ratescales(data->envelopes[i].ratescale);
-        i32 amp_level = calc_levels(data->envelopes[i].level);
-        for(u32 e=0; e< KS_ENVELOPE_NUM_POINTS; e++){
+        i32 amplevel = calc_levels(data->envelopes[i].level);
+        synth->envelope_levels[i] = amplevel << (KS_ENVELOPE_BITS - KS_LEVEL_BITS);
+        for(unsigned e=0; e< KS_ENVELOPE_NUM_POINTS; e++){
             synth->envelope_samples[e][i] = calc_envelope_samples(ctx->sampling_rate, data->envelopes[i].points[e].time);
             synth->envelope_points[e][i] = calc_envelope_points(data->envelopes[i].points[e].amp);
 
             i64 point = synth->envelope_points[e][i];
-            point *= amp_level;
+            point *= amplevel;
             point >>= KS_LEVEL_BITS;
             synth->envelope_points[e][i] = point;
         }
@@ -326,7 +331,7 @@ void ks_synth_set(ks_synth* synth, const ks_synth_context* ctx, const ks_synth_d
         synth->velocity_sens[i] = calc_velocity_sens(data->envelopes[i].velocity_sens);
     }
 
-    for(u32 e=0; e< KS_NUM_LFOS; e++){
+    for(unsigned e=0; e< KS_NUM_LFOS; e++){
         const u32 freq = calc_lfo_freq(data->lfos[e].freq);
         const u64 freq_11 = ((u64)freq) << KS_TABLE_BITS;
         u64 delta_11 = (u64)freq_11 * ctx->sampling_rate_inv;
@@ -334,8 +339,9 @@ void ks_synth_set(ks_synth* synth, const ks_synth_context* ctx, const ks_synth_d
 
         synth->lfo_deltas[e]= delta_11;
         synth->lfo_offsets[e] =calc_lfo_offset(data->lfos[e].offset);
-        synth->lfo_op_enables[e] = data->lfos[e].op_enabled;
-
+        for(unsigned i = 0; i< KS_NUM_OPERATORS; i++){
+            synth->lfo_op_enables[e][i] = (data->lfos[e].op_enabled & ks_1(i)) != 0;
+        }
         synth->lfo_wave_tables[e] = ctx->wave_tables[ks_wave_index(data->lfos[e].use_custom_wave, data->lfos[e].wave)];
         if(synth->lfo_wave_tables[e] == NULL) {
             ks_error("Failed to set synth for not set wave table %d", ks_wave_index(data->lfos[e].use_custom_wave, data->lfos[e].wave));
@@ -346,10 +352,27 @@ void ks_synth_set(ks_synth* synth, const ks_synth_context* ctx, const ks_synth_d
         synth->lfo_levels[e] = calc_lfo_depth(data->lfos[e].level);
     }
 
-    synth->filter_cutoff = calc_filter_cutoff(data->filter_cutoff);
+    synth->filter_cutoff = calc_filter_cutoff(ctx, data->filter_cutoff);
     synth->filter_type = data->filter_type;
     synth->filter_key_sens = calc_filter_key_sens(data->filter_key_sens);
     synth->filter_q = calc_filter_q(data->filter_q);
+
+    for(unsigned i=0; i< KS_NUM_LFOS; i++){
+        if(data->lfos[i].level == 0) continue;
+        if(data->lfos[i].filter_enabled){
+            synth->lfo_filter_enabled = i+1;
+            break;
+        }
+    }
+
+    for(unsigned i=0; i< KS_NUM_LFOS; i++){
+        if(data->lfos[i].level == 0) continue;
+        if(data->lfos[i].level != 0 && data->lfos[i].panpot_enabled){
+            synth->lfo_panpot_enabled = i+1;
+            break;
+        }
+    }
+
 
     ks_calc_panpot(ctx, &synth->panpot_left, &synth->panpot_right, calc_panpot(data->panpot));
 }
@@ -399,12 +422,11 @@ void ks_synth_note_on(ks_synth_note* note, const ks_synth *synth, const ks_synth
         note->filter_cutoff = synth->filter_cutoff ;
     } else {
         const u32 exp = notenum / key_sens;
-        const u32 exp_sens = exp*key_sens;
-        const u32 val = notenum - exp_sens;
-        const u32 val_max = 127 - exp_sens;
-        const i64 exp_val = ((u64)ctx->powerof2[ks_v(val, 7-2) / val_max]) << exp;
+        const u32 val = notenum % key_sens;
+        const i64 exp_val = ((u64)ctx->powerof2[ks_v(val, KS_TABLE_BITS-2) / key_sens]) << exp;
+        const i64 cutoff = (exp_val * synth->filter_cutoff) >> (KS_POWER_OF_2_BITS+4);
 
-        note->filter_cutoff = (exp_val * synth->filter_cutoff) >> KS_POWER_OF_2_BITS;
+        note->filter_cutoff = cutoff;
     }
 
     for(unsigned i=0; i<KS_FILTER_NUM_LOGS; i++){
@@ -509,7 +531,7 @@ void ks_synth_note_off (ks_synth_note* note)
 KS_FORCEINLINE static void ks_envelope_process(const ks_synth_context*ctx, ks_synth_note* note, int i){
     note->envelope_now_remains[i] -= note->envelope_now_deltas[i];
     i64 amp = note->envelope_now_remains[i];
-    amp = ctx->powerof2[amp >> (KS_ENVELOPE_BITS - 7)] - ks_1(KS_POWER_OF_2_BITS);
+    amp = ctx->powerof2[amp >> (KS_ENVELOPE_BITS - KS_TABLE_BITS)] - ks_1(KS_POWER_OF_2_BITS);
     amp *=note->envelope_now_diffs[i];
     amp >>= KS_ENVELOPE_BITS - KS_OUTPUT_BITS;
     note->envelope_now_amps[i] = note->envelope_now_point_amps[i] - amp;
@@ -578,13 +600,26 @@ static void KS_FORCEINLINE ks_synth_biquad_filter_base(const ks_synth_context* c
     const ks_synth* synth = note->synth;
 
     i32* outbuf = buf[0];
-    i32* lfo1 = buf[1];
-    i32* lfo2 = buf[2];
+    i32* lfobufs[KS_NUM_LFOS];
+    for(unsigned i=0; i<KS_NUM_LFOS; i++){
+        lfobufs[i] = buf[i+1];
+    }
 
     for(u32 i=0; i< len; i++){
         ks_envelope_process(ctx, note, 1);
 
-        const u32 omega0 = MAX(MIN(((ks_v(1ll, KS_ENVELOPE_BITS) - note->envelope_now_amps[1]) >>(KS_ENVELOPE_BITS - KS_PHASE_MAX_BITS + 2))  + note->filter_cutoff, ks_1(KS_PHASE_MAX_BITS-1)), ks_1(KS_PHASE_BITS));
+        const u32 cutoff = note->filter_cutoff;
+        i32 envelope_amp = ((ks_v(1ll, KS_ENVELOPE_BITS) + note->envelope_now_amps[1] - synth->envelope_levels[1]) >> (KS_ENVELOPE_BITS - KS_TABLE_BITS + 1));
+        if(lfo) {
+           envelope_amp +=(buf[lfo_index][i] >> (KS_OUTPUT_BITS - KS_TABLE_BITS));
+        }
+        envelope_amp = MAX(MIN(ks_1(KS_TABLE_BITS), envelope_amp), 0);
+
+        const i32 envelope_level = ctx->powerof2[envelope_amp] >> 2; // 1/4 ~ 4
+
+        const i64 omega0_ = ((i64)cutoff * envelope_level) >> KS_POWER_OF_2_BITS;
+
+        const u32 omega0 = MAX(MIN(omega0_, ks_1(KS_PHASE_MAX_BITS-1)), ks_1(KS_PHASE_BITS));
         const i32 sin_omega0 = ks_sin(ctx, omega0);
         const i32 cos_omega0 = ks_sin(ctx, omega0 + ks_1(KS_PHASE_BITS + KS_TABLE_BITS - 2));
 
@@ -635,8 +670,10 @@ static void KS_FORCEINLINE ks_synth_render_mod_base(const ks_synth_context* ctx,
     if(mod_type == KS_MOD_PASS) return;
 
     i32* outbuf = buf[0];
-    i32* lfo1 = buf[1];
-    i32* lfo2 = buf[2];
+    i32* lfobufs[KS_NUM_LFOS];
+    for(unsigned i=0; i<KS_NUM_LFOS; i++){
+        lfobufs[i] = buf[i+1];
+    }
 
     const ks_synth* synth = note->synth;
     const u32 preop = (op-1) & 3;
@@ -700,14 +737,14 @@ static void KS_FORCEINLINE ks_synth_render_mod_base(const ks_synth_context* ctx,
         }
 
         if(ams){
-            i32 factor = ks_1(KS_OUTPUT_BITS) + lfo1[i];
+            i32 factor = ks_1(KS_OUTPUT_BITS) + lfobufs[0][i];
             outbuf[i] = ((i64)factor*outbuf[i]) >> KS_OUTPUT_BITS;
         }
 
         u32 phase_delta = bend_phase_delta;
 
         if(fms) {
-            i32 factor = lfo2[i] + ks_1(KS_OUTPUT_BITS);
+            i32 factor = lfobufs[1][i] + ks_1(KS_OUTPUT_BITS);
             phase_delta = ((i64)factor* phase_delta) >> KS_OUTPUT_BITS;
         }
 
@@ -778,8 +815,8 @@ if(fm) { \
         const u32 preop = op-1; \
         const bool fm = synth->mod_fm_levels[preop]!= 0; \
         const bool sync = synth->mod_syncs[preop]; \
-        const bool ams = (synth->lfo_op_enables[0] & ks_1(op)) != 0 && synth->lfo_levels[0] != 0; \
-        const bool fms = (synth->lfo_op_enables[1] & ks_1(op)) != 0 && synth->lfo_levels[1] != 0; \
+        const bool ams = synth->lfo_op_enables[0][op]; \
+        const bool fms = synth->lfo_op_enables[1][op]; \
         if(sync){ \
             if(ams){ \
                fm_branch(mod, 1, 1, 0); \
@@ -832,8 +869,8 @@ static void KS_NOINLINE ks_synth_render_0(const ks_synth_context* ctx, ks_synth_
 
     const ks_synth* synth = note->synth;
     const bool noise_table = synth->wave_tables[0] == ctx->wave_tables[KS_WAVE_NOISE];
-    const bool ams = (synth->lfo_op_enables[0] & ks_1(0)) != 0 && synth->lfo_levels[0] != 0;
-    const bool fms = (synth->lfo_op_enables[1] & ks_1(0)) != 0 && synth->lfo_levels[1] != 0;
+    const bool ams = synth->lfo_op_enables[0][0];
+    const bool fms = synth->lfo_op_enables[1][0];
     if(ams){
         fms_branch(1);
     } else {
@@ -871,8 +908,15 @@ ks_synth_apply_filter_impl_lfo(KS_LOW_PASS_FILTER)
 ks_synth_apply_filter_impl_lfo(KS_HIGH_PASS_FILTER)
 ks_synth_apply_filter_impl_lfo(KS_BAND_PASS_FILTER)
 
-static void KS_FORCEINLINE ks_synth_apply_filter(const ks_synth_context* ctx, ks_synth_note* note, i32* buf[], u32 len, u32 lfo_index){
-#define lfo_branch(type) ks_synth_apply_filter_func(type, 0)(ctx, note, buf, len, lfo_index);
+static void KS_FORCEINLINE ks_synth_apply_filter(const ks_synth_context* ctx, ks_synth_note* note, i32* buf[], u32 len){
+#define lfo_branch(type)  \
+    if(synth->lfo_filter_enabled == 0) { \
+        ks_synth_apply_filter_func(type, 0)(ctx, note, buf, len, 0); \
+    } else { \
+        ks_synth_apply_filter_func(type, 1)(ctx, note, buf, len, synth->lfo_filter_enabled); \
+    }
+
+    const ks_synth* synth = note->synth;
     switch(note->synth->filter_type){
     case KS_LOW_PASS_FILTER:
         lfo_branch(KS_LOW_PASS_FILTER);
@@ -899,43 +943,43 @@ static void KS_NOINLINE ks_synth_render_lfo(const ks_synth_context* ctx, ks_synt
 
 void ks_synth_render(const ks_synth_context*ctx, ks_synth_note* note, u32 volume, u32 pitchbend, i32 *buf, u32 len)
 {
-
     if(*(u32*)note->envelope_states != 0){
         const ks_synth* synth = note->synth;
         const size_t tmpbuf_len = len / 2;
-        i32* tmpbuf = (i32*)malloc(sizeof(i32) * tmpbuf_len);
-        i32* lfo1buf = NULL;
-        i32* lfo2buf = NULL;
-        if(synth->lfo_op_enables[0]){
-            lfo1buf = (i32*)malloc(sizeof(i32) * tmpbuf_len);
-            ks_synth_render_lfo(ctx, note, 0, lfo1buf, tmpbuf_len);
-        }
-        if(synth->lfo_op_enables[1]){
-            lfo2buf = (i32*)malloc(sizeof(i32)* tmpbuf_len);
-            ks_synth_render_lfo(ctx, note, 1, lfo2buf, tmpbuf_len);
-        }
 
-        i32* bufs[3] = {tmpbuf, lfo1buf, lfo2buf};
+        i32* bufs[KS_NUM_LFOS+1];
+
+        bufs[0] = (i32*)malloc(sizeof(i32) * tmpbuf_len);
+
+
+        for(unsigned i=0; i<KS_NUM_LFOS; i++){
+            if(synth->lfo_levels[i] != 0){
+                bufs[i+1]= (i32*)malloc(sizeof(i32) * tmpbuf_len);
+                ks_synth_render_lfo(ctx, note, i, bufs[i+1], tmpbuf_len);
+            }
+        }
 
         ks_synth_render_0(ctx, note, pitchbend, bufs, tmpbuf_len);
         for(unsigned i=1; i< KS_NUM_OPERATORS; i++){
             ks_synth_render_branch(ctx, note, i, pitchbend, bufs, tmpbuf_len);
         }
-        ks_synth_apply_filter(ctx, note, bufs, tmpbuf_len, 0);
-        ks_synth_apply_envelope(ctx, note, tmpbuf, tmpbuf_len);
+        ks_synth_apply_filter(ctx, note, bufs, tmpbuf_len);
+        ks_synth_apply_envelope(ctx, note, bufs[0], tmpbuf_len);
 
         for(unsigned i=0; i<tmpbuf_len; i++){
-            buf[2*i] = ks_apply_panpot(tmpbuf[i], synth->panpot_left) >> 2;
-            buf[2*i+1] = ks_apply_panpot(tmpbuf[i], synth->panpot_right) >> 2;
+            const i64 volumed = ((i64)bufs[0][i] * volume)>> KS_VOLUME_BITS;
+
+            buf[2*i] = ks_apply_panpot(volumed, synth->panpot_left) >> 2;
+            buf[2*i+1] = ks_apply_panpot(volumed, synth->panpot_right) >> 2;
         }
 
-        free(tmpbuf);
-        if(lfo1buf != NULL){
-            free(lfo1buf);
+        free(bufs[0]);
+        for(unsigned i=0; i<KS_NUM_LFOS; i++){
+            if(synth->lfo_levels[i] != 0){
+                free(bufs[i+1]);
+            }
         }
-        if(lfo2buf != NULL){
-            free(lfo2buf);
-        }
+
     } else {
         memset(buf, 0, len*sizeof(i32));
     }
