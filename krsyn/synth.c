@@ -10,68 +10,47 @@
 #define M_PI  3.14159265358979323846
 #endif
 
-KS_FORCEINLINE bool ks_io_binary_as_array(ks_io* io, const ks_io_methods* methods, void* data, u32 data_size, ks_io_serial_type serial_type){
-    ks_value v = ks_val_ptr(data, KS_VALUE_U8);
-    ks_array_data arr = ks_prop_arr_data_size_len(data_size, 1, v, true);
-    return ks_io_array(io, methods, arr, 0, serial_type);
-}
-
-KS_FORCEINLINE i16 ks_io_bit_value(ks_io* io, const ks_io_methods* methods, u8 val, const char* prop_name, ks_io_serial_type serial_type){
-    ks_value v = ks_val_ptr(&val, KS_VALUE_U8);
-    ks_property p = ks_prop_v(prop_name, v);
-    return ks_io_property(io, methods, p, serial_type) ? val : -1;
-}
-
-
-#define ks_bit_u8(prop) { \
-    i16 ret = ks_io_bit_value(__IO, __METHODS, ks_access(prop), #prop, __SERIAL_TYPE); \
-    if(ret != -1) { \
-        ks_access(prop) = (u8)ret; \
-        __RETURN ++; \
-    } \
-}
-
 ks_io_begin_custom_func(ks_lfo_data)
-    ks_bit_u8(op_enabled);
-    ks_bit_u8(filter_enabled);
-    ks_bit_u8(panpot_enabled);
+    ks_bit_val(op_enabled);
+    ks_bit_val(filter_enabled);
+    ks_bit_val(panpot_enabled);
 
-    ks_bit_u8(freq);
-    ks_bit_u8(level);
-    ks_bit_u8(use_custom_wave);
-    ks_bit_u8(wave);
-    ks_bit_u8(offset);
+    ks_bit_val(freq);
+    ks_bit_val(level);
+    ks_bit_val(use_custom_wave);
+    ks_bit_val(wave);
+    ks_bit_val(offset);
 ks_io_end_custom_func(ks_lfo_data)
 
 ks_io_begin_custom_func(ks_envelope_point_data)
-    ks_bit_u8(time);
-    ks_bit_u8(amp);
+    ks_bit_val(time);
+    ks_bit_val(amp);
 ks_io_end_custom_func(ks_envelope_point_data)
 
 ks_io_begin_custom_func(ks_envelope_data)
     ks_arr_obj(points, ks_envelope_point_data);
-    ks_bit_u8(level);
-    ks_bit_u8(ratescale);
-    ks_bit_u8(velocity_sens);
+    ks_bit_val(level);
+    ks_bit_val(ratescale);
+    ks_bit_val(velocity_sens);
 ks_io_end_custom_func(ks_envelope_data)
 
 
 ks_io_begin_custom_func(ks_operator_data)
-    ks_bit_u8(use_custom_wave);
-    ks_bit_u8(wave_type);
-    ks_bit_u8(fixed_frequency);
-    ks_bit_u8(phase_coarse);
-    ks_bit_u8(phase_offset);
-    ks_bit_u8(phase_fine);
-    ks_bit_u8(semitones);
+    ks_bit_val(use_custom_wave);
+    ks_bit_val(wave_type);
+    ks_bit_val(fixed_frequency);
+    ks_bit_val(phase_coarse);
+    ks_bit_val(phase_offset);
+    ks_bit_val(phase_fine);
+    ks_bit_val(semitones);
 
 ks_io_end_custom_func(ks_operator_data)
 
 ks_io_begin_custom_func(ks_mod_data)
-    ks_bit_u8(type);
-    ks_bit_u8(sync);
-    ks_bit_u8(fm_level);
-    ks_bit_u8(mix);
+    ks_bit_val(type);
+    ks_bit_val(sync);
+    ks_bit_val(fm_level);
+    ks_bit_val(mix);
 ks_io_end_custom_func(ks_mod_data)
 
 ks_io_begin_custom_func(ks_synth_data)
@@ -83,11 +62,11 @@ ks_io_begin_custom_func(ks_synth_data)
         ks_arr_obj(mods, ks_mod_data);
         ks_arr_obj(envelopes, ks_envelope_data);
         ks_arr_obj(lfos, ks_lfo_data);
-        ks_bit_u8(filter_type);
-        ks_bit_u8(filter_cutoff);
-        ks_bit_u8(filter_q);
-        ks_bit_u8(filter_key_sens);
-        ks_bit_u8(panpot);
+        ks_bit_val(filter_type);
+        ks_bit_val(filter_cutoff);
+        ks_bit_val(filter_q);
+        ks_bit_val(filter_key_sens);
+        ks_bit_val(panpot);
     }
 ks_io_end_custom_func(ks_synth_data)
 
