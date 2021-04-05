@@ -7,7 +7,7 @@
 #endif
 
 #define SCREEN_WIDTH 726
-#define SCREEN_HEIGHT 650
+#define SCREEN_HEIGHT 620
 
 #define SAMPLING_RATE               48000
 #define SAMPLES_PER_UPDATE          4096
@@ -250,8 +250,6 @@ void EditorUpdate(void* ptr){
                         es->score.length ++;
                         es->last_event_time += delta_d;
                         es->last_event_tick += delta;
-
-                        printf("%d %d %d %d \n", message[0], message[1], message[2], message[3]);
                     }
 
                     res_midi_event = true;

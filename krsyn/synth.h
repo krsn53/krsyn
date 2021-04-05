@@ -382,8 +382,8 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_envelope_time(value)                       ks_calc_envelope_time( ks_v(value, (8-5)))
 #define calc_velocity_sens(value)                       ks_linear_i(ks_v(value, 8-4), 0, ks_1(KS_VELOCITY_SENS_BITS)+9)
 #define calc_filter_q(value)                            ks_linear_i(ks_v(value, 8-4), ks_1(KS_FILTER_Q_BITS-1), ks_v(9, KS_FILTER_Q_BITS-1))
-#define calc_filter_cutoff(ctx, value)                  ctx->note_deltas[ks_v(value, 7-5)]
-#define calc_filter_key_sens(value)                     (value == 0 ? 0 : ks_exp_u((16-value), 1))
+#define calc_filter_cutoff(ctx, value)                  (ks_exp_u(value, 1) * ctx->note_deltas[0])
+#define calc_filter_key_sens(value)                     (value == 0 ? 0 : ks_exp_u((19-value), 2)*3)
 #define calc_ratescales(value)                          ((ks_exp_u(ks_v(value, (8-4)), 6) * 585) >> 2)
 #define calc_output(value)                              (value)
 #define calc_panpot(value)                              ks_linear_u(ks_v(value, (7-4)), 0, 293)

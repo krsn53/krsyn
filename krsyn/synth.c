@@ -768,7 +768,7 @@ static void KS_FORCEINLINE ks_synth_render_mod_base(const ks_synth_context* ctx,
             break;
         }
         case KS_NUM_MODS:{
-            out= synth->operators[0].wave_table[ks_mask((note->operators[0].phase>> shift ) + note->noise_table_offset, KS_TABLE_BITS)];
+            out= synth->operators[0].wave_table[ks_mask((note->operators[0].phase>> shift ) + (noise ? note->noise_table_offset : 0), KS_TABLE_BITS)];
             break;
         }
         }
