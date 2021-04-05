@@ -1180,7 +1180,7 @@ void EditorUpdate(void* ptr){
 
                GuiAlignedLabel("Rate Scale", pos, GUI_TEXT_ALIGN_RIGHT);
                pos.x += step_x;
-               text = FormatText("%.1f %%", 100.0*calc_ratescales(syn->envelopes[i].ratescale) / (float)ks_1(KS_RATESCALE_BITS));
+               text = FormatText("%.1f %%", 100.0 * 12 *ks_v(1ll, 30) / calc_ratescales(syn->envelopes[i].ratescale) / ks_1(30));
                syn->envelopes[i].ratescale = PropertyInt(pos, text, syn->envelopes[i].ratescale, 0, 15, 1);
 
 
@@ -1230,7 +1230,7 @@ void EditorUpdate(void* ptr){
                 syn->filter_q= PropertyInt(pos, text, syn->filter_q, 0, 15, 1);
                 pos.x += step_x;
                 if(syn->filter_key_sens == 0) {
-                    text = FormatText("Fix");
+                    text = FormatText("Almost Fix");
                 }
                 else {
                     text = FormatText("%d Per Oct.", calc_filter_key_sens(syn->filter_key_sens));

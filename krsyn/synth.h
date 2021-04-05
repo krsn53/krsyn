@@ -30,11 +30,12 @@ extern "C" {
 #define KS_POWER_OF_2_BITS              11u
 
 #define KS_FREQUENCY_BITS               16u
-#define KS_RATESCALE_BITS               16u
+#define KS_RATESCALE_BITS               KS_POWER_OF_2_BITS
 
 #define KS_PHASE_BITS                   (30u - KS_TABLE_BITS)
 #define KS_PHASE_MAX_BITS               (KS_PHASE_BITS + KS_TABLE_BITS)
 #define KS_NOISE_PHASE_BITS             (KS_PHASE_MAX_BITS - 5)
+
 
 
 #define KS_SAMPLING_RATE_INV_BITS       30u
@@ -133,7 +134,6 @@ typedef struct ks_synth_context{
     u32         sampling_rate;
     u32         sampling_rate_inv;
     u32         note_deltas[128];
-    u32         ratescales[128];
     u16         powerof2[ks_1(KS_TABLE_BITS)]; // 1 ~ 2^4
     i16         *(wave_tables[KS_MAX_WAVES]);
 }ks_synth_context;
@@ -382,9 +382,9 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_envelope_time(value)                       ks_calc_envelope_time( ks_v(value, (8-5)))
 #define calc_velocity_sens(value)                       ks_linear_i(ks_v(value, 8-4), 0, ks_1(KS_VELOCITY_SENS_BITS)+9)
 #define calc_filter_q(value)                            ks_linear_i(ks_v(value, 8-4), ks_1(KS_FILTER_Q_BITS-1), ks_v(9, KS_FILTER_Q_BITS-1))
-#define calc_filter_cutoff(ctx, value)                  (ks_exp_u(value, 1) * ctx->note_deltas[0])
-#define calc_filter_key_sens(value)                     (value == 0 ? 0 : ks_exp_u((19-value), 2)*3)
-#define calc_ratescales(value)                          ((ks_exp_u(ks_v(value, (8-4)), 6) * 585) >> 2)
+#define calc_filter_cutoff(ctx, value)                  (ks_exp_u(value, 1) * ctx->note_deltas[0] >> 3)
+#define calc_filter_key_sens(value)                     (value == 0 ? INT32_MAX :(ks_exp_u((19-value), 2)*3))
+#define calc_ratescales(value)                          (value == 0 ? INT32_MAX :(ks_exp_u((19-value), 2)*3))
 #define calc_output(value)                              (value)
 #define calc_panpot(value)                              ks_linear_u(ks_v(value, (7-4)), 0, 293)
 #define calc_lfo_wave_type(value)                       (value)

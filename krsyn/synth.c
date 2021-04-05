@@ -77,8 +77,6 @@ ks_synth_context* ks_synth_context_new(u32 sampling_rate){
     ret->sampling_rate_inv = ks_1(30) / sampling_rate;
 
     for(unsigned i=0; i< 128; i++){
-        ret->ratescales[i] = ks_1(KS_RATESCALE_BITS) - ks_1(KS_RATESCALE_BITS) / exp2((double)i/12);
-
         u64 freq_30 = 440.0 * exp2(((double)i-69)/12) * ret->sampling_rate_inv;
         ret->note_deltas[i] = freq_30 >> (KS_SAMPLING_RATE_INV_BITS - KS_PHASE_MAX_BITS);
     }
@@ -429,11 +427,12 @@ void ks_synth_note_on(ks_synth_note* note, const ks_synth *synth, const ks_synth
     for(unsigned i=0; i<KS_NUM_ENVELOPES; i++){
         note->envelopes[i].update_clock =0;
 
+        i64 ratescales;
+        const u32 exp = notenum / synth->envelopes[i].ratescale;
+        const u32 val = notenum % synth->envelopes[i].ratescale;
+        const i64 exp_val = (ctx->powerof2[ks_1(KS_TABLE_BITS-2) - ks_v(val, KS_TABLE_BITS-2) / synth->envelopes[i].ratescale])  >> exp; // val^ -exp
         //rate scale
-        i64 ratescales =  synth->envelopes[i].ratescale;
-        ratescales *= ctx->ratescales[notenum];
-        ratescales >>= KS_RATESCALE_BITS;
-        ratescales = ks_1(KS_RATESCALE_BITS) - ratescales;
+        ratescales = exp_val >> 1; // if val == 0 then base = 2
 
         i64 target;
         i32 velocity;
@@ -491,16 +490,13 @@ void ks_synth_note_on(ks_synth_note* note, const ks_synth *synth, const ks_synth
     note->filter_seek = 0;
 
     const u32 key_sens = synth->filter_key_sens;
-    if(key_sens == 0){
-        note->filter_cutoff = synth->filter_cutoff ;
-    } else {
-        const u32 exp = notenum / key_sens;
-        const u32 val = notenum % key_sens;
-        const i64 exp_val = ((u64)ctx->powerof2[ks_v(val, KS_TABLE_BITS-2) / key_sens]) << exp;
-        const i64 cutoff = (exp_val * synth->filter_cutoff) >> (KS_POWER_OF_2_BITS+4);
+    const u32 exp = notenum / key_sens;
+    const u32 val = notenum % key_sens;
+    const i64 exp_val = ((u64)ctx->powerof2[ks_v(val, KS_TABLE_BITS-2) / key_sens]) << exp;
+    const i64 cutoff = (exp_val * synth->filter_cutoff) >> (KS_POWER_OF_2_BITS+4);
 
-        note->filter_cutoff = cutoff;
-    }
+    note->filter_cutoff = cutoff;
+
 }
 
 void ks_synth_note_off (ks_synth_note* note)
