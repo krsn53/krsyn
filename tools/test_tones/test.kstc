@@ -1,37 +1,37 @@
 {
 	// Magic number : KSTN
-	.length=1,
-	.data=(ks_tone_data[1]){
+	.length=2,
+	.data=(ks_tone_data[2]){
 		{
 			.msb=0,
 			.lsb=0,
-			.program=0,
-			.note=128,
+			.program=128,
+			.note=127,
 			.name="Noname Tone",
 			.synth={
 				// Magic number : KSYN
 				.operators={
 					{
 						.use_custom_wave=0,
-						.wave_type=5,
-						.fixed_frequency=0,
-						.phase_coarse=4,
-						.phase_offset=0,
-						.phase_fine=8,
-						.semitones=58,
-					},
-					{
-						.use_custom_wave=0,
-						.wave_type=0,
+						.wave_type=4,
 						.fixed_frequency=0,
 						.phase_coarse=2,
 						.phase_offset=0,
-						.phase_fine=7,
+						.phase_fine=8,
 						.semitones=51,
 					},
 					{
 						.use_custom_wave=0,
 						.wave_type=3,
+						.fixed_frequency=0,
+						.phase_coarse=8,
+						.phase_offset=0,
+						.phase_fine=8,
+						.semitones=51,
+					},
+					{
+						.use_custom_wave=0,
+						.wave_type=0,
 						.fixed_frequency=0,
 						.phase_coarse=2,
 						.phase_offset=0,
@@ -56,16 +56,16 @@
 						.mix=63,
 					},
 					{
-						.type=0,
+						.type=3,
 						.sync=0,
-						.fm_level=27,
-						.mix=82,
+						.fm_level=0,
+						.mix=63,
 					},
 					{
 						.type=3,
 						.sync=0,
 						.fm_level=0,
-						.mix=127,
+						.mix=63,
 					},
 				},
 				.envelopes={
@@ -76,11 +76,154 @@
 								.amp=7,
 							},
 							{
-								.time=17,
+								.time=0,
+								.amp=7,
+							},
+							{
+								.time=0,
+								.amp=7,
+							},
+							{
+								.time=14,
+								.amp=0,
+							},
+						},
+						.level=255,
+						.ratescale=0,
+						.velocity_sens=15,
+					},
+					{
+						.points={
+							{
+								.time=0,
+								.amp=7,
+							},
+							{
+								.time=0,
+								.amp=7,
+							},
+							{
+								.time=0,
+								.amp=7,
+							},
+							{
+								.time=0,
+								.amp=7,
+							},
+						},
+						.level=255,
+						.ratescale=0,
+						.velocity_sens=0,
+					},
+				},
+				.lfos={
+					{
+						.op_enabled=0,
+						.filter_enabled=0,
+						.panpot_enabled=0,
+						.freq=0,
+						.level=0,
+						.use_custom_wave=0,
+						.wave=1,
+						.offset=0,
+					},
+					{
+						.op_enabled=0,
+						.filter_enabled=0,
+						.panpot_enabled=0,
+						.freq=0,
+						.level=0,
+						.use_custom_wave=0,
+						.wave=1,
+						.offset=0,
+					},
+				},
+				.filter_type=0,
+				.filter_cutoff=19,
+				.filter_q=0,
+				.filter_key_sens=15,
+				.panpot=7,
+			},
+		},
+		{
+			.msb=0,
+			.lsb=0,
+			.program=0,
+			.note=128,
+			.name="Noname Tone",
+			.synth={
+				// Magic number : KSYN
+				.operators={
+					{
+						.use_custom_wave=1,
+						.wave_type=0,
+						.fixed_frequency=0,
+						.phase_coarse=2,
+						.phase_offset=0,
+						.phase_fine=8,
+						.semitones=51,
+					},
+					{
+						.use_custom_wave=0,
+						.wave_type=0,
+						.fixed_frequency=0,
+						.phase_coarse=4,
+						.phase_offset=0,
+						.phase_fine=8,
+						.semitones=58,
+					},
+					{
+						.use_custom_wave=0,
+						.wave_type=0,
+						.fixed_frequency=0,
+						.phase_coarse=2,
+						.phase_offset=0,
+						.phase_fine=8,
+						.semitones=51,
+					},
+					{
+						.use_custom_wave=0,
+						.wave_type=5,
+						.fixed_frequency=0,
+						.phase_coarse=1,
+						.phase_offset=0,
+						.phase_fine=12,
+						.semitones=51,
+					},
+				},
+				.mods={
+					{
+						.type=0,
+						.sync=0,
+						.fm_level=7,
+						.mix=63,
+					},
+					{
+						.type=0,
+						.sync=0,
+						.fm_level=9,
+						.mix=76,
+					},
+					{
+						.type=3,
+						.sync=0,
+						.fm_level=0,
+						.mix=96,
+					},
+				},
+				.envelopes={
+					{
+						.points={
+							{
+								.time=0,
+								.amp=7,
+							},
+							{
+								.time=20,
 								.amp=3,
 							},
 							{
-								.time=23,
+								.time=24,
 								.amp=0,
 							},
 							{
@@ -139,9 +282,9 @@
 					},
 				},
 				.filter_type=0,
-				.filter_cutoff=26,
-				.filter_q=7,
-				.filter_key_sens=2,
+				.filter_cutoff=25,
+				.filter_q=2,
+				.filter_key_sens=1,
 				.panpot=7,
 			},
 		},

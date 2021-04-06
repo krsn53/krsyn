@@ -39,6 +39,8 @@ extern "C" {
 
 
 #define KS_SAMPLING_RATE_INV_BITS       30u
+#define KS_RATESCALE_INV_BITS           30u
+#define KS_KEYSENS_INV_BITS             30u
 
 #define KS_PHASE_COARSE_BITS            1u
 #define KS_PHASE_FINE_BITS              (KS_FREQUENCY_BITS)
@@ -103,15 +105,6 @@ typedef enum ks_mod_t{
 
     KS_NUM_MODS,
 }ks_mod_t;
-
-typedef enum ks_lfo_t{
-    KS_LFO_0 = ks_1(1),
-    KS_LFO_1 = ks_1(2),
-    KS_LFO_2 = ks_1(3),
-    KS_LFO_3 = ks_1(4),
-    KS_LFO_FILTER = 0x0101,
-    KS_LFO_PANPOT = 0x0110,
-}ks_lfo_t;
 
 typedef enum ks_wave_t
 {
@@ -383,8 +376,8 @@ i32                         ks_apply_panpot                 (i32 in, i16 pan);
 #define calc_velocity_sens(value)                       ks_linear_i(ks_v(value, 8-4), 0, ks_1(KS_VELOCITY_SENS_BITS)+9)
 #define calc_filter_q(value)                            ks_linear_i(ks_v(value, 8-4), ks_1(KS_FILTER_Q_BITS-1), ks_v(9, KS_FILTER_Q_BITS-1))
 #define calc_filter_cutoff(ctx, value)                  (ks_exp_u(value, 1) * ctx->note_deltas[0] >> 3)
-#define calc_filter_key_sens(value)                     (value == 0 ? INT32_MAX :(ks_exp_u((19-value), 2)*3))
-#define calc_ratescales(value)                          (value == 0 ? INT32_MAX :(ks_exp_u((19-value), 2)*3))
+#define calc_filter_key_sens(value)                     (value == 0 ? 0 :ks_v(1ll, KS_KEYSENS_INV_BITS) /(ks_exp_u((19-value), 2)*3))
+#define calc_ratescales(value)                          (value == 0 ? 0 :ks_v(1ll, KS_KEYSENS_INV_BITS) /(ks_exp_u((19-value), 2)*3))
 #define calc_output(value)                              (value)
 #define calc_panpot(value)                              ks_linear_u(ks_v(value, (7-4)), 0, 293)
 #define calc_lfo_wave_type(value)                       (value)

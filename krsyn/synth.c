@@ -428,9 +428,9 @@ void ks_synth_note_on(ks_synth_note* note, const ks_synth *synth, const ks_synth
         note->envelopes[i].update_clock =0;
 
         i64 ratescales;
-        const u32 exp = notenum / synth->envelopes[i].ratescale;
-        const u32 val = notenum % synth->envelopes[i].ratescale;
-        const i64 exp_val = (ctx->powerof2[ks_1(KS_TABLE_BITS-2) - ks_v(val, KS_TABLE_BITS-2) / synth->envelopes[i].ratescale])  >> exp; // val^ -exp
+        const u32 exp = ((u64)notenum * synth->envelopes[i].ratescale) >> KS_RATESCALE_INV_BITS;
+        const u32 val = ks_mask((ks_v((u64)notenum, KS_TABLE_BITS-2)  * synth->envelopes[i].ratescale) >> KS_RATESCALE_INV_BITS, KS_TABLE_BITS-2);
+        const i64 exp_val = (ctx->powerof2[ks_1(KS_TABLE_BITS-2) - val])  >> exp; // val^ -exp
         //rate scale
         ratescales = exp_val >> 1; // if val == 0 then base = 2
 
@@ -490,9 +490,9 @@ void ks_synth_note_on(ks_synth_note* note, const ks_synth *synth, const ks_synth
     note->filter_seek = 0;
 
     const u32 key_sens = synth->filter_key_sens;
-    const u32 exp = notenum / key_sens;
-    const u32 val = notenum % key_sens;
-    const i64 exp_val = ((u64)ctx->powerof2[ks_v(val, KS_TABLE_BITS-2) / key_sens]) << exp;
+    const u32 exp = ((u64)notenum * key_sens) >> KS_KEYSENS_INV_BITS;
+    const u32 val = ks_mask((ks_v((u64)notenum, KS_TABLE_BITS-2) * key_sens) >> KS_KEYSENS_INV_BITS, KS_TABLE_BITS-2);
+    const i64 exp_val = ((u64)ctx->powerof2[val]) << exp;
     const i64 cutoff = (exp_val * synth->filter_cutoff) >> (KS_POWER_OF_2_BITS+4);
 
     note->filter_cutoff = cutoff;
@@ -832,7 +832,6 @@ ks_synth_render_impl_mod_fm(0, 1, 0)
 ks_synth_render_impl_mod_fm(0, 1, 1)
 ks_synth_render_impl_mod_fm(1, 0, 0)
 ks_synth_render_impl_mod_fm(1, 1, 0)
-ks_synth_render_impl(KS_MOD_PASS, 0, 0, 0, 0, 0)
 
 ks_synth_render_impl(KS_NUM_MODS, 0, 0, 0, 0, 0)
 ks_synth_render_impl(KS_NUM_MODS, 0, 0, 0, 1, 0)
@@ -892,8 +891,7 @@ if(fm) { \
         sync_lfo_branch(KS_MOD_AM);
         break;
     case KS_MOD_PASS:
-        ks_synth_render_func(KS_MOD_PASS, 0, 0, 0, 0, 0)(ctx, note, op, pitchbend, buf, len);
-        break;
+        return;
     }
 #undef sync_lfo_branch
 #undef fm_branch
