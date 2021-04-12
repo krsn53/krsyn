@@ -120,11 +120,11 @@
 					{
 						.op_enabled=0,
 						.filter_enabled=0,
-						.panpot_enabled=0,
+						.panpot_enabled=1,
 						.freq=0,
-						.level=0,
+						.level=25,
 						.use_custom_wave=0,
-						.wave=1,
+						.wave=6,
 						.offset=0,
 					},
 					{
@@ -299,7 +299,7 @@
 				.operators={
 					{
 						.use_custom_wave=0,
-						.wave_type=3,
+						.wave_type=5,
 						.fixed_frequency=0,
 						.phase_coarse=2,
 						.phase_offset=0,

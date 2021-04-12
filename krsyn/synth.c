@@ -96,7 +96,7 @@ ks_synth_context* ks_synth_context_new(u32 sampling_rate){
 
         ret->wave_tables[KS_WAVE_FAKE_TRIANGLE][i] = ret->wave_tables[KS_WAVE_TRIANGLE][i] >> 13 << 13;
 
-        ret->wave_tables[KS_WAVE_SAW_DOWN][i] = INT16_MIN + ks_mask(ks_1(16) * p / ks_1(KS_TABLE_BITS), 16);
+        ret->wave_tables[KS_WAVE_SAW_DOWN][i] = (-ks_1(KS_OUTPUT_BITS)) + ks_mask(ks_1(KS_OUTPUT_BITS+1) * p / ks_1(KS_TABLE_BITS), KS_OUTPUT_BITS+1);
         ret->wave_tables[KS_WAVE_SAW_UP][i] = -ret->wave_tables[KS_WAVE_SAW_DOWN][i];
 
         ret->wave_tables[KS_WAVE_SQUARE][i] = i < ks_1(KS_TABLE_BITS-1) ? (ks_1(KS_OUTPUT_BITS)-1): -(ks_1(KS_OUTPUT_BITS)-1);
